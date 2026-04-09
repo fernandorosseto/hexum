@@ -1,4 +1,4 @@
-# Plano de Implementação Tática 2.0 (Foco: MVP Contra a Máquina)
+# Plano de Implementação Hexum (Foco: MVP Contra a Máquina)
 
 Este plano divide a produção do jogo em etapas concretas e validadas passo-a-passo. O objetivo central é **alcançar a diversão e testar as regras o mais rápido possível**. Por isso, atacaremos primeiro a criação de uma inteligência artificial (Bot) simples rodando no navegador, deixando o servidor Multiplayer complexo (Node.js/Supabase) pré-preparado na arquitetura, mas implementado apenas na fase final de escala.
 

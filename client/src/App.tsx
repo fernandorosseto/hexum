@@ -48,7 +48,7 @@ function App() {
       {currentView === 'SANDBOX' && <SandboxUI />}
 
       {/* CAMADA 2: BattleLog (Responsivo) */}
-      <div className="absolute top-16 md:top-20 right-0 md:right-4 w-full md:w-64 z-20 pointer-events-none">
+      <div className="absolute top-16 md:top-20 right-0 md:right-4 w-full md:w-64 z-20 pointer-events-auto">
         <BattleLog />
       </div>
 

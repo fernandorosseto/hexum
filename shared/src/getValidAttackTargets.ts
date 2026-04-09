@@ -9,7 +9,12 @@ import { UNIT_BEHAVIORS } from './unitBehaviors';
  */
 export function getValidAttackTargets(state: GameState, unitId: string, useSpecial: boolean = false): HexCoordinates[] {
   const unit = state.boardUnits[unitId];
-  if (!unit || unit.summoningSickness || !unit.canAttack) return [];
+  if (!unit) return [];
+  
+  // No sandbox, ignoramos travas de enjoo e ação para permitir testes rápidos
+  if (!state.sandboxMode) {
+    if (unit.summoningSickness || !unit.canAttack) return [];
+  }
 
   const targets: HexCoordinates[] = [];
 

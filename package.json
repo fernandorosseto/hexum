@@ -1,5 +1,5 @@
 {
-  "name": "tatica-2.0-monorepo",
+  "name": "hexum-monorepo",
   "private": true,
   "workspaces": [
     "shared",

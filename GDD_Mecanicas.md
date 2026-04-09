@@ -68,7 +68,6 @@ Esta seção define as peças medievais do jogo e suas identidades semânticas.
 | **🗡️ Assassino** | 2 | 1 | 3 | Furtividade e Sangramento |
 | **🔮 Mago** | 3 | 1 (AoE) | 3 | Dano em Área |
 | **📿 Clérigo** | 3 | 0 | 4 | Healer / Conversão |
-| **🛖 Inerte de Prova**| 0 | 0 | 5 | Alvo de Treino (Sandbox) |
 
 ---
 
@@ -115,8 +114,7 @@ Efeitos imediatos lançados diretamente da mão do jogador.
 
 O ambiente de testes definitivo para validar táticas e balanceamento.
 
-- **Forja (P1):** Janela de controle do Jogador 1. Permite invocar qualquer unidade no hexágono selecionado e adicionar cartas à mão sem custo.
-- **Campo de Adestramento (P2):** Janela dedicada a spawnar **Inertes de Prova** (Manequins) para testes de dano.
+- **Forja (P1/P2):** Janelas de controle que permitem invocar qualquer unidade no hexágono selecionado e adicionar cartas à mão sem custo.
 - **Purificar Arena:** Reseta o tabuleiro, remove todas as unidades e limpa as mãos de cartas para um novo teste.
 - **Mana Infinita:** No Simulador, a mana é restaurada ao máximo (6) no início de cada turno automaticamente.
 

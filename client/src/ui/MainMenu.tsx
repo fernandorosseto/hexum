@@ -1,3 +1,4 @@
+import React from 'react';
 import { useGameStore } from '../store/gameStore';
 import heroImg from '../assets/hexum.png';
 import backgroundImg from '../assets/background.jpg';
@@ -38,7 +39,7 @@ export const MainMenu: React.FC = () => {
         </div>
 
         {/* Buttons Menu */}
-        <div className="flex flex-col w-full space-y-5 mt-10">
+        <div className="flex flex-col w-full max-w-[550px] md:max-w-[650px] space-y-5 mt-10">
           
           <button 
             onClick={() => setCurrentView('PLAY')}
@@ -81,7 +82,7 @@ export const MainMenu: React.FC = () => {
         {/* Footer */}
         <div className="absolute bottom-8 text-center opacity-40">
           <p className="text-[10px] text-slate-400 font-bold tracking-[0.2em] uppercase">
-            © 2026 Studio Tatica
+            © 2026 Hexum Studios
           </p>
         </div>
 

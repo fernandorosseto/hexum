@@ -11,6 +11,11 @@ interface GameLog {
 
 type AnimationType = 'attacking' | 'damaged' | 'healing' | 'lightning';
 
+interface TransfusionAnimation {
+  source: HexCoordinates;
+  target: HexCoordinates;
+}
+
 interface GameStore extends GameState {
   currentView: 'MENU' | 'PLAY' | 'SANDBOX';
   setCurrentView: (view: 'MENU' | 'PLAY' | 'SANDBOX') => void;
@@ -42,6 +47,8 @@ interface GameStore extends GameState {
   spawnUnit: (unitName: string, hex: HexCoordinates, playerId: string) => void;
   addCardToHand: (cardId: string) => void;
   sandboxPlayCard: (cardId: string, hex: HexCoordinates, playerId: string) => void;
+  activeTransfusion: TransfusionAnimation | null;
+  activeMeteor: HexCoordinates | null;
   resetGame: () => void;
   purifyArena: () => void;
   removeUnit: (unitId: string) => void;
@@ -93,6 +100,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   sandboxMode: false,
   isVsAI: false,
   isAiThinking: false,
+  activeTransfusion: null,
+  activeMeteor: null,
   
   setSandboxMode: (enabled) => set({ sandboxMode: enabled }),
   
@@ -104,7 +113,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   addLog: (message, playerId) => {
     const newLog = { id: Math.random().toString(36).substr(2, 9), message, playerId };
-    set(state => ({ logs: [newLog, ...state.logs].slice(0, 15) }));
+    set(state => ({ logs: [...state.logs, newLog].slice(-50) })); // Mantém os últimos 50 logs no final do array
   },
   
   attemptMove: (unitId, targetHex, useSpecial = false) => {
@@ -135,7 +144,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const finalUseSpecial = useSpecial || !!currentGameState.selectedAbility;
       const newState = moveTo(effectiveState, unitId, targetHex, finalUseSpecial);
       set({ ...newState, selectedHex: null, selectedAbility: null });
-      get().addLog(`${unit.unitClass} moveu para (${targetHex.q}, ${targetHex.r})`, unit.playerId);
+      
+      const moveTemplates = [
+        `O ${unit.unitClass} marchou pelo campo de batalha.`,
+        `${unit.unitClass} se posicionou estrategicamente.`,
+        `O ${unit.unitClass} avançou em direção ao objetivo.`
+      ];
+      const moveMsg = moveTemplates[Math.floor(Math.random() * moveTemplates.length)];
+      get().addLog(moveMsg, unit.playerId);
     } catch (err: any) {
       console.warn("Erro de Regra:", err.message);
       set({ selectedHex: null, selectedAbility: null });
@@ -157,7 +173,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       if (currentGameState.sandboxMode) {
         effectiveState = {
           ...currentGameState,
-          currentTurnPlayerId: attacker.playerId,
+          currentTurnPlayerId: attacker.playerId, // Temporariamente assume o turno do atacante no Sandbox
           boardUnits: {
             ...currentGameState.boardUnits,
             [attackerId]: {
@@ -197,8 +213,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
         combatLogs: [] 
       });
       
-      const details = (newState.combatLogs && newState.combatLogs.length > 0) ? ` (${newState.combatLogs.join(', ')})` : '';
-      get().addLog(`[Dano: ${damageDealt}] ${attacker.unitClass} atacou ${target.unitClass}${details}`, attacker.playerId);
+      const details = (newState.combatLogs && newState.combatLogs.length > 0) ? `. ${newState.combatLogs.join('. ')}` : '';
+      
+      const attackTemplates = [
+        `O ${attacker.unitClass} desferiu um golpe certeiro em ${target.unitClass} causando ${damageDealt} de dano!`,
+        `${attacker.unitClass} atacou ${target.unitClass} infligindo ${damageDealt} de dano.`,
+        `O impacto de ${attacker.unitClass} atingiu ${target.unitClass} com força: ${damageDealt} de dano.`
+      ];
+      const attackMsg = attackTemplates[Math.floor(Math.random() * attackTemplates.length)] + details;
+      
+      get().addLog(attackMsg, attacker.playerId);
 
       setTimeout(() => {
         set(state => {
@@ -236,7 +260,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
       const newState = heal(effectiveState, healerId, targetId);
       set({ ...newState, selectedHex: null, animatingUnits: { [targetId]: 'healing' } });
-      get().addLog(`${healer.unitClass} curou ${target.unitClass}`, healer.playerId);
+      get().addLog(`O ${healer.unitClass} usou preces divinas para curar o ${target.unitClass}!`, healer.playerId);
       setTimeout(() => set({ animatingUnits: {} }), 600);
     } catch (err: any) {
       console.warn("Erro de Cura:", err.message);
@@ -304,6 +328,39 @@ export const useGameStore = create<GameStore>((set, get) => ({
         }
       }
 
+      // Trigger de Animação de Transfusão
+      if (cardId === 'spl_transfusao') {
+        const myKing = Object.values(currentGameState.boardUnits).find(u => u.unitClass === 'Rei' && u.playerId === currentGameState.currentTurnPlayerId);
+        if (myKing) {
+          set({ activeTransfusion: { source: targetHex, target: myKing.position } });
+          setTimeout(() => set({ activeTransfusion: null }), 1000);
+        }
+      }
+
+      // Trigger de Animação de Meteoro
+      if (cardId === 'spl_meteoro') {
+        set({ activeMeteor: targetHex });
+        
+        // Identificar todas as unidades afetadas para brilhar
+        const neighbors = getHexNeighbors(targetHex);
+        const affectedUnitIds = Object.keys(currentGameState.boardUnits).filter(id => {
+          const u = currentGameState.boardUnits[id];
+          return (u.position.q === targetHex.q && u.position.r === targetHex.r) || 
+                 neighbors.some(n => n.q === u.position.q && n.r === u.position.r);
+        });
+
+        if (affectedUnitIds.length > 0) {
+          const animations: Record<string, AnimationType> = {};
+          affectedUnitIds.forEach(id => {
+            animations[id] = 'damaged'; // Brilho de impacto
+          });
+          set({ animatingUnits: animations });
+        }
+
+        setTimeout(() => set({ activeMeteor: null, animatingUnits: {} }), 1000);
+        hasCustomAnimation = true;
+      }
+
       // Se unidades morreram, preservamos no Board com HP 0 para a animação
       if (deadUnitIds.length > 0) {
         deadUnitIds.forEach(id => {
@@ -327,9 +384,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
           });
         }, 800);
       }
-      
+
       const cardName = cardId.replace('unit_', '').replace('spl_', '').replace('art_', '').toUpperCase();
-      get().addLog(`Jogou ${cardName}`, currentGameState.currentTurnPlayerId);
+      let playMsg = `Jogou ${cardName}`;
+      
+      if (cardId.startsWith('unit_')) {
+        playMsg = `O ${currentGameState.currentTurnPlayerId === 'p1' ? 'Azul' : 'Roxo'} convocou o ${cardName} para o campo de batalha!`;
+      } else if (cardId.startsWith('spl_')) {
+        playMsg = `Uma poderosa magia foi conjurada: ${cardName}!`;
+      } else if (cardId.startsWith('art_')) {
+        playMsg = `O artefato sagrado ${cardName} foi revelado.`;
+      }
+
+      get().addLog(playMsg, currentGameState.currentTurnPlayerId);
     } catch (err: any) {
       console.warn("Erro ao jogar carta:", err.message);
       set({ selectedCard: null, selectedHex: null });
@@ -361,7 +428,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
 
       set({ ...newState });
-      get().addLog(`Sacrificou uma carta por Mana`, currentGameState.currentTurnPlayerId);
+      get().addLog(`Uma oferenda de mana foi feita por ${currentGameState.currentTurnPlayerId === 'p1' ? 'Azul' : 'Roxo'}.`, currentGameState.currentTurnPlayerId);
     } catch (err: any) {
       console.warn("Erro ao oferecer carta:", err.message);
     }
@@ -387,7 +454,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const pId = currentGameState.currentTurnPlayerId;
       const newState = endTurn(currentGameState);
       set({ ...newState, selectedHex: null });
-      get().addLog(`Turno de ${pId} finalizado`, pId);
+      get().addLog(`O turno de ${pId === 'p1' ? 'Azul' : 'Roxo'} chegou ao fim.`, pId);
       
       const updatedState = get();
       if (updatedState.isVsAI && updatedState.currentTurnPlayerId === 'p2' && updatedState.currentPhase !== 'GAME_OVER') {

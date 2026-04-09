@@ -3,7 +3,6 @@ import { useGameStore } from '../store/gameStore';
 import { UNIT_DESCRIPTIONS, UNIT_STATS, ARTIFACTS, SPELLS, ARTIFACT_DESCRIPTIONS, SPELL_DESCRIPTIONS, getFearStatus, buffLabels } from 'shared';
 import { motion } from 'framer-motion';
 import reiIcon from '../assets/rei.png';
-import inerteIcon from '../assets/pell.png';
 import arqueiroIcon from '../assets/arqueiro.png';
 import assassinoIcon from '../assets/assassino.png';
 import cavaleiroIcon from '../assets/cavaleiro.png';
@@ -20,7 +19,6 @@ const UNIT_ICONS: Record<string, string> = {
   Assassino: assassinoIcon, 
   Mago: magoIcon, 
   Clerigo: clerigoIcon, 
-  Inerte: inerteIcon
 };
 
 const UNIT_ART_COLORS: Record<string, { bg: string, glow: string, border: string }> = {
@@ -31,7 +29,6 @@ const UNIT_ART_COLORS: Record<string, { bg: string, glow: string, border: string
   Assassino: { bg: 'from-violet-900/60 to-purple-950/80',glow: 'shadow-[0_0_40px_rgba(139,92,246,0.15)]', border: 'border-violet-500/60' },
   Mago:      { bg: 'from-blue-900/60 to-indigo-950/80',  glow: 'shadow-[0_0_40px_rgba(99,102,241,0.15)]', border: 'border-blue-500/60' },
   Clerigo:   { bg: 'from-amber-900/60 to-orange-950/80', glow: 'shadow-[0_0_40px_rgba(217,119,6,0.15)]', border: 'border-amber-500/60' },
-  Inerte:    { bg: 'from-orange-800/60 to-yellow-950/80', glow: 'shadow-[0_0_40px_rgba(245,158,11,0.15)]', border: 'border-orange-500/60' },
 };
 
 const SPELL_ICONS: Record<string, string> = {
@@ -62,7 +59,6 @@ export const CardDetailsUI: React.FC = () => {
   const currentPlayerId = useGameStore(state => state.currentTurnPlayerId);
   const sandboxMode = useGameStore(state => state.sandboxMode);
   const activePlayer = useGameStore(state => state.players[currentPlayerId]);
-  const removeUnit = useGameStore(state => state.removeUnit);
   const setSelectedHex = useGameStore(state => state.setSelectedHex);
   const setSelectedCard = useGameStore(state => state.setSelectedCard);
 
@@ -319,22 +315,8 @@ export const CardDetailsUI: React.FC = () => {
               </button>
             )}
 
-            {/* BOTÃO DELETAR (Apenas Inerte no Sandbox) */}
-            {data.unitClass === 'Inerte' && sandboxMode && selectedHex && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const unitOnHex = Object.values(boardUnits).find(u => u.position.q === selectedHex.q && u.position.r === selectedHex.r);
-                  if (unitOnHex) removeUnit(unitOnHex.id);
-                }}
-                className="flex-1 bg-red-950/40 hover:bg-red-800/60 text-red-400 border border-red-500/30 font-black text-[9px] uppercase tracking-widest rounded-md py-1.5 transition-all active:scale-95"
-              >
-                🗑️ DELETAR
-              </button>
-            )}
-
             {/* Spacer if no button */}
-            {(selectedCardId || !selectedHex || (data.unitClass !== 'Cavaleiro' && data.unitClass !== 'Assassino' && data.unitClass !== 'Inerte') || (!sandboxMode && data.unitOwner !== currentPlayerId)) && (
+            {(selectedCardId || !selectedHex || (data.unitClass !== 'Cavaleiro' && data.unitClass !== 'Assassino') || (!sandboxMode && data.unitOwner !== currentPlayerId)) && (
               <div className="flex-1" />
             )}
           </div>

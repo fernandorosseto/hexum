@@ -71,7 +71,7 @@ export function applyFinalDamage(target: Unit, damage: number, state: GameState)
         shield.value -= 1;
       } else {
         target.buffs.splice(shieldIndex, 1);
-        addCombatLog(state, `🛡️ O escudo se quebrou!`);
+        addCombatLog(state, `🛡️ O escudo não resistiu e se quebrou!`);
       }
       
       if (remainingDamage > 0) {
@@ -82,7 +82,7 @@ export function applyFinalDamage(target: Unit, damage: number, state: GameState)
 
     // Escudo padrão (Aura Rúnica / Escudo Sagrado) - Absorve 1 hit total
     target.buffs.splice(shieldIndex, 1);
-    addCombatLog(state, `🛡️ Escudo Absorveu o impacto total! (0 de dano)`);
+    addCombatLog(state, `🛡️ Proteção Divina! O escudo absorveu todo o impacto.`);
     return;
   }
 
@@ -109,7 +109,7 @@ function applyFuryEffect(attacker: Unit, state: GameState): void {
 function checkAndConsumeInvulnerability(attacker: Unit, state: GameState): void {
   if (attacker.buffs.some(b => b.type === 'invulnerable')) {
     attacker.buffs = attacker.buffs.filter(b => b.type !== 'invulnerable');
-    addCombatLog(state, `⚖️ Invulnerabilidade consumida pelo ataque!`);
+    addCombatLog(state, `⚖️ Sacrifício! Invulnerabilidade consumida pelo ataque.`);
   }
 }
 
@@ -125,7 +125,7 @@ function handleUnitDeath(state: GameState, unit: Unit, killerPlayerId: string): 
       state.winner = killerPlayerId;
     }
     delete state.boardUnits[unit.id];
-    addCombatLog(state, `💀 ${unit.unitClass} foi removido.`);
+    addCombatLog(state, `💀 O ${unit.unitClass} sucumbiu e foi removido do campo.`);
   }
 }
 
@@ -183,11 +183,9 @@ const CavaleiroBehavior: UnitBehavior = {
       if (dist > 3 || !isLine(unit.position, target)) {
         throw new Error("Rompante de Ferro deve ser em linha reta de até 3 de distância.");
       }
-      if (dist > 1) checkTrajectory(state, unit, { position: target } as any, 1);
     } else {
       if (dist > maxMoveDist) throw new Error(`Cavaleiro só move até ${maxMoveDist} casa(s).`);
       if (!isLine(unit.position, target)) throw new Error("Cavaleiro só se move em linha reta.");
-      if (dist > 1) checkTrajectory(state, unit, { position: target } as any, 1);
     }
   },
   isValidMovePosition(unit, targetPos, dist, state, useSpecial) {
@@ -202,7 +200,6 @@ const CavaleiroBehavior: UnitBehavior = {
       if (dist > 3 || !isLine(attacker.position, target.position)) {
         throw new Error("Rompante de Ferro em linha reta de até 3 de distância.");
       }
-      if (dist > 1) checkTrajectory(state, attacker, target, 1);
     } else {
       if (dist > 1 + rangeBonus) throw new Error("Cavaleiro só ataca colado.");
     }
@@ -214,7 +211,7 @@ const CavaleiroBehavior: UnitBehavior = {
 
     if (useSpecial) {
       damage += 2;
-      addCombatLog(state, `🐎 Rompante de Ferro: +2 Danos`);
+      addCombatLog(state, `🐎 Rompante de Ferro: +2 de impacto extra!`);
       const line = getLineOfSight(attacker.position, target.position);
       if (line.length > 2) {
         attacker.position = line[line.length - 2];
@@ -227,7 +224,7 @@ const CavaleiroBehavior: UnitBehavior = {
 
     if ((dist > 1 || useSpecial) && checkEffectTrigger(attacker)) {
       target.buffs.push({ type: 'stun', duration: 1 });
-      addCombatLog(state, `💫 Alvo Atordoado!`);
+      addCombatLog(state, `💫 O alvo ficou atordoado pelo choque!`);
     }
     applyFuryEffect(attacker, state);
     handleUnitDeath(state, target, attacker.playerId);
@@ -302,7 +299,7 @@ const ArqueiroBehavior: UnitBehavior = {
     if (extra > 0) addCombatLog(state, `Artefatos: +${extra}`);
     if (checkEffectTrigger(attacker)) {
       target.buffs.push({ type: 'stun', duration: 1 });
-      addCombatLog(state, `🎯 Tiro Preciso: Atordoou o alvo!`);
+      addCombatLog(state, `🎯 Tiro Preciso! O alvo foi paralisado.`);
     }
     applyFuryEffect(attacker, state);
     handleUnitDeath(state, target, attacker.playerId);
@@ -347,7 +344,7 @@ const AssassinoBehavior: UnitBehavior = {
     
     if (useSpecial) {
       applyFinalDamage(target, 2, state);
-      addCombatLog(state, `🦘 Transposição Etérea: +2 Danos Bonus`);
+      addCombatLog(state, `🦘 Salto Etéreo: +2 de dano bônus!`);
     }
     
     const extra = applyArtifactDamageEffects(attacker, target);
@@ -375,7 +372,7 @@ const AssassinoBehavior: UnitBehavior = {
         }
         if (!landed) {
           attacker.position = originalPos;
-          addCombatLog(state, `🦘 Transposição: Alvo cercado! Voltou à origem.`);
+          addCombatLog(state, `🦘 Sem espaço para transpor! Voltou à origem.`);
         }
       }
     }
@@ -419,7 +416,7 @@ const MagoBehavior: UnitBehavior = {
       }
       if (Math.random() < 0.3) {
         applyDoT(u, 'burn', 2, 1);
-        addCombatLog(state, `🔥 Chama Rúnica em ${u.unitClass}`);
+        addCombatLog(state, `🔥 Chama Rúnica: Incendiou o ${u.unitClass}!`);
       }
       handleUnitDeath(state, u, attacker.playerId);
     });
@@ -453,21 +450,21 @@ const ClerigoBehavior: UnitBehavior = {
 };
 
 // ══════════════════════════════════════════════
-//  Inerte de Prova
+//  Estrutura (Muralhas, etc)
 // ══════════════════════════════════════════════
 
-const InerteBehavior: UnitBehavior = {
-  validateMove(unit, target, dist, maxMoveDist, state) {
-    const collision = Object.values(state.boardUnits).some(u => 
-      u.id !== unit.id && u.position.q === target.q && u.position.r === target.r
-    );
-    if (collision) throw new Error("Local já ocupado!");
-  },
-  isValidMovePosition(_unit, _targetPos, _dist, _state) {
-    return false; // Inerte não se move
-  },
-  validateAttack() { throw new Error("O Inerte de Prova não ataca."); },
-  applyDamage() {}
+const EstruturaBehavior: UnitBehavior = {
+  validateMove() { throw new Error("Estruturas não podem se mover."); },
+  isValidMovePosition() { return false; },
+  validateAttack() { throw new Error("Estruturas não podem atacar."); },
+  applyDamage(attacker, target, state) {
+    // Apenas aplica o dano no alvo (muralha), sem contra-ataque ou lógica complexa
+    addCombatLog(state, `Base: ${attacker.attack}`);
+    applyFinalDamage(target, attacker.attack, state);
+    const extra = applyArtifactDamageEffects(attacker, target);
+    if (extra > 0) addCombatLog(state, `Artefatos: +${extra}`);
+    handleUnitDeath(state, target, attacker.playerId);
+  }
 };
 
 // ══════════════════════════════════════════════
@@ -482,5 +479,5 @@ export const UNIT_BEHAVIORS: Record<UnitClass, UnitBehavior> = {
   Assassino: AssassinoBehavior,
   Mago: MagoBehavior,
   Clerigo: ClerigoBehavior,
-  Inerte: InerteBehavior,
+  Estrutura: EstruturaBehavior,
 };

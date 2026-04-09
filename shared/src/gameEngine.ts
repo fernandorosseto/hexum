@@ -58,7 +58,7 @@ export function getValidSpawnCoordinates(state: GameState, playerId: string, car
     }
     
     // Feitiços de ATAQUE (Inimigos)
-    if (['spl_raio', 'spl_transfusao', 'spl_raizes'].includes(cardId)) {
+    if (['spl_raio', 'spl_raizes'].includes(cardId)) {
       const myKing = boardUnits.find(u => u.unitClass === 'Rei' && u.playerId === playerId);
       let potentialTargets = boardUnits.filter(u => u.playerId !== playerId);
       
@@ -69,8 +69,20 @@ export function getValidSpawnCoordinates(state: GameState, playerId: string, car
       return potentialTargets.map(u => u.position);
     }
 
+    // Transfusão Sombria (Adjacente ao Rei, qualquer lado)
+    if (cardId === 'spl_transfusao') {
+      const myKing = boardUnits.find(u => u.unitClass === 'Rei' && u.playerId === playerId);
+      if (!myKing) return [];
+      const neighbors = getHexNeighbors(myKing.position);
+      return boardUnits.filter(u => 
+        neighbors.some(n => n.q === u.position.q && n.r === u.position.r)
+      ).map(u => u.position);
+    }
+
     if (cardId === 'spl_meteoro') {
-      return getAllHexes(range);
+      const myKing = boardUnits.find(u => u.unitClass === 'Rei' && u.playerId === playerId);
+      if (!myKing) return [];
+      return getAllHexes(range).filter(hex => getHexDistance(myKing.position, hex) <= 4);
     }
     
     return getAllHexes(range);
@@ -317,25 +329,14 @@ export function moveTo(state: GameState, unitId: string, targetPosition: HexCoor
   // Base de movimento por classe
   let baseMove = 1;
   if (unit.unitClass === 'Cavaleiro') baseMove = 2;
-  if (unit.unitClass === 'Inerte') baseMove = 99;
   
   // Bônus de artefato (Corcel concede +1 de distância de movimento)
   const bonus = (unit.equippedArtifacts || []).includes('art_corcel') ? 1 : 0;
   const maxMoveDist = baseMove + bonus;
 
-  // Se for Inerte, ignoramos a distância máxima na validação global
-  if (unit.unitClass !== 'Inerte' && dist > maxMoveDist) {
-    // Delega validação à behavior se não for Inerte
-    const behavior = UNIT_BEHAVIORS[unit.unitClass];
-    behavior.validateMove(unit, targetPosition, dist, maxMoveDist, newState, useSpecial);
-  } else if (unit.unitClass === 'Inerte') {
-     // Inerte tem sua própria validação simples que não usa maxMoveDist
-     const behavior = UNIT_BEHAVIORS[unit.unitClass];
-     behavior.validateMove(unit, targetPosition, dist, maxMoveDist, newState, useSpecial);
-  } else {
-     const behavior = UNIT_BEHAVIORS[unit.unitClass];
-     behavior.validateMove(unit, targetPosition, dist, maxMoveDist, newState, useSpecial);
-  }
+  // Validação delegada à behavior da classe
+  const behavior = UNIT_BEHAVIORS[unit.unitClass];
+  behavior.validateMove(unit, targetPosition, dist, maxMoveDist, newState, useSpecial);
 
   // Colisão (compartilhado)
   const collision = Object.values(newState.boardUnits).some(u =>
@@ -355,8 +356,8 @@ export function getValidMoveCoordinates(state: GameState, unitId: string, useSpe
   const behavior = UNIT_BEHAVIORS[unit.unitClass];
   const validMoves: HexCoordinates[] = [];
   
-  // Lógica Especial para o Inerte: Unidade Estática (Não se move)
-  if (unit.unitClass === 'Inerte') {
+  // Estruturas não se movem
+  if (unit.unitClass === 'Estrutura') {
     return [];
   }
 

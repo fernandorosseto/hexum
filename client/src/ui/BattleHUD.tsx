@@ -56,7 +56,7 @@ export const BattleHUD: React.FC = () => {
         {/* Centro — Turno (Ou Lab) */}
         <div className="hidden sm:flex flex-col items-center gap-1">
           <span className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] whitespace-nowrap">
-            {sandboxMode ? '🧪 SIMULADOR' : `Turno ${turnNumber}`}
+            {sandboxMode ? 'SIMULADOR DE GUERRA' : `Turno ${turnNumber}`}
           </span>
           {isAiThinking && (
             <div className="flex items-center gap-2 px-3 py-1 bg-purple-900/30 border border-purple-500/30 rounded-lg animate-pulse">

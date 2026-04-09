@@ -5,10 +5,9 @@ export const UNIT_STATS: Record<string, { hp: number, attack: number, mana: numb
   'Cavaleiro': { hp: 5, attack: 3, mana: 2 },
   'Lanceiro': { hp: 3, attack: 1, mana: 1 },
   'Arqueiro': { hp: 2, attack: 1, mana: 1 },
-  'Assassino': { hp: 3, attack: 1, mana: 2 },
+  'Assassino': { hp: 3, attack: 2, mana: 2 },
   'Mago': { hp: 3, attack: 1, mana: 3 },
   'Clerigo': { hp: 4, attack: 0, mana: 3 },
-  'Inerte': { hp: 5, attack: 0, mana: 0 },
 };
 
 export const UNIT_DESCRIPTIONS: Record<string, { ability: string, flavor: string, role: string }> = {
@@ -19,7 +18,6 @@ export const UNIT_DESCRIPTIONS: Record<string, { ability: string, flavor: string
   'Assassino': { ability: 'Toque Letal — Todo ataque aplica Sangramento (1 dano/turno, 2 turnos).\nTransposição Etérea (3 Mana) — Salta 2 casas e ataca com +2 de Dano Bônus.', flavor: '"Nas sombras, o silêncio é a lâmina mais afiada. Quem vê o brilho do aço já habita o reino das cinzas."', role: 'Assassino · Mobilidade' },
   'Mago': { ability: 'Cataclismo Arcano — Dano em Área no alvo e adjacentes (raio 1). Chance de aplicar Queimadura (1 dano/turno, 2 turnos).', flavor: '"O fogo que nasce das runas não conhece aliados."', role: 'AoE · Controle de Área' },
   'Clerigo': { ability: 'Prece de Alento — Restaura 2 HP de um aliado adjacente. Chance de conceder Escudo Sagrado.\nChamado da Fé — Tenta converter um inimigo adjacente (chance escala por rodada).', flavor: '"A fé cura feridas que o aço não alcança."', role: 'Healer · Conversão' },
-  'Inerte': { ability: 'Inerte de Prova — Unidade inerte para testes de dano. Pode ser movida livremente.', flavor: '"O treino em palha salva o sangue no aço."', role: 'Alvo de Batalha' },
 };
 
 export const ARTIFACTS: Card[] = [
@@ -80,7 +78,7 @@ export function getUnitCard(unitClass: string): UnitCard {
   const stats = UNIT_STATS[unitClass];
   return {
     id: `unit_${unitClass.toLowerCase()}`,
-    name: unitClass === 'Inerte' ? 'Inerte de Prova' : unitClass,
+    name: unitClass,
     type: 'Unit',
     unitClass: unitClass as any,
     baseHp: stats.hp,

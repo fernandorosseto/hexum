@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 import { motion, useDragControls } from 'framer-motion';
 import { useGameStore } from '../store/gameStore';
 import { UNIT_STATS, ARTIFACTS, SPELLS } from 'shared';
-import inerteIcon from '../assets/pell.png';
 
 // ══════════════════════════════════════════════
 //  Janela 1: Arsenal do Jogador (P1)
 // ══════════════════════════════════════════════
 
 const ArsenalBoxP1: React.FC = () => {
-  const { spawnUnit, addCardToHand, sandboxPlayCard, purifyArena, selectedHex } = useGameStore();
+  const { spawnUnit, addCardToHand, sandboxPlayCard, purifyArena, selectedHex, triggerEndTurn } = useGameStore();
   const [activeTab, setActiveTab] = useState<'unidades' | 'cartas'>('unidades');
   const [selectedPlayer, setSelectedPlayer] = useState<'p1' | 'p2'>('p1');
   const [size, setSize] = useState({ width: 260, height: 420 });
@@ -31,7 +30,7 @@ const ArsenalBoxP1: React.FC = () => {
       >
         <div className="flex items-center gap-2">
           <div className={`w-1.5 h-1.5 rounded-full ${selectedPlayer === 'p1' ? 'bg-blue-400' : 'bg-red-400'}`} />
-          <h2 className="text-white/90 font-black tracking-widest text-[9px] uppercase">Forja ({selectedPlayer.toUpperCase()})</h2>
+          <h2 className="text-white/90 font-black tracking-widest text-[11px] uppercase">Simulador de Guerra</h2>
         </div>
         <div className="flex gap-1">
            <button onClick={() => setSelectedPlayer('p1')} className={`px-2 py-1 rounded text-[7px] font-black uppercase tracking-tighter transition-all ${selectedPlayer === 'p1' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-white/5 text-white/30 hover:bg-white/10'}`}>P1</button>
@@ -80,8 +79,19 @@ const ArsenalBoxP1: React.FC = () => {
       </div>
 
       {/* Footer */}
-      <div className="p-3 bg-black/40 border-t border-white/10 shrink-0 relative">
-        <button onClick={purifyArena} className="w-full py-2 bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-500 text-[8px] font-black uppercase tracking-[0.2em] rounded-lg transition-all active:scale-95 shadow-inner">Purificar Arena</button>
+      <div className="p-3 bg-black/40 border-t border-white/10 shrink-0 relative flex gap-2">
+        <button 
+          onClick={triggerEndTurn} 
+          className="flex-1 py-2 bg-blue-950/40 hover:bg-blue-900/60 border border-blue-500/30 text-blue-400 text-[8px] font-black uppercase tracking-[0.2em] rounded-lg transition-all active:scale-95"
+        >
+          Finalizar Turno
+        </button>
+        <button 
+          onClick={purifyArena} 
+          className="flex-[0.6] py-2 bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-500 text-[8px] font-black uppercase tracking-[0.2em] rounded-lg transition-all active:scale-95 shadow-inner"
+        >
+          Purificar
+        </button>
         {/* Resize Handle */}
         <motion.div drag dragMomentum={false} dragConstraints={{ left: 0, top: 0 }} onDrag={(_e, info) => { setSize(prev => ({ width: Math.max(180, prev.width + info.delta.x), height: Math.max(200, prev.height + info.delta.y) })); }} onDragEnd={(e) => { (e.target as any).style.transform = 'none'; }} className="absolute bottom-1 right-1 w-3 h-3 cursor-nwse-resize flex items-center justify-center group"><div className="w-1 h-1 bg-white/20 rounded-full group-hover:bg-blue-500 transition-colors" /></motion.div>
       </div>

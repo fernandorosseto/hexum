@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { generateHexMap, hexToPixel, HEX_SIZE } from './HexUtils';
-import { getValidMoveCoordinates, getValidSpawnCoordinates, getValidAttackTargets, getLineOfSight, BOARD_RADIUS } from 'shared';
+import { getValidMoveCoordinates, getValidSpawnCoordinates, getValidAttackTargets, getLineOfSight, getHexNeighbors, BOARD_RADIUS } from 'shared';
 import type { HexCoordinates } from 'shared';
 import { UnitSprite } from './UnitSprite';
 import { useGameStore } from '../store/gameStore';
@@ -33,6 +33,8 @@ export const HexMap: React.FC = () => {
   const selectedCard = useGameStore(state => state.selectedCard);
   const animatingUnits = useGameStore(state => state.animatingUnits);
   const selectedAbility = useGameStore(state => state.selectedAbility);
+  const activeTransfusion = useGameStore(state => state.activeTransfusion);
+  const activeMeteor = useGameStore(state => state.activeMeteor);
 
   const getUnitAt = (q: number, r: number) => {
     return Object.values(boardUnits).find(u => u.position.q === q && u.position.r === r);
@@ -147,6 +149,56 @@ export const HexMap: React.FC = () => {
           style={{ touchAction: 'none' }}
           onClick={() => { setSelectedHex(null); setTargetHex(null); }}
         >
+          <defs>
+            <linearGradient id="blood-gradient" x1="0%" y1="0%" x2="100%" y2="0%" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#7f1d1d" stopOpacity="0.7" />
+              <stop offset="50%" stopColor="#ef4444" stopOpacity="1.0" />
+              <stop offset="100%" stopColor="#7f1d1d" stopOpacity="0.7" />
+              <animateTransform 
+                attributeName="gradientTransform" 
+                type="translate" 
+                from="-1 0" 
+                to="1 0" 
+                dur="1.5s" 
+                repeatCount="indefinite" 
+              />
+            </linearGradient>
+            <radialGradient id="blood-glow">
+              <stop offset="0%" stopColor="rgba(239, 68, 68, 0.6)" />
+              <stop offset="100%" stopColor="rgba(239, 68, 68, 0)" />
+            </radialGradient>
+            <radialGradient id="mist-radial">
+              <stop offset="0%" stopColor="rgba(255, 255, 255, 0.7)" />
+              <stop offset="50%" stopColor="rgba(220, 220, 255, 0.4)" />
+              <stop offset="100%" stopColor="rgba(200, 200, 255, 0)" />
+            </radialGradient>
+            <linearGradient id="ice-wall-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#bae6fd" />
+              <stop offset="25%" stopColor="#7dd3fc" />
+              <stop offset="50%" stopColor="#38bdf8" />
+              <stop offset="75%" stopColor="#7dd3fc" />
+              <stop offset="100%" stopColor="#bae6fd" />
+            </linearGradient>
+            <linearGradient id="meteor-trail" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="transparent" />
+              <stop offset="100%" stopColor="#f97316" />
+            </linearGradient>
+            <radialGradient id="explosion-glow">
+              <stop offset="0%" stopColor="#facc15" />
+              <stop offset="40%" stopColor="#f97316" />
+              <stop offset="100%" stopColor="transparent" />
+            </radialGradient>
+            <linearGradient id="ice-glare" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="rgba(255,255,255,0.8)" />
+              <stop offset="50%" stopColor="rgba(255,255,255,0.1)" />
+              <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+            </linearGradient>
+            <filter id="mist-filter">
+              <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise" />
+              <feDisplacementMap in="SourceGraphic" in2="noise" scale="20" />
+            </filter>
+          </defs>
+
           {/* 1. Camada do Grid (Hexágonos) */}
           <g>
             {hexes.map((hex) => {
@@ -179,7 +231,7 @@ export const HexMap: React.FC = () => {
                           ? 'stroke-[#602471] fill-[#602471]/25 stroke-[4px]'
                           : isAttackTarget
                             ? 'stroke-[#602471]/60 fill-[#602471]/15 stroke-[3px]'
-                            : isMoveTarget
+                            : isMoveTarget && !unit
                               ? 'stroke-[#0b622f]/50 fill-[#0b622f]/10 stroke-[2.5px]'
                               : isSpawnTarget
                                 ? 'stroke-cyan-400/50 fill-cyan-900/10 stroke-[2.5px]'
@@ -231,7 +283,8 @@ export const HexMap: React.FC = () => {
                 
                 // Destaque de Carta (Pode ser verde ou vermelho)
                 const isCardTarget = validSpawns.some(at => at.q === unit.position.q && at.r === unit.position.r);
-                
+                const hasMist = unit.buffs.some(b => b.type === 'immune_ranged');
+                 
                 let targetColor: 'red' | 'green' = 'red';
                 if (selectedCard) {
                   const isArtifact = selectedCard.startsWith('art_');
@@ -241,33 +294,260 @@ export const HexMap: React.FC = () => {
                 }
 
                 return (
-                  <foreignObject 
-                    key={`unit-${unit.id}`}
-                    x={x - HEX_SIZE} 
-                    y={y - HEX_SIZE} 
-                    width={HEX_SIZE * 2} 
-                    height={HEX_SIZE * 2} 
-                    className="pointer-events-none"
-                    style={{ overflow: 'visible' }}
-                  >
-                    <div 
-                      {...{ xmlns: "http://www.w3.org/1999/xhtml" } as any}
-                      className="w-full h-full flex items-center justify-center"
-                      style={{ WebkitBackfaceVisibility: 'hidden' }}
+                  <g key={`unit-group-${unit.id}`}>
+                    {/* Efeito de Névoa Espessa (Persistent Aura) */}
+                    {hasMist && (
+                      <motion.g
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transform={`translate(${x}, ${y})`}
+                        className="pointer-events-none"
+                      >
+                        {[0, 72, 144, 216, 288].map((angle, i) => (
+                          <motion.circle
+                            key={`mist-${unit.id}-${i}`}
+                            r={HEX_SIZE * 0.8}
+                            fill="url(#mist-radial)"
+                            filter="url(#mist-filter)"
+                            animate={{ 
+                              x: [
+                                Math.cos(angle * Math.PI / 180) * 10, 
+                                Math.cos((angle + 40) * Math.PI / 180) * 30, 
+                                Math.cos(angle * Math.PI / 180) * 10
+                              ],
+                              y: [
+                                Math.sin(angle * Math.PI / 180) * 10, 
+                                Math.sin((angle + 40) * Math.PI / 180) * 30, 
+                                Math.sin(angle * Math.PI / 180) * 10
+                              ],
+                              scale: [1, 1.4, 1],
+                              opacity: [0.25, 0.45, 0.25]
+                            }}
+                            transition={{ 
+                              duration: 6 + i, 
+                              repeat: Infinity, 
+                              ease: "easeInOut" 
+                            }}
+                          />
+                        ))}
+                        {/* Core densa da névoa */}
+                        <motion.circle
+                          r={HEX_SIZE * 1.1}
+                          fill="url(#mist-radial)"
+                          animate={{ opacity: [0.2, 0.4, 0.2], scale: [0.95, 1.1, 0.95] }}
+                          transition={{ duration: 5, repeat: Infinity }}
+                        />
+                      </motion.g>
+                    )}
+
+                    <foreignObject 
+                      x={x - HEX_SIZE} 
+                      y={y - HEX_SIZE} 
+                      width={HEX_SIZE * 2} 
+                      height={HEX_SIZE * 2} 
+                      className="pointer-events-none"
+                      style={{ overflow: 'visible' }}
                     >
-                      <UnitSprite 
-                        unit={unit} 
-                        isSelected={isSelected} 
-                        isTargetable={isAttackTarget || isCardTarget}
-                        targetColor={targetColor}
-                        animation={animatingUnits[unit.id]}
-                      />
-                    </div>
-                  </foreignObject>
-                );
+                      <div 
+                        {...{ xmlns: "http://www.w3.org/1999/xhtml" } as any}
+                        className="w-full h-full flex items-center justify-center"
+                        style={{ WebkitBackfaceVisibility: 'hidden' }}
+                      >
+                        <UnitSprite 
+                          unit={unit} 
+                          isSelected={isSelected} 
+                          isTargetable={isAttackTarget || isCardTarget}
+                          targetColor={targetColor}
+                          animation={animatingUnits[unit.id]}
+                        />
+                      </div>
+                    </foreignObject>
+
+                     {/* Camada Frontal de Névoa (Cobre parcialmente a unidade) */}
+                     {hasMist && (
+                       <motion.g
+                         initial={{ opacity: 0 }}
+                         animate={{ opacity: 1 }}
+                         exit={{ opacity: 0 }}
+                         transform={`translate(${x}, ${y})`}
+                         className="pointer-events-none"
+                       >
+                         {[36, 108, 180, 252, 324].map((angle, i) => (
+                           <motion.circle
+                             key={`mist-front-${unit.id}-${i}`}
+                             r={HEX_SIZE * 0.9}
+                             fill="url(#mist-radial)"
+                             filter="url(#mist-filter)"
+                             animate={{ 
+                               x: [
+                                 Math.cos(angle * Math.PI / 180) * 15, 
+                                 Math.cos((angle + 20) * Math.PI / 180) * 40, 
+                                 Math.cos(angle * Math.PI / 180) * 15
+                               ],
+                               y: [
+                                 Math.sin(angle * Math.PI / 180) * 15, 
+                                 Math.sin((angle + 20) * Math.PI / 180) * 40, 
+                                 Math.sin(angle * Math.PI / 180) * 15
+                               ],
+                               scale: [0.8, 1.3, 0.8],
+                               opacity: [0.2, 0.5, 0.2]
+                             }}
+                             transition={{ 
+                               duration: 5 + i * 2, 
+                               repeat: Infinity, 
+                               ease: "easeInOut" 
+                             }}
+                           />
+                         ))}
+                       </motion.g>
+                     )}
+                   </g>
+                 );
               })}
             </AnimatePresence>
           </g>
+
+          {/* 3. Camada de Efeitos Especiais (Transfusão) */}
+          <AnimatePresence>
+            {activeTransfusion && (
+               <motion.g
+                 initial={{ opacity: 0 }}
+                 animate={{ opacity: 1 }}
+                 exit={{ opacity: 0 }}
+                 key="transfusion-animation"
+                 className="pointer-events-none"
+               >
+                 {(() => {
+                   const start = hexToPixel(activeTransfusion.source);
+                   const end = hexToPixel(activeTransfusion.target);
+                   return (
+                     <>
+                        {/* Fluxo totalmente contínuo com gradiente animado */}
+                        <motion.path
+                          d={`M ${start.x} ${start.y} L ${end.x} ${end.y}`}
+                          fill="none"
+                          stroke="url(#blood-gradient)"
+                          strokeWidth="12"
+                          strokeLinecap="round"
+                          animate={{ 
+                            strokeWidth: [10, 14, 10],
+                            strokeOpacity: [0.6, 0.9, 0.6] 
+                          }}
+                          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                        />
+
+                        {/* Núcleo de brilho fino (contínuo) */}
+                        <motion.path
+                          d={`M ${start.x} ${start.y} L ${end.x} ${end.y}`}
+                          fill="none"
+                          stroke="rgba(255, 255, 255, 0.4)"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          animate={{ opacity: [0.3, 0.6, 0.3] }}
+                          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                        />
+                        
+                        {/* Brilho nos nós de conexão */}
+                        <circle cx={start.x} cy={start.y} r={10} fill="url(#blood-glow)" opacity="0.5" />
+                        <circle cx={end.x} cy={end.y} r={12} fill="url(#blood-glow)" opacity="0.5" />
+                     </>
+                   );
+                 })()}
+               </motion.g>
+            )}
+
+            {activeMeteor && (
+                <motion.g
+                  key="meteor-animation"
+                  className="pointer-events-none"
+                >
+                  {(() => {
+                    const epicenterPos = hexToPixel(activeMeteor);
+                    const neighborHexes = getHexNeighbors(activeMeteor);
+                    
+                    // Definimos os meteoros: 4 no centro, 6 nas bordas (total 10)
+                    // Usamos offsets fixos para evitar que o Math.random re-calcule e faça os meteoros "pularem" em re-renderizações
+                    const epicenterOffsets = [
+                      { dx: 15, dy: 10 }, { dx: -10, dy: -20 }, 
+                      { dx: -20, dy: 5 }, { dx: 10, dy: -15 }
+                    ];
+
+                    const meteorData = [
+                      // Epicentro (4 meteoros com offsets estáveis)
+                      ...epicenterOffsets.map((off, i) => ({
+                         target: { x: epicenterPos.x + off.dx, y: epicenterPos.y + off.dy },
+                         delay: i * 0.05,
+                         isEpicenter: true
+                      })),
+                      // Vizinhos (Todos os 6 agora, ordem estável vinda do getHexNeighbors)
+                      ...neighborHexes.map((n, i) => ({
+                         target: hexToPixel(n),
+                         delay: 0.1 + i * 0.05,
+                         isEpicenter: false
+                      }))
+                    ];
+
+                    return (
+                      <>
+                        {meteorData.map((m, idx) => (
+                          <motion.g key={`meteor-drop-${idx}`}>
+                            {/* O Meteoro Caindo */}
+                            <motion.g 
+                              initial={{ x: m.target.x - 150, y: m.target.y - 300, opacity: 0 }}
+                              animate={{ 
+                                x: m.target.x, 
+                                y: m.target.y, 
+                                opacity: [0, 1, 1, 0] // Desaparece no exato momento do impacto
+                              }}
+                              transition={{ 
+                                duration: 0.2, 
+                                delay: m.delay, 
+                                ease: "easeIn",
+                                times: [0, 0.2, 0.95, 1] 
+                              }}
+                            >
+                               <line x1="-10" y1="-40" x2="0" y2="0" stroke="url(#meteor-trail)" strokeWidth="6" strokeLinecap="round" />
+                               <circle r={m.isEpicenter ? 8 : 6} fill="#ef4444" />
+                               <circle r={m.isEpicenter ? 4 : 3} fill="#fef08a" />
+                            </motion.g>
+
+                            {/* Impacto Individual */}
+                            <motion.g
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ delay: m.delay + 0.2 }}
+                              transform={`translate(${m.target.x}, ${m.target.y})`}
+                            >
+                               <motion.circle 
+                                 r={m.isEpicenter ? HEX_SIZE * 1.2 : HEX_SIZE * 0.8} 
+                                 fill="url(#explosion-glow)"
+                                 initial={{ scale: 0 }}
+                                 animate={{ scale: [1, 1.2, 0], opacity: [0.8, 1, 0] }}
+                                 transition={{ duration: 0.3 }}
+                               />
+                            </motion.g>
+                          </motion.g>
+                        ))}
+
+                        {/* Onda de Choque Global (Epicentro) */}
+                        <motion.circle 
+                          cx={epicenterPos.x}
+                          cy={epicenterPos.y}
+                          r={HEX_SIZE * 2.5} 
+                          fill="none" 
+                          stroke="#f97316" 
+                          strokeWidth="4"
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: [0, 1.5], opacity: [0.8, 0] }}
+                          transition={{ delay: 0.4, duration: 0.5 }}
+                        />
+                      </>
+                    );
+                  })()}
+                </motion.g>
+             )}
+          </AnimatePresence>
         </svg>
 
       </div>

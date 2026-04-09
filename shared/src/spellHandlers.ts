@@ -63,9 +63,15 @@ const TransfusaoSombria: SpellHandler = {
   execute(state, playerId, targetHex) {
     const targetUnit = findUnitAtHex(state, targetHex);
     if (!targetUnit) throw new Error("Alvo inválido para Transfusão Sombria (selecione quem perderá HP).");
-    targetUnit.hp -= 2;
+
     const myKing = Object.values(state.boardUnits).find(u => u.unitClass === 'Rei' && u.playerId === playerId);
-    if (myKing) myKing.hp = Math.min(myKing.maxHp, myKing.hp + 2);
+    if (!myKing) throw new Error("O Rei deve estar no tabuleiro para usar Transfusão.");
+
+    const dist = getHexDistance(myKing.position, targetHex);
+    if (dist > 1) throw new Error("O Rei deve estar adjacente ao alvo para realizar a transfusão.");
+
+    applyFinalDamage(targetUnit, 2, state);
+    myKing.hp = Math.min(myKing.maxHp, myKing.hp + 2);
   }
 };
 
@@ -73,7 +79,7 @@ const NevoaEspessa: SpellHandler = {
   execute(state, playerId, targetHex) {
     const targetUnit = findUnitAtHex(state, targetHex);
     if (!targetUnit || targetUnit.playerId !== playerId) throw new Error("Selecione um aliado para proteger com Névoa.");
-    targetUnit.buffs.push({ type: 'immune_ranged', duration: 1 });
+    targetUnit.buffs.push({ type: 'immune_ranged', duration: 2 });
   }
 };
 
@@ -88,7 +94,7 @@ const MuralhaDeGelo: SpellHandler = {
       if (!occupant && isInsideBoard(hex)) {
         const wallId = `u_${Math.random().toString(36).substr(2, 5)}_muralha`;
         state.boardUnits[wallId] = {
-          id: wallId, playerId, cardId: 'spl_muralha', unitClass: 'Lanceiro' as any,
+          id: wallId, playerId, cardId: 'spl_muralha', unitClass: 'Estrutura' as any,
           hp: 6, maxHp: 6, attack: 0, position: hex, buffs: [], roundsInField: 0,
           summoningSickness: true, canMove: false, canAttack: false, equippedArtifacts: []
         };
@@ -112,12 +118,18 @@ const ChuvaDeMeteoros: SpellHandler = {
   execute(state, playerId, targetHex) {
     const targetUnit = findUnitAtHex(state, targetHex);
     const targetId = targetUnit ? targetUnit.id : null;
-    if (targetUnit) applyFinalDamage(targetUnit, 2, state);
+    if (targetUnit) {
+      const damage = targetUnit.unitClass === 'Estrutura' ? 4 : 2;
+      applyFinalDamage(targetUnit, damage, state);
+    }
     const neighbors = getHexNeighbors(targetHex);
     const splashUnits = Object.values(state.boardUnits).filter(u =>
       u.id !== targetId && neighbors.some(n => n.q === u.position.q && n.r === u.position.r)
     );
-    splashUnits.forEach(u => applyFinalDamage(u, 1, state));
+    splashUnits.forEach(u => {
+      const damage = u.unitClass === 'Estrutura' ? 2 : 1;
+      applyFinalDamage(u, damage, state);
+    });
   }
 };
 

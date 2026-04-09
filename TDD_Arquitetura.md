@@ -1,6 +1,6 @@
-# Tática 2.0 - Technical Design Document (TDD)
+# Hexum - Technical Design Document (TDD)
 
-Este documento centraliza as decisões de arquitetura de software, stack tecnológica, estruturação de pastas, gerenciamento de estado e modelagem do motor de jogo do projeto Tática 2.0.
+Este documento centraliza as decisões de arquitetura de software, stack tecnológica, estruturação de pastas, gerenciamento de estado e modelagem do motor de jogo do projeto Hexum.
 
 ---
 
@@ -74,7 +74,7 @@ O coração do jogo — todas as regras vivem aqui, isoladas da UI.
 ## 📁 4. Estrutura de Pastas (MonoRepo)
 
 ```text
-tatica-2.0/
+hexum/
 ├── shared/                         # Código Isomórfico (Regras do Jogo)
 │   └── src/
 │       ├── types.ts                # Tipagem TS: GameState, Unit, Card, Buff, Phase, etc.
