@@ -1,0 +1,9 @@
+{
+  "name": "tatica-2.0-monorepo",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "client",
+    "server"
+  ]
+}
