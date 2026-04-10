@@ -27,16 +27,16 @@ function App() {
   }
 
   return (
-    <div 
+    <div
       className="w-screen h-[100dvh] relative overflow-hidden bg-transparent"
-      style={{ 
-        backgroundImage: `url(${backgroundImg})`, 
-        backgroundSize: 'cover', 
+      style={{
+        backgroundImage: `url(${backgroundImg})`,
+        backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed'
       }}
     >
-      
+
 
       {/* CAMADA 0: Tabuleiro fullscreen (ocupa TODA a tela) */}
       <HexMap />
@@ -54,7 +54,7 @@ function App() {
       {/* CAMADA 2: BattleLog (Responsivo e Ocultável no Mobile) */}
       <AnimatePresence>
         {(isLogVisible || typeof window !== 'undefined' && window.innerWidth >= 768) && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -20, x: 20 }}
             animate={{ opacity: 1, y: 0, x: 0 }}
             exit={{ opacity: 0, y: -20, x: 20 }}
@@ -81,7 +81,7 @@ function App() {
       </div>
 
       {/* CAMADA 5: Overlay de turno do oponente (Apenas no modo PLAY) */}
-       {currentView === 'PLAY' && currentTurnPlayerId === 'p2' && phase !== 'GAME_OVER' && (
+      {currentView === 'PLAY' && currentTurnPlayerId === 'p2' && phase !== 'GAME_OVER' && (
         <div className="absolute top-4 inset-x-0 z-30 flex justify-center pointer-events-none">
           <div className="bg-black/80 backdrop-blur-md px-6 py-2 rounded-full border border-red-900/60 shadow-lg">
             <div className="flex items-center gap-3">
@@ -94,6 +94,18 @@ function App() {
       )}
 
       {phase === 'GAME_OVER' && <GameOverUI />}
+
+      {/* Botão de Feedback Flutuante (Beta) */}
+      <motion.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.5 }}
+        whileHover={{ opacity: 1, scale: 1.05 }}
+        onClick={() => window.open('mailto:contato@hexum.tg?subject=Feedback Hexum Beta', '_blank')}
+        className="fixed bottom-4 left-4 z-50 p-2 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg shadow-xl pointer-events-auto flex items-center gap-2 group transition-all"
+      >
+        <span className="text-lg">📩</span>
+        <span className="text-[10px] text-white/70 group-hover:text-white font-bold tracking-widest uppercase hidden md:block">Feedback Beta</span>
+      </motion.button>
     </div>
   );
 }
