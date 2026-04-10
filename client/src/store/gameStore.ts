@@ -49,6 +49,8 @@ interface GameStore extends GameState {
   sandboxPlayCard: (cardId: string, hex: HexCoordinates, playerId: string) => void;
   activeTransfusion: TransfusionAnimation | null;
   activeMeteor: HexCoordinates | null;
+  isLogVisible: boolean;
+  toggleLog: () => void;
   resetGame: () => void;
   purifyArena: () => void;
   removeUnit: (unitId: string) => void;
@@ -102,6 +104,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   isAiThinking: false,
   activeTransfusion: null,
   activeMeteor: null,
+  
+  isLogVisible: false,
+  toggleLog: () => set(state => ({ isLogVisible: !state.isLogVisible })),
   
   setSandboxMode: (enabled) => set({ sandboxMode: enabled }),
   

@@ -151,29 +151,31 @@ export const CardDetailsUI: React.FC = () => {
 
   return (
     <motion.div 
-      initial={{ x: -100, opacity: 0 }}
+      initial={{ x: -300, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      exit={{ x: -100, opacity: 0 }}
-      className="bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col relative"
-      style={{ 
-        maxWidth: '100%', 
-        height: typeof window !== 'undefined' && window.innerWidth < 768 ? 'auto' : '360px',
-        maxHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? '200px' : 'none'
-      }}
+      exit={{ x: -300, opacity: 0 }}
+      className={`
+        bg-slate-900/95 backdrop-blur-xl border border-white/10 shadow-2xl overflow-hidden flex flex-col relative
+        ${typeof window !== 'undefined' && window.innerWidth < 768 
+          ? 'fixed left-0 top-[90px] bottom-[110px] w-[80%] max-w-[300px] rounded-r-3xl z-40' 
+          : 'rounded-2xl md:h-[360px] md:max-h-none h-full w-full'
+        }
+      `}
     >
-      <button 
-        onClick={() => { setSelectedHex(null); setSelectedCard(null); }}
-        className="md:hidden absolute top-2 right-2 w-6 h-6 rounded-full bg-black/40 flex items-center justify-center text-white/70 z-30"
-      >
-        ✕
-      </button>
-
-      <div className="flex items-center justify-between px-3 py-2 bg-black/40 border-b border-white/5">
-        <h2 className="text-sm font-black text-white tracking-tight truncate">{data.title}</h2>
-        <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center justify-between px-3 py-2 bg-black/40 border-b border-white/5 min-h-[44px]">
+        <h2 className="text-sm font-black text-white tracking-tight truncate pr-2">{data.title}</h2>
+        <div className="flex items-center gap-3 shrink-0">
           <div className="w-6 h-6 rounded-full bg-[#0b622f]/90 border border-[#0b622f]/50 flex items-center justify-center text-[11px] font-black text-white shadow-[0_0_8px_rgba(11,98,47,0.4)]">
             {data.manaCost}
           </div>
+          <button 
+            onClick={() => { setSelectedHex(null); setSelectedCard(null); }}
+            className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -193,12 +195,12 @@ export const CardDetailsUI: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-white/5 pointer-events-none" />
       </div>
 
-      <div className="px-3 py-1.5 bg-black/20 border-b border-white/5 flex items-center justify-between">
-        <span className={`px-2 py-0.5 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-wider ${typeBadgeColor}`}>
+      <div className="px-3 py-1.5 md:py-2 bg-black/20 border-b border-white/5 flex items-center justify-between">
+        <span className={`px-2 py-0.5 rounded-full text-[10px] md:text-[10px] font-black uppercase tracking-wider ${typeBadgeColor}`}>
           {typeLabel}
         </span>
         {data.role && (
-          <span className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">{data.role}</span>
+          <span className="text-[10px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">{data.role}</span>
         )}
       </div>
 

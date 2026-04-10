@@ -8,6 +8,7 @@ import { MainMenu } from './ui/MainMenu';
 import { GameOverUI } from './ui/GameOverUI';
 import { useBot } from './hooks/useBot';
 import { useGameStore } from './store/gameStore';
+import { AnimatePresence, motion } from 'framer-motion';
 import './index.css';
 import backgroundImg from './assets/background.jpg';
 
@@ -16,6 +17,9 @@ function App() {
   const currentTurnPlayerId = useGameStore(s => s.currentTurnPlayerId);
   const phase = useGameStore(s => s.currentPhase);
   const currentView = useGameStore(s => s.currentView);
+  const isLogVisible = useGameStore(s => s.isLogVisible);
+  const selectedHex = useGameStore(s => s.selectedHex);
+  const selectedCard = useGameStore(s => s.selectedCard);
 
   // Se estiver no MENU, renderiza apenas o MainMenu
   if (currentView === 'MENU') {
@@ -24,7 +28,7 @@ function App() {
 
   return (
     <div 
-      className="w-screen h-screen relative overflow-hidden bg-transparent"
+      className="w-screen h-[100dvh] relative overflow-hidden bg-transparent"
       style={{ 
         backgroundImage: `url(${backgroundImg})`, 
         backgroundSize: 'cover', 
@@ -47,20 +51,31 @@ function App() {
       {/* CAMADA 6: Sandbox Controls (sobreposto) - Apenas no modo SANDBOX */}
       {currentView === 'SANDBOX' && <SandboxUI />}
 
-      {/* CAMADA 2: BattleLog (Responsivo) */}
-      <div className="absolute top-16 md:top-20 right-0 md:right-4 w-full md:w-64 z-20 pointer-events-auto">
-        <BattleLog />
+      {/* CAMADA 2: BattleLog (Responsivo e Ocultável no Mobile) */}
+      <AnimatePresence>
+        {(isLogVisible || typeof window !== 'undefined' && window.innerWidth >= 768) && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20, x: 20 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, y: -20, x: 20 }}
+            className="absolute top-24 md:top-20 right-0 md:right-4 w-[65%] md:w-64 z-20 pointer-events-auto"
+          >
+            <BattleLog />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* CAMADA 3: Detalhes da Carta (Independente) */}
+      <div className="absolute md:bottom-4 md:left-4 md:w-80 z-40 pointer-events-auto">
+        <CardDetailsUI />
       </div>
 
-      {/* CAMADA 3: CardDetails & CAMADA 4: Mão de Cartas (Container Flex na Base) */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col md:flex-row items-end justify-between p-2 md:p-4 gap-4 pointer-events-none">
-        {/* Detalhes da Carta - No mobile aparece acima da mão */}
-        <div className="w-full md:w-64 pointer-events-auto">
-          <CardDetailsUI />
-        </div>
-
-        {/* Mão de Cartas - Centralizada no mobile */}
-        <div className="w-full md:w-auto flex justify-center md:justify-end pointer-events-auto">
+      {/* CAMADA 4: Mão de Cartas (Oculta apenas no mobile durante seleção) */}
+      <div className="fixed bottom-12 md:bottom-4 left-0 right-0 z-20 flex justify-center md:justify-end p-2 md:p-4 pointer-events-none">
+        <div className={`
+          w-full md:w-auto flex justify-center md:justify-end pointer-events-auto transition-all duration-500
+          ${(selectedHex || selectedCard) ? 'max-md:opacity-0 max-md:translate-y-32 max-md:pointer-events-none' : 'opacity-100 translate-y-0'}
+        `}>
           <HandUI />
         </div>
       </div>
