@@ -61,6 +61,8 @@ export const CardDetailsUI: React.FC = () => {
   const activePlayer = useGameStore(state => state.players[currentPlayerId]);
   const setSelectedHex = useGameStore(state => state.setSelectedHex);
   const setSelectedCard = useGameStore(state => state.setSelectedCard);
+  const isCardExpanded = useGameStore(state => state.isCardExpanded);
+  const toggleCardExpanded = useGameStore(state => state.toggleCardExpanded);
 
   // ── Data Resolution ──
   type CardData = {
@@ -152,8 +154,14 @@ export const CardDetailsUI: React.FC = () => {
   return (
     <motion.div 
       initial={{ x: -300, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
+      animate={{ 
+        x: typeof window !== 'undefined' && window.innerWidth < 768 
+          ? (isCardExpanded ? 0 : -250) 
+          : 0, 
+        opacity: 1 
+      }}
       exit={{ x: -300, opacity: 0 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className={`
         bg-slate-900/95 backdrop-blur-xl border border-white/10 shadow-2xl overflow-hidden flex flex-col relative
         ${typeof window !== 'undefined' && window.innerWidth < 768 
@@ -164,7 +172,18 @@ export const CardDetailsUI: React.FC = () => {
     >
       <div className="flex items-center justify-between px-3 py-2 bg-black/40 border-b border-white/5 min-h-[44px]">
         <h2 className="text-sm font-black text-white tracking-tight truncate pr-2">{data.title}</h2>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Botão de Toggle - apenas em mobile */}
+          {typeof window !== 'undefined' && window.innerWidth < 768 && (
+            <button 
+              onClick={toggleCardExpanded}
+              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={isCardExpanded ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"} />
+              </svg>
+            </button>
+          )}
           <div className="w-6 h-6 rounded-full bg-[#0b622f]/90 border border-[#0b622f]/50 flex items-center justify-center text-[11px] font-black text-white shadow-[0_0_8px_rgba(11,98,47,0.4)]">
             {data.manaCost}
           </div>

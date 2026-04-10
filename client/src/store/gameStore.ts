@@ -29,6 +29,8 @@ interface GameStore extends GameState {
   sandboxMode: boolean;
   isVsAI: boolean;
   isAiThinking: boolean;
+  isCardExpanded: boolean;
+  toggleCardExpanded: () => void;
   setSelectedHex: (hex: HexCoordinates | null) => void;
   setSelectedCard: (cardId: string | null) => void;
   setTargetHex: (hex: HexCoordinates | null) => void;
@@ -108,10 +110,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
   isLogVisible: false,
   toggleLog: () => set(state => ({ isLogVisible: !state.isLogVisible })),
   
+  isCardExpanded: false,
+  toggleCardExpanded: () => set(state => ({ isCardExpanded: !state.isCardExpanded })),
+  
   setSandboxMode: (enabled) => set({ sandboxMode: enabled }),
   
-  setSelectedHex: (hex) => set({ selectedHex: hex, targetHex: null, selectedAbility: null }),
-  setSelectedCard: (cardId) => set({ selectedCard: cardId, selectedHex: null, targetHex: null, selectedAbility: null }),
+  setSelectedHex: (hex) => set({ selectedHex: hex, targetHex: null, selectedAbility: null, isCardExpanded: false }),
+  setSelectedCard: (cardId) => set({ selectedCard: cardId, selectedHex: null, targetHex: null, selectedAbility: null, isCardExpanded: false }),
   setTargetHex: (hex) => set({ targetHex: hex }),
   setSelectedAbility: (ability) => set({ selectedAbility: ability }),
   setInspectedItem: (item) => set({ inspectedItem: item }),

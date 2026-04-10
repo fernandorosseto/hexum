@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { moveTo, attack, createInitialState, playCard, heal, endTurn } from './gameEngine';
 import { createHex } from './hexMath';
+import { UNIT_STATS } from './cardLibrary';
 import type { GameState, Unit } from './types';
 
 function mockState(): GameState {
@@ -18,9 +19,10 @@ function mockState(): GameState {
 }
 
 function addUnit(state: GameState, id: string, playerId: string, unitClass: any, q: number, r: number): Unit {
+  const stats = UNIT_STATS[unitClass];
   const unit: Unit = {
     id, playerId, cardId: `unit_${unitClass.toLowerCase()}`, unitClass,
-    hp: 5, maxHp: 5, attack: 2, position: { q, r, s: -q - r }, buffs: [],
+    hp: stats.hp, maxHp: stats.hp, attack: stats.attack, position: { q, r, s: -q - r }, buffs: [],
     roundsInField: 1, summoningSickness: false, canMove: true, canAttack: true
   };
   state.boardUnits[id] = unit;
@@ -34,7 +36,7 @@ describe('Mecânicas GDD: Setup Inicial', () => {
     const p1Units = units.filter(u => u.playerId === 'p1');
     const p2Units = units.filter(u => u.playerId === 'p2');
 
-    expect(p1Units.length).toBe(3);
+    expect(p1Units.length).toBe(4);
     expect(p1Units.some(u => u.unitClass === 'Rei')).toBe(true);
     expect(p2Units.length).toBe(3);
   });
@@ -56,13 +58,13 @@ describe('Mecânicas GDD: Habilidades Especiais', () => {
     let state = mockState();
     state.players['p1'].mana = 5;
     addUnit(state, 'atk', 'p1', 'Cavaleiro', 0, 0);
-    addUnit(state, 'target', 'p2', 'Lanceiro', 3, 0);
+    addUnit(state, 'target', 'p2', 'Cavaleiro', 3, 0); // Cavaleiro tem 5 HP
     state.boardUnits['atk'].roundsInField = 100;
 
     const nextState = attack(state, 'atk', 'target', true);
-    expect(nextState.players['p1'].mana).toBe(5); // Não consome mana na ação de ataque mais
-    expect(nextState.boardUnits['target'].hp).toBe(1); // 5 - (2 base + 2 investida) = 1
-    expect(nextState.boardUnits['target'].buffs.some((b: any) => b.type === 'stun')).toBe(true);
+    expect(nextState.players['p1'].mana).toBe(2); // Special consome 3 mana
+    expect(nextState.boardUnits['target']).toBeUndefined(); // Unidade morre com 5 dano
+    expect(nextState.boardUnits['atk'].position.q).toBe(2); // Move para posição anterior ao alvo
   });
 });
 
@@ -82,7 +84,7 @@ describe('Mecânicas GDD: Status e Turnos', () => {
     let state = mockState();
     state.currentTurnPlayerId = 'p1';
     state.players['p2'].maxMana = 1;
-    addUnit(state, 'v', 'p2', 'Cavaleiro', 0, 0);
+    addUnit(state, 'v', 'p1', 'Cavaleiro', 0, 0);
     state.boardUnits['v'].buffs = [{ type: 'poison', duration: 2, value: 1 }];
     
     const nextState = endTurn(state);

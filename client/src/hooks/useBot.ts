@@ -17,6 +17,7 @@ export function useBot() {
   useEffect(() => {
     // Só age se for o turno do P2 e não estiver já processando
     if (currentTurnPlayerId === 'p2' && currentPhase === 'MAIN_PHASE' && !isThinking.current) {
+      console.log("IA ativada para turno do P2");
       processBotTurn();
     }
   }, [currentTurnPlayerId, currentPhase]);
@@ -37,9 +38,11 @@ export function useBot() {
 
     // O bot executa ações enquanto tiver jogadas úteis (IA detecta mana e exaustão)
     let actionsPerformed = 0;
+    const startTime = Date.now();
     while (useGameStore.getState().currentTurnPlayerId === 'p2' && 
            useGameStore.getState().currentPhase === 'MAIN_PHASE' &&
-           actionsPerformed < 15) {
+           actionsPerformed < 15 &&
+           (Date.now() - startTime) < 8000) {  // Timeout de 8 segundos
       
       const currentState = useGameStore.getState();
       const bestAction = getBestAction(currentState, 'p2');
@@ -69,6 +72,10 @@ export function useBot() {
         await new Promise(resolve => setTimeout(resolve, 1200));
       }
       actionsPerformed++;
+    }
+
+    if ((Date.now() - startTime) >= 8000) {
+      console.log("Timeout IA excedido, finalizando turno.");
     }
 
     // Fim de turno do Bot
