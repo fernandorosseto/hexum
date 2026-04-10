@@ -44,3 +44,4 @@ deep_simulation_results.json
 test_output.txt
 test_output_utf8.txt
 debug_state.ts
+.vercel

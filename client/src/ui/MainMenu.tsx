@@ -39,7 +39,7 @@ export const MainMenu: React.FC = () => {
         </div>
 
         {/* Buttons Menu */}
-        <div className="flex flex-col w-full max-w-[550px] md:max-w-[650px] space-y-5 mt-10">
+        <div className="flex flex-col w-full max-w-[550px] md:max-w-[650px] space-y-5">
 
           <button
             onClick={() => setCurrentView('PLAY')}
@@ -80,9 +80,9 @@ export const MainMenu: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <div className="absolute bottom-8 flex flex-col items-center space-y-2 opacity-40 hover:opacity-100 transition-opacity">
+        <div className="flex flex-col items-center space-y-2 opacity-40 hover:opacity-100 transition-opacity pt-4">
           <button
-            onClick={() => window.open('mailto:contato@hexum.tg?subject=Feedback Hexum Beta', '_blank')}
+            onClick={() => window.open('https://forms.gle/c9ReRbd2SAc5dggr7', '_blank')}
             className="text-[10px] text-blue-400 font-bold tracking-[0.2em] uppercase hover:text-blue-300 transition-colors cursor-pointer pointer-events-auto"
           >
             Enviar Feedback 📩

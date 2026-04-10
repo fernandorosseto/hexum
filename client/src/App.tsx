@@ -100,7 +100,7 @@ function App() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 0.5 }}
         whileHover={{ opacity: 1, scale: 1.05 }}
-        onClick={() => window.open('mailto:contato@hexum.tg?subject=Feedback Hexum Beta', '_blank')}
+        onClick={() => window.open('https://forms.gle/c9ReRbd2SAc5dggr7', '_blank')}
         className="fixed bottom-4 left-4 z-50 p-2 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg shadow-xl pointer-events-auto flex items-center gap-2 group transition-all"
       >
         <span className="text-lg">📩</span>
