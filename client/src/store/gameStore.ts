@@ -17,6 +17,14 @@ interface TransfusionAnimation {
   target: HexCoordinates;
 }
 
+interface ProjectileAnimation {
+  id: string;
+  source: HexCoordinates;
+  target: HexCoordinates;
+  type: 'arrow' | 'bolt';
+  playerId: string;
+}
+
 interface GameStore extends GameState {
   currentView: 'MENU' | 'PLAY' | 'SANDBOX';
   setCurrentView: (view: 'MENU' | 'PLAY' | 'SANDBOX') => void;
@@ -51,6 +59,7 @@ interface GameStore extends GameState {
   addCardToHand: (cardId: string) => void;
   sandboxPlayCard: (cardId: string, hex: HexCoordinates, playerId: string) => void;
   activeTransfusion: TransfusionAnimation | null;
+  activeProjectile: ProjectileAnimation | null;
   activeMeteor: HexCoordinates | null;
   isLogVisible: boolean;
   toggleLog: () => void;
@@ -108,6 +117,7 @@ export const useGameStore = create<GameStore>()(
       isVsAI: false,
       isAiThinking: false,
       activeTransfusion: null,
+      activeProjectile: null,
       activeMeteor: null,
 
       isLogVisible: false,
@@ -216,15 +226,6 @@ export const useGameStore = create<GameStore>()(
             newState.boardUnits[targetId] = { ...target, hp: 0 };
           }
 
-          set({
-            ...newState,
-            selectedHex: null,
-            targetHex: null,
-            selectedAbility: null,
-            animatingUnits: animations,
-            combatLogs: []
-          });
-
           const details = (newState.combatLogs && newState.combatLogs.length > 0) ? `. ${newState.combatLogs.join('. ')}` : '';
 
           const attackTemplates = [
@@ -234,15 +235,57 @@ export const useGameStore = create<GameStore>()(
           ];
           const attackMsg = attackTemplates[Math.floor(Math.random() * attackTemplates.length)] + details;
 
-          get().addLog(attackMsg, attacker.playerId);
-
-          setTimeout(() => {
-            set(state => {
-              const cleanBoard = { ...state.boardUnits };
-              if (targetDied) delete cleanBoard[targetId];
-              return { animatingUnits: {}, boardUnits: cleanBoard };
+          if (attacker.unitClass === 'Arqueiro') {
+            const projectileId = `proj_${Math.random().toString(36).substr(2, 5)}`;
+            set({ 
+              activeProjectile: {
+                id: projectileId,
+                source: attacker.position,
+                target: target.position,
+                type: 'arrow',
+                playerId: attacker.playerId
+              },
+              selectedHex: null,
+              targetHex: null,
+              selectedAbility: null
             });
-          }, 500);
+
+            setTimeout(() => {
+              set({
+                ...newState,
+                activeProjectile: null,
+                animatingUnits: animations,
+                combatLogs: []
+              });
+              get().addLog(attackMsg, attacker.playerId);
+
+              setTimeout(() => {
+                set(state => {
+                  const cleanBoard = { ...state.boardUnits };
+                  if (targetDied) delete cleanBoard[targetId];
+                  return { animatingUnits: {}, boardUnits: cleanBoard };
+                });
+              }, 500);
+            }, 600); // Duração do voo da flecha
+          } else {
+            set({
+              ...newState,
+              selectedHex: null,
+              targetHex: null,
+              selectedAbility: null,
+              animatingUnits: animations,
+              combatLogs: []
+            });
+            get().addLog(attackMsg, attacker.playerId);
+
+            setTimeout(() => {
+              set(state => {
+                const cleanBoard = { ...state.boardUnits };
+                if (targetDied) delete cleanBoard[targetId];
+                return { animatingUnits: {}, boardUnits: cleanBoard };
+              });
+            }, 500);
+          }
         } catch (err: any) {
           console.warn("Erro de Ataque:", err.message);
           set({ selectedHex: null, targetHex: null, selectedAbility: null });
@@ -635,6 +678,7 @@ export const useGameStore = create<GameStore>()(
           targetHex,
           selectedAbility,
           activeTransfusion,
+          activeProjectile,
           activeMeteor,
           isCardExpanded,
           ...rest
