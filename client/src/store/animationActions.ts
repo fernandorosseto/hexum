@@ -13,8 +13,8 @@ export interface ShadowSlashAnimation { target: HexCoordinates; }
 export interface ArcaneExplosionAnimation { epicenter: HexCoordinates; }
 
 // Animações de Cartas de Magia
-export interface SimpleSpellAnimation { target: HexCoordinates; }
-export interface WallSpellAnimation { targets: HexCoordinates[]; }
+export type SimpleSpellAnimation = HexCoordinates;
+export type WallSpellAnimation = HexCoordinates[];
 
 export const scheduleProjectileAnimation = (set: any, get: any, attacker: any, target: any, newState: any, animations: Record<string, AnimationType>, attackMsg: string, targetDied: boolean) => {
   const projectileId = `proj_${Math.random().toString(36).substr(2, 5)}`;
