@@ -1,15 +1,11 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Unit } from 'shared';
+import type { Unit, HexCoordinates } from 'shared';
 import { getFearStatus } from 'shared';
 import { useGameStore } from '../store/gameStore';
-import reiIcon from '../assets/rei.png';
-import arqueiroIcon from '../assets/arqueiro.png';
-import assassinoIcon from '../assets/assassino.png';
-import cavaleiroIcon from '../assets/cavaleiro.png';
-import clerigoIcon from '../assets/clerigo.png';
-import lanceiroIcon from '../assets/lanceiro.png';
-import magoIcon from '../assets/mago.png';
+import { CLASS_ICONS } from '../constants/unitIcons';
+import { LightningAnimation } from '../animations';
+import { StructureSprite, UnitBadges, UnitBuffs, ShieldAura, UnitEquipment } from '../units';
 
 interface Props {
   unit: Unit;
@@ -17,36 +13,18 @@ interface Props {
   isTargetable?: boolean;
   targetColor?: 'red' | 'green';
   animation?: 'attacking' | 'damaged' | 'healing' | 'lightning';
+  thrustTarget?: HexCoordinates;
+  thrustDistance?: number;
+  thrustAngle?: number;
 }
 
-const CLASS_ICONS: Record<string, string> = {
-  'Rei': reiIcon, 
-  'Cavaleiro': cavaleiroIcon, 
-  'Lanceiro': lanceiroIcon,
-  'Arqueiro': arqueiroIcon, 
-  'Assassino': assassinoIcon, 
-  'Mago': magoIcon, 
-  'Clerigo': clerigoIcon, 
-};
-
-const BUFF_ICONS: Record<string, string> = {
-  'poison': '🧪', 'burn': '🔥', 'stun': '🌀', 'taunt': '💢', 'fury': '⚡', 'bleed': '🩸', 'fear': '💀', 'invulnerable': '✨'
-};
-
-export const UnitSprite: React.FC<Props> = ({ unit, isSelected, isTargetable, targetColor, animation }) => {
-  const isP1 = unit.playerId === 'p1';
-  const isEstrutura = unit.unitClass === 'Estrutura';
-  const hpPercent = Math.max(0, (unit.hp / unit.maxHp) * 100);
-  
+export const UnitSprite: React.FC<Props> = ({ 
+  unit, isSelected, isTargetable, targetColor, animation, thrustTarget, thrustDistance, thrustAngle 
+}) => {
   const gameState = useGameStore(state => state);
   const fearInfo = getFearStatus(unit, gameState as any);
 
   const displayBuffs = [...unit.buffs];
-  const isCurrentTurn = unit.playerId === gameState.currentTurnPlayerId;
-  const isMovementSpent = isCurrentTurn && !unit.canMove && !unit.summoningSickness;
-  const isAttackSpent = isCurrentTurn && !unit.canAttack && !unit.summoningSickness;
-  const hasSickness = unit.summoningSickness;
-  
   if (fearInfo.inRange) {
     displayBuffs.push({ type: 'fear' as any, duration: 0 });
   }
@@ -57,86 +35,24 @@ export const UnitSprite: React.FC<Props> = ({ unit, isSelected, isTargetable, ta
     : animation === 'lightning' ? 'animate-lightning'
     : '';
 
-  if (isEstrutura) {
-    const scale = 0.82; // Ajuste para não transbordar
+  if (unit.unitClass === 'Estrutura') {
     return (
-      <motion.div 
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0, opacity: 0, transition: { duration: 0.3 } }}
-        className={`
-          relative flex flex-col items-center justify-center 
-          w-full h-full pointer-events-none drop-shadow-2xl
-          ${isSelected ? 'drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]' : ''}
-          ${isTargetable 
-            ? targetColor === 'green'
-              ? 'drop-shadow-[0_0_15px_rgba(34,197,94,0.6)]' 
-              : 'drop-shadow-[0_0_15px_rgba(239,68,68,0.6)]' 
-            : ''}
-          ${animClass}
-        `}
-      >
-        <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
-          {/* Sombra projetada no chão */}
-          <polygon 
-            points="50,4 90,27 90,73 50,96 10,73 10,27" 
-            transform={`scale(${scale}) translate(${(1-scale)*50/scale}, ${(1-scale)*50/scale + 5})`}
-            fill="rgba(0,0,0,0.3)" 
-            filter="blur(4px)"
-          />
-          
-          {/* Corpo Principal (Vidro/Gelo) */}
-          <g transform={`scale(${scale}) translate(${(1-scale)*50/scale}, ${(1-scale)*50/scale})`}>
-            {/* Base com Glassmorphism */}
-            <polygon 
-              points="50,0 93.3,25 93.3,75 50,100 6.7,75 6.7,25" 
-              fill="rgba(186, 230, 253, 0.2)"
-              stroke="rgba(255, 255, 255, 0.4)"
-              strokeWidth="1.5"
-              style={{ backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
-            />
-            
-            {/* Gradiente de profundidade */}
-            <polygon 
-              points="50,0 93.3,25 93.3,75 50,100 6.7,75 6.7,25" 
-              fill="url(#ice-wall-gradient)"
-              opacity="0.4"
-            />
-
-            {/* Facetas de Vidro (Reflexos) */}
-            <path d="M 50,0 L 50,45 L 93.3,25" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="0.8" />
-            <path d="M 6.7,25 L 50,45 L 6.7,75" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="0.8" />
-            <path d="M 50,100 L 50,55 L 93.3,75" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="0.8" />
-            
-            {/* Brilhos Especulares */}
-            <polygon points="50,5 88,27 88,35 50,13" fill="white" opacity="0.3" />
-            <polygon points="12,30 25,37 25,63 12,70" fill="white" opacity="0.15" />
-
-            {/* Geada / Glitter (Estático) */}
-            {[...Array(6)].map((_, i) => (
-              <circle 
-                key={i}
-                cx={20 + Math.random() * 60}
-                cy={20 + Math.random() * 60}
-                r={0.8 + Math.random()}
-                fill="white"
-                opacity={0.3 + Math.random() * 0.3}
-              />
-            ))}
-          </g>
-        </svg>
-
-        {/* HP da Muralha (Dentro do bloco e maior) */}
-        <div className={`
-          absolute flex items-center gap-1 font-black text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,1)] z-20 transition-all
-          ${isP1 ? 'text-white' : 'text-cyan-100'}
-        `}>
-          <span className="text-2xl">♥</span>
-          {unit.hp}
-        </div>
-      </motion.div>
+      <StructureSprite 
+        unit={unit} 
+        isSelected={isSelected} 
+        isTargetable={isTargetable} 
+        targetColor={targetColor} 
+        animClass={animClass} 
+      />
     );
   }
+
+  const isP1 = unit.playerId === 'p1';
+  const isCurrentTurn = unit.playerId === gameState.currentTurnPlayerId;
+  const isMovementSpent = isCurrentTurn && !unit.canMove && !unit.summoningSickness;
+  const isAttackSpent = isCurrentTurn && !unit.canAttack && !unit.summoningSickness;
+  const hasSickness = unit.summoningSickness;
+  const hasShield = unit.buffs.some(b => b.type === 'shield');
 
   return (
     <motion.div 
@@ -168,6 +84,7 @@ export const UnitSprite: React.FC<Props> = ({ unit, isSelected, isTargetable, ta
         absolute inset-0 rounded-full border-[3px] bg-gradient-to-br from-slate-700 to-slate-900 border-slate-600 shadow-inner transition-opacity duration-1000 ease-in-out
         ${isMovementSpent ? 'opacity-100' : 'opacity-0'}
       `} />
+
       {/* Anel pulsante de alvo atacável */}
       {isTargetable && (
         <div className={`
@@ -192,40 +109,9 @@ export const UnitSprite: React.FC<Props> = ({ unit, isSelected, isTargetable, ta
 
       {/* Escudo Protetor (Aura Branca) */}
       <AnimatePresence>
-        {unit.buffs.some(b => b.type === 'shield') && (
-          <motion.div
-            key="shield-aura"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ 
-              opacity: [0.4, 0.7, 0.4],
-              scale: [1, 1.1, 1],
-              boxShadow: [
-                '0 0 15px 2px rgba(255,255,255,0.3)',
-                '0 0 25px 6px rgba(255,255,255,0.6)',
-                '0 0 15px 2px rgba(255,255,255,0.3)'
-              ]
-            }}
-            exit={{ 
-              opacity: 0, 
-              scale: 1.8, 
-              filter: 'blur(10px)',
-              transition: { duration: 0.5, ease: "easeOut" } 
-            }}
-            transition={{ 
-              opacity: { duration: 2, repeat: Infinity },
-              scale: { duration: 2, repeat: Infinity },
-              boxShadow: { duration: 2, repeat: Infinity }
-            }}
-            className="absolute inset-[-6px] rounded-full border-[3px] border-white/80 z-20 pointer-events-none"
-            style={{ 
-              background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
-            }}
-          >
-             {/* Partículas de brilho internas */}
-            <div className="absolute inset-0 rounded-full bg-white/10 blur-sm animate-pulse" />
-          </motion.div>
-        )}
+        {hasShield && <ShieldAura key="shield-aura" />}
       </AnimatePresence>
+
       {/* Indicador de Summoning Sickness (Enjoo de Invocação) */}
       {hasSickness && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-indigo-900/10 rounded-full backdrop-blur-[1px]">
@@ -236,22 +122,10 @@ export const UnitSprite: React.FC<Props> = ({ unit, isSelected, isTargetable, ta
       )}
 
       {/* Indicadores de Status (Buffs) */}
-      <div className="absolute -top-6 flex gap-1">
-        <AnimatePresence>
-          {displayBuffs.map((buff, idx) => (
-            <motion.div
-              key={`${buff.type}-${idx}`}
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0 }}
-              className={`bg-black/90 rounded-full w-9 h-9 flex items-center justify-center text-base border border-white/30 shadow-xl ${buff.type === 'fear' ? 'text-purple-400' : ''}`}
-              title={`${buff.type} ${buff.duration > 0 ? '(' + buff.duration + ')' : ''}`}
-            >
-              {BUFF_ICONS[buff.type] || '✨'}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+      <UnitBuffs buffs={displayBuffs} />
+
+      {/* Artefatos Equipados */}
+      <UnitEquipment artifacts={unit.equippedArtifacts || []} />
 
       {/* Ícone da Classe */}
       <motion.div 
@@ -281,66 +155,15 @@ export const UnitSprite: React.FC<Props> = ({ unit, isSelected, isTargetable, ta
           <span className="text-3xl drop-shadow-lg">❓</span>
         )}
       </motion.div>
-      
-      {/* Badges de Atributo (Mantém as cores vivas) */}
-      <div className={`
-        absolute -bottom-5 flex items-center gap-2 font-black text-base bg-slate-950 rounded-lg px-3 py-1 border-2 shadow-[0_2px_8px_rgba(0,0,0,0.8)] relative z-10 transition-all
-        ${isP1 ? 'border-[#0b622f]' : 'border-[#602471]'}
-      `}>
-        <span className={`drop-shadow-sm transition-all duration-1000 ease-in-out ${!isAttackSpent ? 'text-yellow-300' : 'text-slate-500 opacity-40 grayscale'}`}>
-          ⚔{unit.attack}
-        </span>
-        <span className="text-slate-500">|</span>
-        <span className={`drop-shadow-sm ${hpPercent > 60 ? 'text-green-400' : hpPercent > 30 ? 'text-yellow-300' : 'text-red-400'}`}>
-          ♥{unit.hp}
-        </span>
-      </div>
+
+      {/* Badges de Atributo (ATK / HP) */}
+      <UnitBadges unit={unit} isAttackSpent={isAttackSpent} />
 
       {/* Efeito de Raio (Overlay) */}
       <AnimatePresence>
-        {animation === 'lightning' && (
-          <motion.div
-            initial={{ opacity: 0, scaleY: 0, originY: 0 }}
-            animate={{ opacity: [0, 1, 0.8, 1, 0], scaleY: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none"
-          >
-            <div className="text-6xl filter drop-shadow-[0_0_15px_#60a5fa] -mt-10">⚡</div>
-            
-            {/* Raio Zigzag em SVG */}
-            <svg 
-              viewBox="0 0 100 400" 
-              className="absolute top-[-360px] h-[380px] w-20 overflow-visible pointer-events-none"
-              preserveAspectRatio="none"
-            >
-              {/* Brilho externo (Glow) */}
-              <motion.polyline
-                points="50,0 30,100 70,200 20,300 50,400"
-                fill="none"
-                stroke="#60a5fa"
-                strokeWidth="16"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: [0, 0.3, 0.1, 0.2, 0] }}
-                style={{ filter: 'blur(10px)' }}
-              />
-              {/* Núcleo do raio */}
-              <motion.polyline
-                points="50,0 30,100 70,200 20,300 50,400"
-                fill="none"
-                stroke="white"
-                strokeWidth="4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: [0, 1, 0.7, 1, 0] }}
-              />
-            </svg>
-          </motion.div>
-        )}
+        {animation === 'lightning' && <LightningAnimation />}
       </AnimatePresence>
+
     </motion.div>
   );
 };

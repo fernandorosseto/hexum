@@ -1,181 +1,67 @@
-import React, { useState, useMemo, useRef } from 'react';
-import { AnimatePresence, motion, useMotionValue, useSpring, animate, useMotionValueEvent } from 'framer-motion';
-import { generateHexMap, hexToPixel, HEX_SIZE } from './HexUtils';
+import React, { useMemo } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { 
   getValidMoveCoordinates, 
   getValidSpawnCoordinates, 
   getValidAttackTargets, 
   getLineOfSight, 
-  getHexNeighbors, 
-  BOARD_RADIUS 
 } from 'shared';
 import type { HexCoordinates } from 'shared';
-import { UnitSprite } from './UnitSprite';
 import { useGameStore } from '../store/gameStore';
-
-const hexPolygonPoints = () => {
-  const points = [];
-  for (let i = 0; i < 6; i++) {
-    const angle_deg = 60 * i - 30; // Pointy top
-    const angle_rad = Math.PI / 180 * angle_deg;
-    points.push(`${HEX_SIZE * Math.cos(angle_rad)},${HEX_SIZE * Math.sin(angle_rad)}`);
-  }
-  return points.join(' ');
-};
-
-const ProjectileAnimator: React.FC<{ projectile: any }> = ({ projectile }) => {
-  const start = hexToPixel(projectile.source);
-  const end = hexToPixel(projectile.target);
-  
-  // Calcular ponto de controle para o arco (Bézier Quadrática)
-  const midX = (start.x + end.x) / 2;
-  const midY = (start.y + end.y) / 2;
-  const dist = Math.hypot(end.x - start.x, end.y - start.y);
-  
-  const arcHeight = Math.max(100, dist * 0.4); 
-  const cpX = midX;
-  const cpY = midY - arcHeight;
-
-  const color = projectile.playerId === 'p1' ? '#60a5fa' : '#ef4444';
-  const filter = projectile.playerId === 'p1' ? 'url(#neon-glow-p1)' : 'url(#neon-glow-p2)';
-
-  // Motion value para progressão atômica (0 a 1)
-  const progress = useMotionValue(0);
-
-  // Efeito para disparar a animação de progresso
-  React.useEffect(() => {
-    const controls = animate(progress, 1, { 
-      duration: 0.6, 
-      ease: "linear" 
-    });
-    return () => controls.stop();
-  }, [progress]);
-
-  // Transforma progresso em coordenadas X, Y e Rotação usando a fórmula de Bézier
-  const x = useMotionValue(start.x);
-  const y = useMotionValue(start.y);
-  const rotation = useMotionValue(0);
-
-  useMotionValueEvent(progress, "change", (t) => {
-    // Posição: B(t) = (1-t)^2 * P0 + 2(1-t)t * P1 + t^2 * P2
-    const currentX = Math.pow(1 - t, 2) * start.x + 2 * (1 - t) * t * cpX + Math.pow(t, 2) * end.x;
-    const currentY = Math.pow(1 - t, 2) * start.y + 2 * (1 - t) * t * cpY + Math.pow(t, 2) * end.y;
-    
-    // Tangente: B'(t) = 2(1-t)(P1 - P0) + 2t(P2 - P1)
-    const tx = 2 * (1 - t) * (cpX - start.x) + 2 * t * (end.x - cpX);
-    const ty = 2 * (1 - t) * (cpY - start.y) + 2 * t * (end.y - cpY);
-    
-    const angle = Math.atan2(ty, tx) * (180 / Math.PI);
-    
-    x.set(currentX);
-    y.set(currentY);
-    rotation.set(angle);
-  });
-
-  return (
-    <motion.g className="pointer-events-none">
-      {/* Rastro Neon */}
-      <motion.path
-        d={`M ${start.x} ${start.y} Q ${cpX} ${cpY} ${end.x} ${end.y}`}
-        fill="none"
-        stroke={color}
-        strokeWidth="3"
-        strokeLinecap="round"
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={{ 
-          pathLength: [0, 1, 1],
-          opacity: [0, 1, 0]
-        }}
-        transition={{ duration: 0.6, times: [0, 0.2, 1], ease: "linear" }}
-        style={{ filter }}
-      />
-      
-      {/* Cabeça da Flecha (Agrupada para rotação) */}
-      <motion.g
-        style={{ x, y, rotate: rotation }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: [0, 1, 1, 0] }}
-        transition={{ duration: 0.6, times: [0, 0.1, 0.9, 1] }}
-      >
-        {/* Glow de impacto na frente */}
-        <circle r="5" fill="white" style={{ filter: 'blur(2px)' }} />
-        
-        {/* Mini Flecha (Triângulo) */}
-        <polygon 
-          points="8,0 -6,-5 -4,0 -6,5" 
-          fill="white"
-          stroke={color}
-          strokeWidth="1"
-        />
-        
-        {/* Brilho da flecha */}
-        <circle r="3" fill={color} style={{ filter }} />
-      </motion.g>
-    </motion.g>
-  );
-};
-
+import { useZoomPan } from '../hooks/useZoomPan';
+import { HexGrid } from './HexGrid';
+import { UnitLayer } from './UnitLayer';
+import {
+  SvgDefs,
+  SpearAnimation,
+  ProjectileAnimation,
+  MeteorAnimation,
+  TransfusionAnimation,
+  MistEffect,
+  CleaveSlash,
+  ShockwaveAnimation,
+  ArcaneExplosion,
+  ShadowSlash,
+  AuraRunicaAnimation,
+  DivineBlessingAnimation,
+  EarthRootsAnimation,
+  FuryPulseAnimation,
+  WallFormationAnimation,
+  MistImpactAnimation,
+  WindTrailAnimation
+} from '../animations';
 
 export const HexMap: React.FC = () => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-  
-  // Controle de Zoom (Pinch/Wheel) e Pan (Drag)
-  const scale = useMotionValue(isMobile ? 1.4 : 1.0);
-  const springScale = useSpring(scale, { stiffness: 300, damping: 30 });
-  const lastPinchDistance = useRef<number | null>(null);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      const dist = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      lastPinchDistance.current = dist;
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 2 && lastPinchDistance.current !== null) {
-      const dist = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      const delta = dist / lastPinchDistance.current;
-      const newScale = Math.min(Math.max(scale.get() * delta, 0.4), 2.5);
-      scale.set(newScale);
-      lastPinchDistance.current = dist;
-    }
-  };
-
-  const handleTouchEnd = () => {
-    lastPinchDistance.current = null;
-  };
-
-  const handleWheel = (e: React.WheelEvent) => {
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    const newScale = Math.min(Math.max(scale.get() * delta, 0.4), 2.5);
-    scale.set(newScale);
-  };
-
-  const hexes = useMemo(() => generateHexMap(BOARD_RADIUS), []);
-  const [hoveredHex, setHoveredHex] = useState<HexCoordinates | null>(null);
+  const { springScale, handlers } = useZoomPan();
 
   const boardUnits = useGameStore(state => state.boardUnits);
   const selectedHex = useGameStore(state => state.selectedHex);
-  const targetHex = useGameStore(state => state.targetHex);
-  const currentTurnPlayerId = useGameStore(state => state.currentTurnPlayerId);
   const setSelectedHex = useGameStore(state => state.setSelectedHex);
   const setTargetHex = useGameStore(state => state.setTargetHex);
+  const currentTurnPlayerId = useGameStore(state => state.currentTurnPlayerId);
+  
   const attemptPlayCard = useGameStore(state => state.attemptPlayCard);
   const attemptMove = useGameStore(state => state.attemptMove);
   const attemptAttack = useGameStore(state => state.attemptAttack);
   const attemptHeal = useGameStore(state => state.attemptHeal);
+  
   const selectedCard = useGameStore(state => state.selectedCard);
-  const animatingUnits = useGameStore(state => state.animatingUnits);
   const selectedAbility = useGameStore(state => state.selectedAbility);
   const activeTransfusion = useGameStore(state => state.activeTransfusion);
   const activeProjectile = useGameStore(state => state.activeProjectile);
+  const activeThrust = useGameStore(state => state.activeThrust);
   const activeMeteor = useGameStore(state => state.activeMeteor);
+  const activeCleave = useGameStore(state => state.activeCleave);
+  const activeShockwave = useGameStore(state => state.activeShockwave);
+  const activeShadowSlash = useGameStore(state => state.activeShadowSlash);
+  const activeArcaneExplosion = useGameStore(state => state.activeArcaneExplosion);
+  const activeAuraRunica = useGameStore(state => state.activeAuraRunica);
+  const activeDivineBlessing = useGameStore(state => state.activeDivineBlessing);
+  const activeEarthRoots = useGameStore(state => state.activeEarthRoots);
+  const activeFuryPulse = useGameStore(state => state.activeFuryPulse);
+  const activeWallFormation = useGameStore(state => state.activeWallFormation);
+  const activeMistImpact = useGameStore(state => state.activeMistImpact);
+  const activeWindTrail = useGameStore(state => state.activeWindTrail);
   const sandboxMode = useGameStore(state => state.sandboxMode);
 
   const getUnitAt = (q: number, r: number) => {
@@ -262,230 +148,93 @@ export const HexMap: React.FC = () => {
 
   return (
     <div className="absolute inset-0 flex items-center justify-center bg-transparent overflow-hidden select-none font-[Inter]">
-      {/* Background effects */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_50%_50%,_rgba(30,58,138,0.3),_transparent_70%)]" />
       </div>
 
       <motion.div 
         className="absolute inset-0 flex items-center justify-center p-20 cursor-grab active:cursor-grabbing touch-none select-none"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onWheel={handleWheel}
+        {...handlers}
         style={{ scale: springScale }}
         drag
         dragElastic={0.2}
         dragConstraints={{ left: -1000, right: 1000, top: -800, bottom: 800 }}
         onClick={() => { setSelectedHex(null); setTargetHex(null); }}
       >
-        <svg 
-          viewBox="-800 -800 1600 1600"
-          className="w-full h-full overflow-visible pointer-events-none"
-        >
-          <defs>
-            <linearGradient id="blood-gradient" x1="0%" y1="0%" x2="100%" y2="0%" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#7f1d1d" stopOpacity="0.7" />
-              <stop offset="50%" stopColor="#ef4444" stopOpacity="1.0" />
-              <stop offset="100%" stopColor="#7f1d1d" stopOpacity="0.7" />
-              <animateTransform attributeName="gradientTransform" type="translate" from="-1 0" to="1 0" dur="1.5s" repeatCount="indefinite" />
-            </linearGradient>
-            <radialGradient id="blood-glow">
-              <stop offset="0%" stopColor="rgba(239, 68, 68, 0.6)" />
-              <stop offset="100%" stopColor="rgba(239, 68, 68, 0)" />
-            </radialGradient>
-            <radialGradient id="mist-radial">
-              <stop offset="0%" stopColor="rgba(255, 255, 255, 0.7)" />
-              <stop offset="50%" stopColor="rgba(220, 220, 255, 0.4)" />
-              <stop offset="100%" stopColor="rgba(200, 200, 255, 0)" />
-            </radialGradient>
-            <linearGradient id="ice-wall-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#bae6fd" />
-              <stop offset="50%" stopColor="#38bdf8" />
-              <stop offset="100%" stopColor="#bae6fd" />
-            </linearGradient>
-            <linearGradient id="meteor-trail" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="transparent" />
-              <stop offset="100%" stopColor="#f97316" />
-            </linearGradient>
-            <radialGradient id="explosion-glow">
-              <stop offset="0%" stopColor="#facc15" />
-              <stop offset="40%" stopColor="#f97316" />
-              <stop offset="100%" stopColor="transparent" />
-            </radialGradient>
-            <filter id="mist-filter">
-              <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise" />
-              <feDisplacementMap in="SourceGraphic" in2="noise" scale="20" />
-            </filter>
-            <filter id="neon-glow-p1" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-            <filter id="neon-glow-p2" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-          </defs>
+        <svg viewBox="-800 -800 1600 1600" className="w-full h-full overflow-visible pointer-events-none">
+          <SvgDefs />
 
-          {/* Grid de Hexágonos */}
-          <g className="pointer-events-auto">
-            {hexes.map((hex) => {
-              const { x, y } = hexToPixel(hex);
-              const isSelected = selectedHex?.q === hex.q && selectedHex?.r === hex.r;
-              const unit = getUnitAt(hex.q, hex.r);
-              const isMoveTarget = ((!selectedAbility || selectedAbility === 'salto') && validMoves.some(mv => mv.q === hex.q && mv.r === hex.r))
-                                   || chargePathHexes.some(mv => mv.q === hex.q && mv.r === hex.r);
-              const isAttackTarget = validAttacks.some(at => at.q === hex.q && at.r === hex.r);
-              const isSpawnTarget = validSpawns.some(mv => mv.q === hex.q && mv.r === hex.r);
-              const isHovered = hoveredHex?.q === hex.q && hoveredHex?.r === hex.r;
+          <HexGrid 
+            validMoves={validMoves}
+            validAttacks={validAttacks}
+            validSpawns={validSpawns}
+            chargePathHexes={chargePathHexes}
+            handleHexClick={handleHexClick}
+          />
 
-              return (
-                <g 
-                  key={`hex-${hex.q}-${hex.r}`}
-                  transform={`translate(${x}, ${y})`}
-                  onMouseEnter={() => setHoveredHex(hex)}
-                  onMouseLeave={() => setHoveredHex(null)}
-                  onClick={(e) => { e.stopPropagation(); handleHexClick(hex); }}
-                  className="cursor-pointer"
-                >
-                  <polygon
-                    points={hexPolygonPoints()}
-                    className={`transition-all duration-150 stroke-[2px] ${
-                      isSelected ? 'stroke-yellow-400 fill-yellow-500/15 stroke-[4px]' :
-                      isAttackTarget ? 'stroke-[#602471]/60 fill-[#602471]/15 stroke-[3px]' :
-                      isMoveTarget && !unit ? 'stroke-[#0b622f]/50 fill-[#0b622f]/10 stroke-[2.5px]' :
-                      isSpawnTarget ? 'stroke-cyan-400/50 fill-cyan-900/10 stroke-[2.5px]' :
-                      isHovered ? 'fill-slate-700/50 stroke-slate-500/80' : 'fill-slate-800/30 stroke-slate-700/40'
-                    }`}
-                  />
-                  {isMoveTarget && !unit && (
-                    <circle r="7" className="fill-[#0b622f]/40 pointer-events-none">
-                      <animate attributeName="r" values="5;8;5" dur="3s" repeatCount="indefinite" />
-                    </circle>
-                  )}
-                  {isSpawnTarget && !unit && (
-                    <circle r="8" className="fill-cyan-400/30 stroke-cyan-300/40 stroke-1 pointer-events-none">
-                      <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.5s" repeatCount="indefinite" />
-                    </circle>
-                  )}
-                </g>
-              );
-            })}
-          </g>
-
-          {/* Camada de Unidades (Dentro do SVG para sincronização atômica) */}
-          <g>
-            {Object.values(boardUnits).map((unit) => {
-              const { x, y } = hexToPixel(unit.position);
-              const isSelected = selectedHex?.q === unit.position.q && selectedHex?.r === unit.position.r;
-              const isAttackTarget = validAttacks.some(at => at.q === unit.position.q && at.r === unit.position.r);
-              const isCardTarget = validSpawns.some(at => at.q === unit.position.q && at.r === unit.position.r);
-              let targetColor: 'red' | 'green' = 'red';
-              if (selectedCard) {
-                const isArtifact = selectedCard.startsWith('art_');
-                const supportSpells = ['spl_aurarunica', 'spl_nevoa', 'spl_passos', 'spl_bencao', 'spl_furia'];
-                if (isArtifact || supportSpells.includes(selectedCard)) targetColor = 'green';
-              }
-
-              return (
-                <g key={`unit-group-${unit.id}`} transform={`translate(${x}, ${y})`}>
-                  <foreignObject 
-                    x={-HEX_SIZE} 
-                    y={-HEX_SIZE} 
-                    width={HEX_SIZE * 2} 
-                    height={HEX_SIZE * 2}
-                    className="overflow-visible pointer-events-none"
-                  >
-                    <div className="w-full h-full flex items-center justify-center pointer-events-none">
-                      <UnitSprite 
-                        unit={unit} 
-                        isSelected={isSelected} 
-                        isTargetable={isAttackTarget || isCardTarget}
-                        targetColor={targetColor}
-                        animation={animatingUnits[unit.id]}
-                      />
-                    </div>
-                  </foreignObject>
-                </g>
-              );
-            })}
-          </g>
+          <UnitLayer 
+            validAttacks={validAttacks}
+            validSpawns={validSpawns}
+          />
 
           <AnimatePresence>
             {activeTransfusion && (
-               <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pointer-events-none">
-                 {(() => {
-                   const start = hexToPixel(activeTransfusion.source);
-                   const end = hexToPixel(activeTransfusion.target);
-                   return (
-                     <>
-                        <motion.path d={`M ${start.x} ${start.y} L ${end.x} ${end.y}`} fill="none" stroke="url(#blood-gradient)" strokeWidth="12" strokeLinecap="round" />
-                        <circle cx={start.x} cy={start.y} r={10} fill="url(#blood-glow)" opacity="0.5" />
-                        <circle cx={end.x} cy={end.y} r={12} fill="url(#blood-glow)" opacity="0.5" />
-                     </>
-                   );
-                 })()}
-               </motion.g>
+              <TransfusionAnimation source={activeTransfusion.source} target={activeTransfusion.target} />
             )}
-
             {activeMeteor && (
-                <motion.g key="meteor-animation" className="pointer-events-none">
-                  {(() => {
-                    const epicenterPos = hexToPixel(activeMeteor);
-                    const neighborHexes = getHexNeighbors(activeMeteor);
-                    const epicenterOffsets = [{ dx: 15, dy: 10 }, { dx: -10, dy: -20 }, { dx: -20, dy: 5 }, { dx: 10, dy: -15 }];
-                    const meteorData = [
-                      ...epicenterOffsets.map((off, i) => ({ target: { x: epicenterPos.x + off.dx, y: epicenterPos.y + off.dy }, delay: i * 0.05, isEpicenter: true })),
-                      ...neighborHexes.map((n, i) => ({ target: hexToPixel(n), delay: 0.1 + i * 0.05, isEpicenter: false }))
-                    ];
-                    return (
-                      <>
-                        {meteorData.map((m, idx) => (
-                          <motion.g key={`meteor-drop-${idx}`}>
-                            <motion.g initial={{ x: m.target.x - 150, y: m.target.y - 300, opacity: 0 }} animate={{ x: m.target.x, y: m.target.y, opacity: [0, 1, 1, 0] }} transition={{ duration: 0.2, delay: m.delay, ease: "easeIn" }}>
-                              <line x1="-10" y1="-40" x2="0" y2="0" stroke="url(#meteor-trail)" strokeWidth="6" strokeLinecap="round" />
-                              <circle r={m.isEpicenter ? 8 : 6} fill="#ef4444" />
-                            </motion.g>
-                            <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: m.delay + 0.2 }} transform={`translate(${m.target.x}, ${m.target.y})`}>
-                                <motion.circle r={m.isEpicenter ? HEX_SIZE * 1.2 : HEX_SIZE * 0.8} fill="url(#explosion-glow)" initial={{ scale: 0 }} animate={{ scale: [1, 1.2, 0], opacity: [0.8, 1, 0] }} transition={{ duration: 0.3 }} />
-                            </motion.g>
-                          </motion.g>
-                        ))}
-                      </>
-                    );
-                  })()}
-                </motion.g>
+              <MeteorAnimation epicenter={activeMeteor} />
             )}
-
+            {activeThrust && (() => {
+              const attacker = boardUnits[activeThrust.attackerId];
+              if (!attacker || attacker.unitClass !== 'Lanceiro') return null;
+              return (
+                <SpearAnimation attackerPosition={attacker.position} target={activeThrust.target} />
+              );
+            })()}
             {activeProjectile && (
-              <ProjectileAnimator 
+              <ProjectileAnimation
                 key={activeProjectile.id}
-                projectile={activeProjectile}
+                source={activeProjectile.source}
+                target={activeProjectile.target}
+                playerId={activeProjectile.playerId}
               />
             )}
-
-            {Object.values(boardUnits).filter(u => u.buffs.some(b => b.type === 'immune_ranged')).map(unit => {
-              const { x, y } = hexToPixel(unit.position);
-              return (
-                <motion.g key={`mist-layer-${unit.id}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transform={`translate(${x}, ${y})`} className="pointer-events-none">
-                  {[0, 72, 144, 216, 288].map((angle, i) => (
-                    <motion.circle
-                      key={`mist-${unit.id}-${i}`}
-                      r={HEX_SIZE * 0.8}
-                      fill="url(#mist-radial)"
-                      filter="url(#mist-filter)"
-                      animate={{ 
-                        x: [Math.cos(angle * Math.PI / 180) * 10, Math.cos((angle + 40) * Math.PI / 180) * 30, Math.cos(angle * Math.PI / 180) * 10],
-                        y: [Math.sin(angle * Math.PI / 180) * 10, Math.sin((angle + 40) * Math.PI / 180) * 30, Math.sin(angle * Math.PI / 180) * 10],
-                        scale: [1, 1.4, 1],
-                        opacity: [0.2, 0.4, 0.2]
-                      }}
-                      transition={{ duration: 6 + i, repeat: Infinity, ease: "easeInOut" }}
-                    />
-                  ))}
-                </motion.g>
-              );
-            })}
+            {activeArcaneExplosion && (
+              <ArcaneExplosion key="arcane" epicenter={activeArcaneExplosion.epicenter} />
+            )}
+            {activeShadowSlash && (
+              <ShadowSlash key="shadow" target={activeShadowSlash.target} />
+            )}
+            {activeCleave && (
+              <CleaveSlash key="cleave" source={activeCleave.source} target={activeCleave.target} color={activeCleave.color} />
+            )}
+            {activeShockwave && (
+              <ShockwaveAnimation key="shockwave" target={activeShockwave.target} />
+            )}
+            {activeAuraRunica && (
+              <AuraRunicaAnimation key="aura-runica" target={activeAuraRunica} />
+            )}
+            {activeDivineBlessing && (
+              <DivineBlessingAnimation key="divine-blessing" target={activeDivineBlessing} />
+            )}
+            {activeEarthRoots && (
+              <EarthRootsAnimation key="earth-roots" target={activeEarthRoots} />
+            )}
+            {activeFuryPulse && (
+              <FuryPulseAnimation key="fury-pulse" target={activeFuryPulse} />
+            )}
+            {activeWallFormation && (
+              <WallFormationAnimation key="wall-formation" targets={activeWallFormation} />
+            )}
+            {activeMistImpact && (
+              <MistImpactAnimation key="mist-impact" target={activeMistImpact} />
+            )}
+            {activeWindTrail && (
+              <WindTrailAnimation key="wind-trail" target={activeWindTrail} />
+            )}
+            {Object.values(boardUnits).filter(u => u.buffs.some(b => b.type === 'immune_ranged')).map(unit => (
+              <MistEffect key={`mist-layer-${unit.id}`} unit={unit} />
+            ))}
           </AnimatePresence>
         </svg>
       </motion.div>

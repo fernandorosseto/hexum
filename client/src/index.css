@@ -45,8 +45,8 @@ body {
 
 @keyframes damage-flash {
   0%, 100% { filter: brightness(1); }
-  25% { filter: brightness(3) saturate(0); }
-  50% { filter: brightness(0.6) saturate(2); }
+  30% { filter: brightness(2.5) drop-shadow(0 0 10px rgba(255, 0, 0, 0.8)); }
+  70% { filter: brightness(0.8) drop-shadow(0 0 5px rgba(255, 0, 0, 0.5)); }
 }
 
 @keyframes heal-glow {

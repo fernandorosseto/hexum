@@ -1,38 +1,22 @@
 import React from 'react';
 import { useGameStore } from '../store/gameStore';
 import { UNIT_STATS, ARTIFACTS, SPELLS } from 'shared';
-import reiIcon from '../assets/rei.png';
-import arqueiroIcon from '../assets/arqueiro.png';
-import assassinoIcon from '../assets/assassino.png';
-import cavaleiroIcon from '../assets/cavaleiro.png';
-import clerigoIcon from '../assets/clerigo.png';
-import lanceiroIcon from '../assets/lanceiro.png';
-import magoIcon from '../assets/mago.png';
-import escudoIcon from '../assets/escudo.png';
+import { CLASS_ICONS } from '../constants/unitIcons';
+import { SpellIcon, ArtifactIcon } from '../assets/icons/VectorIcons';
 
 function getCardDetails(cardId: string) {
   if (cardId.startsWith('unit_')) {
     const unitClass = cardId.replace('unit_', '');
     const capitalized = unitClass.charAt(0).toUpperCase() + unitClass.slice(1);
     const stats = UNIT_STATS[capitalized];
-    const icons: Record<string, string> = { 
-      Rei: reiIcon, 
-      Cavaleiro: cavaleiroIcon, 
-      Lanceiro: lanceiroIcon, 
-      Arqueiro: arqueiroIcon, 
-      Assassino: assassinoIcon, 
-      Mago: magoIcon, 
-      Clerigo: clerigoIcon 
-    };
-    return { id: cardId, class: capitalized, icon: icons[capitalized] || '👤', cost: stats.mana, atk: stats.attack, hp: stats.hp, type: 'Unidade' };
+    return { id: cardId, class: capitalized, icon: CLASS_ICONS[capitalized] || '👤', cost: stats.mana, atk: stats.attack, hp: stats.hp, type: 'Unidade' };
   }
   const art = ARTIFACTS.find(a => a.id === cardId);
   if (art) {
-    const icon = cardId === 'art_escudo' ? escudoIcon : '⚔️';
-    return { id: cardId, class: art.name, icon, cost: art.manaCost, atk: '-', hp: '-', type: 'Artefato' };
+    return { id: cardId, class: art.name, icon: '', cost: art.manaCost, atk: '-', hp: '-', type: 'Artefato' };
   }
   const spl = SPELLS.find(s => s.id === cardId);
-  if (spl) return { id: cardId, class: spl.name, icon: '✨', cost: spl.manaCost, atk: '-', hp: '-', type: 'Mágica' };
+  if (spl) return { id: cardId, class: spl.name, icon: '', cost: spl.manaCost, atk: '-', hp: '-', type: 'Mágica' };
   return null;
 }
 
@@ -98,10 +82,12 @@ export const HandUI: React.FC = () => {
               </div>
               
               <div className="text-lg md:text-xl mt-1 flex items-center justify-center h-8">
-                {(card.icon.includes('/') || card.icon.includes('.') || card.icon.startsWith('data:')) ? (
+                {card.type === 'Unidade' ? (
                   <img src={card.icon} alt={card.class} className="w-6 h-6 object-contain drop-shadow-md" />
+                ) : card.type === 'Mágica' ? (
+                  <SpellIcon id={card.id} size={28} className="text-blue-300 drop-shadow-[0_0_6px_rgba(96,165,250,0.8)]" />
                 ) : (
-                  card.icon
+                  <ArtifactIcon id={card.id} size={28} className="text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.8)]" />
                 )}
               </div>
               <h4 className="text-white font-bold text-[8px] md:text-[9px] mt-0.5 line-clamp-1 leading-tight">{card.class}</h4>

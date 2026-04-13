@@ -2,53 +2,8 @@ import React from 'react';
 import { useGameStore } from '../store/gameStore';
 import { UNIT_DESCRIPTIONS, UNIT_STATS, ARTIFACTS, SPELLS, ARTIFACT_DESCRIPTIONS, SPELL_DESCRIPTIONS, getFearStatus, buffLabels } from 'shared';
 import { motion } from 'framer-motion';
-import reiIcon from '../assets/rei.png';
-import arqueiroIcon from '../assets/arqueiro.png';
-import assassinoIcon from '../assets/assassino.png';
-import cavaleiroIcon from '../assets/cavaleiro.png';
-import clerigoIcon from '../assets/clerigo.png';
-import lanceiroIcon from '../assets/lanceiro.png';
-import magoIcon from '../assets/mago.png';
-import escudoIcon from '../assets/escudo.png';
-
-const UNIT_ICONS: Record<string, string> = {
-  Rei: reiIcon, 
-  Cavaleiro: cavaleiroIcon, 
-  Lanceiro: lanceiroIcon, 
-  Arqueiro: arqueiroIcon,
-  Assassino: assassinoIcon, 
-  Mago: magoIcon, 
-  Clerigo: clerigoIcon, 
-};
-
-const UNIT_ART_COLORS: Record<string, { bg: string, glow: string, border: string }> = {
-  Rei:       { bg: 'from-yellow-900/60 to-amber-950/80', glow: 'shadow-[0_0_40px_rgba(250,204,21,0.15)]', border: 'border-yellow-600/60' },
-  Cavaleiro: { bg: 'from-slate-700/60 to-zinc-900/80',   glow: 'shadow-[0_0_40px_rgba(148,163,184,0.15)]', border: 'border-slate-500/60' },
-  Lanceiro:  { bg: 'from-teal-900/60 to-emerald-950/80', glow: 'shadow-[0_0_40px_rgba(20,184,166,0.15)]', border: 'border-teal-600/60' },
-  Arqueiro:  { bg: 'from-green-900/60 to-lime-950/80',   glow: 'shadow-[0_0_40px_rgba(132,204,22,0.15)]', border: 'border-green-600/60' },
-  Assassino: { bg: 'from-violet-900/60 to-purple-950/80',glow: 'shadow-[0_0_40px_rgba(139,92,246,0.15)]', border: 'border-violet-500/60' },
-  Mago:      { bg: 'from-blue-900/60 to-indigo-950/80',  glow: 'shadow-[0_0_40px_rgba(99,102,241,0.15)]', border: 'border-blue-500/60' },
-  Clerigo:   { bg: 'from-amber-900/60 to-orange-950/80', glow: 'shadow-[0_0_40px_rgba(217,119,6,0.15)]', border: 'border-amber-500/60' },
-};
-
-const SPELL_ICONS: Record<string, string> = {
-  spl_raio: '⚡', spl_transfusao: '💉', spl_nevoa: '☁️', spl_muralha: '🛡️',
-  spl_passos: '👟', spl_meteoro: '🔥', spl_bencao: '✝️', spl_raizes: '🔗',
-  spl_furia: '⚔️', spl_reforcos: '📯'
-};
-
-const ARTIFACT_ICONS: Record<string, string> = {
-  art_escudo: escudoIcon, 
-  art_montante: '⚔️', 
-  art_arco: '🏹', 
-  art_adagas: '🗡️',
-  art_anel: '💍', 
-  art_corcel: '🐎', 
-  art_coroa: '👑', 
-  art_tomo: '📖',
-  art_amuleto: '🧿', 
-  art_estandarte: '🚩'
-};
+import { CLASS_ICONS as UNIT_ICONS, UNIT_ART_COLORS } from '../constants/unitIcons';
+import { SpellIcon, ArtifactIcon } from '../assets/icons/VectorIcons';
 
 export const CardDetailsUI: React.FC = () => {
   const selectedCardId = useGameStore(state => state.selectedCard);
@@ -104,7 +59,7 @@ export const CardDetailsUI: React.FC = () => {
       const art = ARTIFACTS.find(a => a.id === selectedCardId);
       if (art) {
         data = {
-          kind: 'artifact', title: art.name, icon: ARTIFACT_ICONS[art.id] || '⚔️',
+          kind: 'artifact', title: art.name, icon: '',
           manaCost: art.manaCost,
           ability: ARTIFACT_DESCRIPTIONS[art.id] || 'Equipamento permanente.',
           colors: { bg: 'from-amber-900/60 to-yellow-950/80', glow: 'shadow-[0_0_40px_rgba(217,119,6,0.15)]', border: 'border-amber-500/60' },
@@ -113,7 +68,7 @@ export const CardDetailsUI: React.FC = () => {
         const spl = SPELLS.find(s => s.id === selectedCardId);
         if (spl) {
           data = {
-            kind: 'spell', title: spl.name, icon: SPELL_ICONS[spl.id] || '✨',
+            kind: 'spell', title: spl.name, icon: '',
             manaCost: spl.manaCost,
             ability: SPELL_DESCRIPTIONS[spl.id] || 'Efeito mágico instantâneo.',
             colors: { bg: 'from-purple-900/60 to-indigo-950/80', glow: 'shadow-[0_0_40px_rgba(139,92,246,0.15)]', border: 'border-purple-500/60' },
@@ -203,12 +158,12 @@ export const CardDetailsUI: React.FC = () => {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(255,255,255,0.1),_transparent_70%)]" />
         </div>
         <div className="flex items-center justify-center z-10 w-full h-full">
-          {(data.icon.includes('/') || data.icon.includes('.') || data.icon.startsWith('data:')) ? (
+          {data.kind === 'unit' ? (
             <img src={data.icon} alt={data.title} className="w-16 h-16 md:w-24 md:h-24 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
+          ) : data.kind === 'spell' ? (
+            <SpellIcon id={selectedCardId || ''} size={64} className="text-purple-300 drop-shadow-[0_0_15px_rgba(167,139,250,0.8)]" />
           ) : (
-            <span className="text-4xl md:text-6xl drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-              {data.icon || '❓'}
-            </span>
+            <ArtifactIcon id={selectedCardId || ''} size={64} className="text-amber-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.8)]" />
           )}
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-white/5 pointer-events-none" />
@@ -296,8 +251,8 @@ export const CardDetailsUI: React.FC = () => {
               {data.artifacts.map((artId, i) => {
                 const art = ARTIFACTS.find(a => a.id === artId);
                 return (
-                  <span key={i} className="px-1.5 py-0.5 rounded text-[8px] font-bold border bg-amber-950/60 text-amber-300 border-amber-700/40">
-                    {ARTIFACT_ICONS[artId] || '⚔️'} {art?.name || artId}
+                  <span key={i} className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold border bg-amber-950/60 text-amber-300 border-amber-700/40">
+                    <ArtifactIcon id={artId} size={10} className="text-amber-400" /> {art?.name || artId}
                   </span>
                 );
               })}
