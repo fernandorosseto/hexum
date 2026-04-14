@@ -2,7 +2,7 @@ import { UnitCard, Card } from './types';
 
 export const UNIT_STATS: Record<string, { hp: number, attack: number, mana: number }> = {
   'Rei': { hp: 6, attack: 1, mana: 0 },
-  'Cavaleiro': { hp: 5, attack: 3, mana: 2 },
+  'Cavaleiro': { hp: 5, attack: 3, mana: 4 },
   'Lanceiro': { hp: 3, attack: 1, mana: 1 },
   'Arqueiro': { hp: 2, attack: 1, mana: 1 },
   'Assassino': { hp: 3, attack: 2, mana: 2 },
@@ -12,10 +12,10 @@ export const UNIT_STATS: Record<string, { hp: number, attack: number, mana: numb
 
 export const UNIT_DESCRIPTIONS: Record<string, { ability: string, flavor: string, role: string }> = {
   'Rei': { ability: 'Aura de Medo — Inimigos adjacentes têm chance de errar seus ataques. A chance aumenta +1% a cada rodada em campo.', flavor: '"O trono não se defende com espada, mas com a sombra que projeta."', role: 'Líder · Suporte' },
-  'Cavaleiro': { ability: 'Rompante de Ferro (3 Mana) — Avança em linha reta e ataca com +2 de Dano. Chance de Atordoar o alvo.', flavor: '"Quando a terra treme, já é tarde para fugir."', role: 'Tanque · Rompedor' },
+  'Cavaleiro': { ability: 'Rompante de Ferro (3 Mana) — Avança em linha reta e ataca com +2 de Dano. Chance de Atordoar. (Cooldown: 2 Ciclos)', flavor: '"Quando a terra treme, já é tarde para fugir."', role: 'Tanque · Rompedor' },
   'Lanceiro': { ability: 'Impacto de Falange — Ao acertar, tem chance de empurrar o alvo 1 casa para trás na mesma direção.', flavor: '"Nenhuma linha avança enquanto as hastes estiverem firmes."', role: 'Defensor · Controle' },
   'Arqueiro': { ability: 'Tiro Preciso — Ataca a distância (alcance 3). Chance de Atordoar o alvo.', flavor: '"Uma flecha bem mirada vale mais que cem espadas cegas."', role: 'Suporte · Dano à Distância' },
-  'Assassino': { ability: 'Toque Letal — Todo ataque aplica Sangramento (1 dano/turno, 2 turnos).\nTransposição Etérea (3 Mana) — Salta 2 casas e ataca com +2 de Dano Bônus.', flavor: '"Nas sombras, o silêncio é a lâmina mais afiada. Quem vê o brilho do aço já habita o reino das cinzas."', role: 'Assassino · Mobilidade' },
+  'Assassino': { ability: 'Toque Letal — Todo ataque aplica Sangramento (1 dano/turno, 2 turnos).\nTransposição Etérea (3 Mana) — Salta 2 casas e ataca com +2 de Dano Bônus. (Cooldown: 2 Ciclos)', flavor: '"Nas sombras, o silêncio é a lâmina mais afiada. Quem vê o brilho do aço já habita o reino das cinzas."', role: 'Assassino · Mobilidade' },
   'Mago': { ability: 'Cataclismo Arcano — Dano em Área no alvo e adjacentes (raio 1). Chance de aplicar Queimadura (1 dano/turno, 2 turnos).', flavor: '"O fogo que nasce das runas não conhece aliados."', role: 'AoE · Controle de Área' },
   'Clerigo': { ability: 'Prece de Alento — Restaura 2 HP de um aliado adjacente. Chance de conceder Escudo Sagrado.\nChamado da Fé — Tenta converter um inimigo adjacente (chance escala por rodada).', flavor: '"A fé cura feridas que o aço não alcança."', role: 'Healer · Conversão' },
 };
@@ -55,7 +55,7 @@ export const SPELL_DESCRIPTIONS: Record<string, string> = {
   'spl_passos': 'Permite que uma unidade aja novamente (reset de movimento/ataque).',
   'spl_meteoro': 'Causa 2 de dano no centro e 1 de dano em todos os hexágonos adjacentes.',
   'spl_bencao': 'Cura 3 de HP e remove todos os efeitos negativos de um aliado.',
-  'spl_raizes': 'Imobiliza uma unidade inimiga por 1 turno.',
+  'spl_raizes': 'Imobiliza uma unidade inimiga por 1 turno (impede movimento e uso de habilidades de impacto).',
   'spl_furia': 'A unidade ganha +2 de Ataque, mas perde 1 de HP ao atacar.',
   'spl_reforcos': 'Adiciona 2 cartas de Lanceiro ao seu deck e mão.',
 };

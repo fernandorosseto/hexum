@@ -96,7 +96,8 @@ const MuralhaDeGelo: SpellHandler = {
         state.boardUnits[wallId] = {
           id: wallId, playerId, cardId: 'spl_muralha', unitClass: 'Estrutura' as any,
           hp: 6, maxHp: 6, attack: 0, position: hex, buffs: [], roundsInField: 0,
-          summoningSickness: true, canMove: false, canAttack: false, equippedArtifacts: []
+          summoningSickness: true, canMove: false, canAttack: false,
+          abilityCooldown: 0, equippedArtifacts: []
         };
         wallsSpawned++;
       }
@@ -146,7 +147,7 @@ const RaizesDaTerra: SpellHandler = {
   execute(state, playerId, targetHex) {
     const targetUnit = findUnitAtHex(state, targetHex);
     if (!targetUnit || targetUnit.playerId === playerId) throw new Error("Selecione um inimigo para enraizar.");
-    targetUnit.buffs.push({ type: 'stun', duration: 1 });
+    targetUnit.buffs.push({ type: 'rooted', duration: 1 });
   }
 };
 

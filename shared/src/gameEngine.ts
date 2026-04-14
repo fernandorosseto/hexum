@@ -169,7 +169,8 @@ function addInitialUnit(state: GameState, playerId: string, unitClass: string, p
   state.boardUnits[id] = {
     id, playerId, cardId: `unit_${unitClass.toLowerCase()}`, unitClass: unitClass as any,
     hp: stats.hp, maxHp: stats.hp, attack: stats.attack, position: pos,
-    buffs: [], roundsInField: 0, summoningSickness: false, canMove: true, canAttack: true, equippedArtifacts: []
+    buffs: [], roundsInField: 0, summoningSickness: false, canMove: true, canAttack: true, 
+    abilityCooldown: 0, equippedArtifacts: []
   };
 }
 
@@ -259,6 +260,11 @@ export function endTurn(state: GameState): GameState {
         return buff.duration > 0;
       });
 
+      // Diminuir cooldown de habilidades
+      if (unit.abilityCooldown > 0) {
+        unit.abilityCooldown -= 1;
+      }
+
       if ((unit.equippedArtifacts || []).includes('art_tomo')) {
         unit.buffs = unit.buffs.filter(b => b.type !== 'poison' && b.type !== 'burn' && b.type !== 'stun' && b.type !== 'bleed');
       }
@@ -296,8 +302,12 @@ export function endTurn(state: GameState): GameState {
     if (unit.playerId === nextPlayerId) {
       unit.roundsInField += 1;
       unit.summoningSickness = false;
-      unit.canMove = true;
-      unit.canAttack = true;
+      
+      const isStunned = unit.buffs.some(b => b.type === 'stun');
+      const isRooted = unit.buffs.some(b => b.type === 'rooted');
+
+      unit.canMove = !isStunned && !isRooted;
+      unit.canAttack = !isStunned;
     }
   }
 
@@ -318,11 +328,18 @@ export function moveTo(state: GameState, unitId: string, targetPosition: HexCoor
   if (!isInsideBoard(targetPosition)) throw new Error("Destino fora dos limites do tabuleiro!");
 
   if (useSpecial) {
+    if (unit.abilityCooldown > 0) throw new Error("Habilidade em recarga (Cooldown).");
+    if (unit.buffs.some(b => b.type === 'rooted')) throw new Error("Unidade enraizada: Não pode usar habilidades de impacto.");
+    
     const cost = unit.unitClass === 'Cavaleiro' ? 3 : (unit.unitClass === 'Assassino' ? 3 : 0);
     const player = newState.players[unit.playerId];
     if (player.mana < cost) throw new Error("Mana insuficiente para habilidade especial.");
     player.mana -= cost;
+    unit.abilityCooldown = 2; // Inicia cooldown (pulará o próximo turno do dono)
   }
+
+  if (unit.buffs.some(b => b.type === 'stun')) throw new Error("Unidade atordoada!");
+  if (unit.buffs.some(b => b.type === 'rooted')) throw new Error("Unidade enraizada!");
 
   const dist = getHexDistance(unit.position, targetPosition);
   
@@ -352,6 +369,17 @@ export function moveTo(state: GameState, unitId: string, targetPosition: HexCoor
 export function getValidMoveCoordinates(state: GameState, unitId: string, useSpecial: boolean = false): HexCoordinates[] {
   const unit = state.boardUnits[unitId];
   if (!unit) return [];
+
+  // Checa restrições globais
+  if (!state.sandboxMode) {
+    if (unit.summoningSickness || !unit.canMove) return [];
+  }
+
+  const isStunned = unit.buffs.some(b => b.type === 'stun');
+  const isRooted = unit.buffs.some(b => b.type === 'rooted');
+
+  if (isStunned || isRooted) return [];
+  if (useSpecial && unit.abilityCooldown > 0) return [];
 
   const behavior = UNIT_BEHAVIORS[unit.unitClass];
   const validMoves: HexCoordinates[] = [];
@@ -396,11 +424,17 @@ export function attack(state: GameState, attackerId: string, targetId: string, u
   if (!attacker.canAttack) throw new Error("Esta unidade já atacou.");
 
   if (useSpecial) {
+    if (attacker.abilityCooldown > 0) throw new Error("Habilidade em recarga (Cooldown).");
+    if (attacker.buffs.some(b => b.type === 'rooted')) throw new Error("Unidade enraizada: Não pode usar habilidades de impacto.");
+
     const cost = attacker.unitClass === 'Cavaleiro' ? 3 : (attacker.unitClass === 'Assassino' ? 3 : 0);
     const player = newState.players[attacker.playerId];
     if (player.mana < cost) throw new Error("Mana insuficiente para habilidade especial.");
     player.mana -= cost;
+    attacker.abilityCooldown = 2;
   }
+
+  if (attacker.buffs.some(b => b.type === 'stun')) throw new Error("Unidade atordoada!");
 
   const dist = getHexDistance(attacker.position, target.position);
 
@@ -481,7 +515,8 @@ export function playCard(state: GameState, playerId: string, cardId: string, tar
       id: newUnitId, playerId, cardId, unitClass: unitCard.unitClass,
       hp: unitCard.baseHp, maxHp: unitCard.baseHp, attack: unitCard.baseAttack,
       position: targetHex, buffs: [], roundsInField: 0,
-      summoningSickness: true, canMove: false, canAttack: false, equippedArtifacts: []
+      summoningSickness: true, canMove: false, canAttack: false, 
+      abilityCooldown: 0, equippedArtifacts: []
     };
   }
   // ── Feitiço ──

@@ -134,6 +134,20 @@ export function getPossibleActions(state: GameState, playerId: string): AIAction
   for (const unit of myUnits) {
     if (unit.summoningSickness) continue;
 
+    // --- MOVIMENTOS ---
+    const isRooted = unit.buffs.some(b => b.type === 'rooted');
+    if (unit.canMove && !isRooted) {
+      const validMoves = getValidMoveCoordinates(state, unit.id, false);
+      
+      for (const move of validMoves) {
+        if (unit.unitClass === 'Rei') {
+           actions.push({ type: 'MOVE', unitId: unit.id, target: move });
+           continue;
+        }
+        actions.push({ type: 'MOVE', unitId: unit.id, target: move });
+      }
+    }
+
     // --- ATAQUES ---
     if (unit.canAttack) {
       // Alvos normais
@@ -145,8 +159,8 @@ export function getPossibleActions(state: GameState, playerId: string): AIAction
         }
       }
 
-      // Alvos especiais (se tiver mana)
-      if (player.mana >= 3 && (unit.unitClass === 'Cavaleiro' || unit.unitClass === 'Assassino')) {
+      // Alvos especiais (se tiver mana AND sem cooldown AND sem raízes)
+      if (player.mana >= 3 && unit.abilityCooldown === 0 && !isRooted && (unit.unitClass === 'Cavaleiro' || unit.unitClass === 'Assassino')) {
         const specialTargets = getValidAttackTargets(state, unit.id, true);
         for (const targetPos of specialTargets) {
           const target = boardUnits.find(u => u.position.q === targetPos.q && u.position.r === targetPos.r);
@@ -162,30 +176,6 @@ export function getPossibleActions(state: GameState, playerId: string): AIAction
       const woundedAllies = myUnits.filter(u => u.hp < u.maxHp && getHexDistance(unit.position, u.position) <= 2);
       for (const target of woundedAllies) {
         actions.push({ type: 'HEAL', healerId: unit.id, targetId: target.id });
-      }
-    }
-
-    // --- MOVIMENTOS ---
-    if (unit.canMove) {
-      const validMoves = getValidMoveCoordinates(state, unit.id, false);
-      
-      // Heurística de poda de movimento:
-      // Se a unidade já está em uma posição ofensiva excelente (perto do rei inimigo), 
-      // evita testar todos os hexágonos vizinhos que a afastam do objetivo.
-      const oppKing = boardUnits.find(u => u.playerId !== playerId && u.unitClass === 'Rei');
-      const currentDistToKing = oppKing ? getHexDistance(unit.position, oppKing.position) : 999;
-
-      for (const move of validMoves) {
-        // Se a unidade for o Rei, ser mais cauteloso com movimentos
-        if (unit.unitClass === 'Rei') {
-           // Só move se for pra fugir de inimigos ou se estiver muito longe da zona segura
-           actions.push({ type: 'MOVE', unitId: unit.id, target: move });
-           continue;
-        }
-
-        // Poda: Só adiciona o movimento se ele for estatisticamente interessante
-        // (ex: aproxima do centro, aproxima do rei inimigo, ou sai de perto de perigo)
-        actions.push({ type: 'MOVE', unitId: unit.id, target: move });
       }
     }
   }

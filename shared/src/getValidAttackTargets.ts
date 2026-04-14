@@ -16,6 +16,12 @@ export function getValidAttackTargets(state: GameState, unitId: string, useSpeci
     if (unit.summoningSickness || !unit.canAttack) return [];
   }
 
+  const isStunned = unit.buffs.some(b => b.type === 'stun');
+  const isRooted = unit.buffs.some(b => b.type === 'rooted');
+
+  if (isStunned) return [];
+  if (useSpecial && (isRooted || unit.abilityCooldown > 0)) return [];
+
   const targets: HexCoordinates[] = [];
 
   let rangeBonus = 0;

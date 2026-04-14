@@ -18,7 +18,7 @@ export interface UnitCard extends Card {
 }
 
 export interface Buff {
-  type: 'poison' | 'burn' | 'stun' | 'shield' | 'taunt' | 'fury' | 'immune_ranged' | 'bleed' | 'fear' | 'invulnerable';
+  type: 'poison' | 'burn' | 'stun' | 'shield' | 'taunt' | 'fury' | 'immune_ranged' | 'bleed' | 'fear' | 'invulnerable' | 'rooted';
   duration: number; // turnos sobrando
   value?: number;
 }
@@ -37,6 +37,7 @@ export interface Unit {
   summoningSickness: boolean;
   canMove: boolean;
   canAttack: boolean;
+  abilityCooldown: number; // Turnos até que a habilidade especial possa ser usada novamente
   equippedArtifacts?: string[]; // IDs dos artefatos equipados (ex: 'art_escudo')
 }
 
@@ -63,6 +64,7 @@ export const buffLabels: Record<string, {label: string, color: string}> = {
   bleed: { label: '🩸 Sangramento', color: 'bg-red-950/80 text-red-300 border-red-700/50' },
   fear: { label: '💀 Medo', color: 'bg-purple-900/80 text-purple-300 border-purple-700/50' },
   invulnerable: { label: '✨ Invulnerável', color: 'bg-yellow-900/80 text-yellow-200 border-yellow-600/50' },
+  rooted: { label: '🌿 Enraizado', color: 'bg-emerald-900/80 text-emerald-300 border-emerald-700/50' },
 };
 
 export interface GameState {
