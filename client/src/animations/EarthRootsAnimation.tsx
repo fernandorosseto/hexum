@@ -1,9 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { hexToPixel } from '../board/HexUtils';
+import { HexCoordinates } from 'shared';
 
 interface Props {
-  target: { q: number; r: number };
+  target: HexCoordinates;
 }
 
 export const EarthRootsAnimation: React.FC<Props> = ({ target }) => {

@@ -45,3 +45,8 @@ test_output.txt
 test_output_utf8.txt
 debug_state.ts
 .vercel
+shared/src/run100.ts
+shared/src/run10.ts
+shared/src/run100.js
+shared/src/run10.js
+shared/tests/

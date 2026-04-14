@@ -1,9 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { hexToPixel } from '../board/HexUtils';
+import { HexCoordinates } from 'shared';
 
 interface Props {
-  targets: { q: number; r: number }[];
+  targets: HexCoordinates[];
 }
 
 export const WallFormationAnimation: React.FC<Props> = ({ targets }) => {

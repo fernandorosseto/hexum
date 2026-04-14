@@ -70,6 +70,8 @@ interface GameStore extends GameState {
   resetGame: () => void;
   purifyArena: () => void;
   removeUnit: (unitId: string) => void;
+  isAutoPlay: boolean;
+  toggleAutoPlay: () => void;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -134,6 +136,15 @@ export const useGameStore = create<GameStore>()(
       activeWallFormation: null,
       activeMistImpact: null,
       activeWindTrail: null,
+      isAutoPlay: false,
+      toggleAutoPlay: () => {
+        const newVal = !get().isAutoPlay;
+        set({ isAutoPlay: newVal });
+        if (newVal) {
+          // Pequeno delay para garantir que a UI processe a ativação
+          setTimeout(() => get().runAiTurn(), 500);
+        }
+      },
 
       isLogVisible: false,
       toggleLog: () => set(state => ({ isLogVisible: !state.isLogVisible })),
@@ -166,8 +177,9 @@ export const useGameStore = create<GameStore>()(
           get().addLog(`O turno de ${pId === 'p1' ? 'Azul' : 'Roxo'} chegou ao fim.`, pId);
 
           const updatedState = get();
-          if (updatedState.isVsAI && updatedState.currentTurnPlayerId === 'p2' && updatedState.currentPhase !== 'GAME_OVER') {
-            setTimeout(() => get().runAiTurn(), 1000);
+          const autoBattleTarget = updatedState.isAutoPlay ? 200 : 1000;
+          if (updatedState.currentPhase !== 'GAME_OVER' && (updatedState.isAutoPlay || (updatedState.isVsAI && updatedState.currentTurnPlayerId === 'p2'))) {
+            setTimeout(() => get().runAiTurn(), autoBattleTarget);
           }
         } catch (err: any) {
           console.warn("Erro de Turno:", err.message);
@@ -176,16 +188,19 @@ export const useGameStore = create<GameStore>()(
 
       runAiTurn: async () => {
         const state = get();
-        if (state.isAiThinking || state.currentTurnPlayerId !== 'p2' || state.currentPhase === 'GAME_OVER') return;
+        // No modo Auto-Play, permitimos que a IA jogue para QUALQUER jogador
+        if (state.isAiThinking || state.currentPhase === 'GAME_OVER') return;
+        if (!state.isAutoPlay && state.currentTurnPlayerId !== 'p2') return;
 
         set({ isAiThinking: true });
 
         let continueTurn = true;
+        const currentPlayer = state.currentTurnPlayerId;
         while (continueTurn) {
           const currentState = get();
-          if (currentState.currentPhase === 'GAME_OVER') break;
+          if (currentState.currentPhase === 'GAME_OVER' || currentState.currentTurnPlayerId !== currentPlayer) break;
 
-          const action = getBestAction(currentState, 'p2');
+          const action = getBestAction(currentState, currentPlayer);
 
           if (!action) {
             continueTurn = false;
@@ -193,7 +208,8 @@ export const useGameStore = create<GameStore>()(
             break;
           }
 
-          await new Promise(resolve => setTimeout(resolve, 800));
+          const delay = state.isAutoPlay ? 150 : 800;
+          await new Promise(resolve => setTimeout(resolve, delay));
 
           try {
             if (action.type === 'MOVE') {

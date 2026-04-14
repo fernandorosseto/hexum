@@ -8,7 +8,7 @@ import { UNIT_STATS, ARTIFACTS, SPELLS } from 'shared';
 // ══════════════════════════════════════════════
 
 const ArsenalBoxP1: React.FC = () => {
-  const { spawnUnit, addCardToHand, sandboxPlayCard, purifyArena, selectedHex, triggerEndTurn } = useGameStore();
+  const { spawnUnit, addCardToHand, sandboxPlayCard, purifyArena, selectedHex, triggerEndTurn, toggleAutoPlay, isAutoPlay } = useGameStore();
   const [activeTab, setActiveTab] = useState<'unidades' | 'cartas'>('unidades');
   const [selectedPlayer, setSelectedPlayer] = useState<'p1' | 'p2'>('p1');
   const [size, setSize] = useState({ width: 260, height: 420 });
@@ -92,6 +92,14 @@ const ArsenalBoxP1: React.FC = () => {
         >
           Purificar
         </button>
+        {import.meta.env.DEV && (
+          <button 
+            onClick={toggleAutoPlay} 
+            className={`flex-[0.8] py-2 border text-[8px] font-black uppercase tracking-[0.1em] rounded-lg transition-all active:scale-95 flex items-center justify-center gap-1 ${isAutoPlay ? 'bg-amber-500/80 border-amber-400 text-slate-900 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : 'bg-slate-800/40 hover:bg-slate-700/60 border-white/10 text-white/60'}`}
+          >
+            {isAutoPlay ? '🛑 Parar' : '🤖 Simular'}
+          </button>
+        )}
         {/* Resize Handle */}
         <motion.div drag dragMomentum={false} dragConstraints={{ left: 0, top: 0 }} onDrag={(_e, info) => { setSize(prev => ({ width: Math.max(180, prev.width + info.delta.x), height: Math.max(200, prev.height + info.delta.y) })); }} onDragEnd={(e) => { (e.target as any).style.transform = 'none'; }} className="absolute bottom-1 right-1 w-3 h-3 cursor-nwse-resize flex items-center justify-center group"><div className="w-1 h-1 bg-white/20 rounded-full group-hover:bg-blue-500 transition-colors" /></motion.div>
       </div>

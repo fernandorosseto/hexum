@@ -422,7 +422,10 @@ export function attack(state: GameState, attackerId: string, targetId: string, u
   const fearInfo = getFearStatus(attacker, newState);
   if (fearInfo.inRange && dist === 1) {
     if (Math.random() < fearInfo.chance) {
-      throw new Error("Ataque falhou! Aura de Medo do Rei inimigo.");
+      if (!newState.combatLogs) newState.combatLogs = [];
+      newState.combatLogs.push(`😱 ${attacker.unitClass} sucumbiu ao Medo do Rei inimigo e hesitou no ataque!`);
+      attacker.canAttack = false;
+      return newState;
     }
   }
 
