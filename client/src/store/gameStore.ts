@@ -72,6 +72,7 @@ interface GameStore extends GameState {
   removeUnit: (unitId: string) => void;
   isAutoPlay: boolean;
   toggleAutoPlay: () => void;
+  setAiDifficulty: (difficulty: import('shared').AIDifficulty) => void;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -232,6 +233,8 @@ export const useGameStore = create<GameStore>()(
 
         set({ isAiThinking: false });
       },
+      
+      setAiDifficulty: (difficulty) => set({ aiDifficulty: difficulty }),
 
       resetGame: () => {
         const initialState = createInitialState();

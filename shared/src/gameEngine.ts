@@ -125,6 +125,7 @@ export function createInitialState(): GameState {
     turnNumber: 1,
     currentPhase: 'MAIN_PHASE',
     currentTurnPlayerId: p1Id,
+    aiDifficulty: 'BEGINNER',
     players: {
       [p1Id]: createInitialPlayer(p1Id),
       [p2Id]: createInitialPlayer(p2Id)

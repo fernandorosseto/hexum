@@ -10,9 +10,29 @@ export type AIAction =
   | { type: 'OFFER', cardId: string }
   | { type: 'HEAL', healerId: string, targetId: string };
 
+// ══════════════════════════════════════════════
+//  Infraestrutura Transposição (Cache)
+// ══════════════════════════════════════════════
+
+interface CacheEntry {
+  depth: number;
+  score: number;
+  bestAction?: AIAction;
+}
+
+const TRANSPOSITION_TABLE = new Map<string, CacheEntry>();
+
+function getGameStateHash(state: GameState): string {
+    // Hash simplificado mas único o suficiente para o cache
+    const units = Object.values(state.boardUnits).map(u => 
+        `${u.id}:${u.position.q},${u.position.r}:${u.hp}:${u.canMove ? 1 : 0}:${u.canAttack ? 1 : 0}`
+    ).sort().join('|');
+    const players = Object.values(state.players).map(p => `${p.id}:${p.mana}:${p.hand.length}`).join('|');
+    return `${units}#${players}#${state.currentTurnPlayerId}`;
+}
+
 /**
  * Avalia o quão favorável está o estado do jogo para um jogador específico.
- * Agora utiliza uma abordagem Zero-Sum (Vantagem Aliada - Vantagem Inimiga).
  */
 export function evaluateState(state: GameState, playerId: string): number {
   const opponentId = playerId === 'p1' ? 'p2' : 'p1';
@@ -31,12 +51,27 @@ function calculateSideValue(state: GameState, playerId: string, opponentId: stri
   let value = 0;
   const player = state.players[playerId];
   const boardUnits = Object.values(state.boardUnits);
+  const isElite = state.aiDifficulty === 'ELITE';
   
   const myUnits = boardUnits.filter(u => u.playerId === playerId);
   const oppUnits = boardUnits.filter(u => u.playerId === opponentId);
   
   const oppKing = oppUnits.find(u => u.unitClass === 'Rei');
   const myKing = myUnits.find(u => u.unitClass === 'Rei');
+
+  // Precalcula Threat Map se for Elite
+  const threatMap: Record<string, number> = {};
+  if (isElite) {
+    for (const opp of oppUnits) {
+       const reach = (opp.unitClass === 'Arqueiro' || opp.unitClass === 'Mago') ? 3 : 1;
+       // Simplificação: casas adjacentes ao oponente estão sob ameaça
+       const rangeHexes = getHexesInRange(opp.position, reach);
+       for (const h of rangeHexes) {
+         const key = `${h.q},${h.r}`;
+         threatMap[key] = (threatMap[key] || 0) + opp.attack;
+       }
+    }
+  }
 
   // 1. Recursos (Mana e Mão)
   value += player.mana * 15;
@@ -47,76 +82,105 @@ function calculateSideValue(state: GameState, playerId: string, opponentId: stri
   for (const unit of myUnits) {
     let unitValue = 0;
     
-    // Valor base por Classe (Pesos Estratégicos)
     const classWeights: Record<string, number> = {
-      'Rei': 20000,
-      'Mago': 800,
-      'Cavaleiro': 700,
-      'Assassino': 750,
-      'Clerigo': 650,
-      'Arqueiro': 500,
-      'Lanceiro': 400,
+      'Rei': 25000,
+      'Mago': 950,
+      'Cavaleiro': 800,
+      'Assassino': 850,
+      'Clerigo': 750,
+      'Arqueiro': 550,
+      'Lanceiro': 450,
       'Estrutura': 300
     };
     
     const baseVal = classWeights[unit.unitClass] || 400;
-    // Valor escalado pelo HP (Unidades feridas valem menos, mas não linearmente para o Rei)
     const hpPercent = unit.hp / unit.maxHp;
     unitValue += baseVal * (0.4 + 0.6 * hpPercent);
 
-    // Controle de Mapa (Bônus por proximidade ao centro 0,0,0)
+    // Controle de Mapa e Mobilidade
     const distToCenter = getHexDistance(unit.position, { q: 0, r: 0, s: 0 });
     unitValue += Math.max(0, (5 - distToCenter) * 20);
 
-    // Pressão Offensiva (Proximidade ao Rei Inimigo)
+    // --- DEUS HEURÍSTICAS (MOBILIDADE) ---
+    if (state.aiDifficulty === 'DEUS') {
+        const moves = getValidMoveCoordinates(state, unit.id, false).length;
+        unitValue += moves * 15; // Unidades móveis são valiosas
+        
+        // Domínio de Terreno: Proximidade ao Rei inimigo é mais valorizada
+        if (oppKing) {
+            const d = getHexDistance(unit.position, oppKing.position);
+            if (d < 4) unitValue += (4 - d) * 40;
+        }
+    }
+
+    // Pressão Offensiva
     if (oppKing) {
       const distToEnemyKing = getHexDistance(unit.position, oppKing.position);
-      // Bônus agressivo: Unidades perto do Rei inimigo são valiosas
-      unitValue += Math.max(0, (10 - distToEnemyKing) * 30);
+      unitValue += Math.max(0, (10 - distToEnemyKing) * 25);
       
-      // Se puder atacar o Rei no próximo turno (distância <= alcance)
-      const range = (unit.unitClass === 'Arqueiro' || unit.unitClass === 'Mago') ? 3 : 1;
-      if (distToEnemyKing <= range + 1) unitValue += 200;
+      if (isElite || state.aiDifficulty === 'DEUS') {
+          const range = (unit.unitClass === 'Arqueiro' || unit.unitClass === 'Mago') ? 3 : 1;
+          if (unit.unitClass === 'Arqueiro' || unit.unitClass === 'Mago') {
+             if (distToEnemyKing === range) unitValue += 200; 
+             if (distToEnemyKing === 1) unitValue -= 150; 
+          }
+      }
     }
 
     // Segurança do Rei (Defesa)
     if (myKing && unit.unitClass !== 'Rei') {
       const distToMyKing = getHexDistance(unit.position, myKing.position);
-      // Unidades aliadas perto do rei agem como guarda-costas
-      if (distToMyKing <= 2) unitValue += 100;
-      
-      // Penalidade se o Rei estiver cercado de inimigos
-      const enemiesNearKing = oppUnits.filter(u => getHexDistance(u.position, myKing.position) <= 3);
-      if (enemiesNearKing.length > 0 && distToMyKing <= 2) {
-          unitValue += 150; // Valor extra para defensores quando sob ataque
+      if (distToMyKing <= 2) unitValue += 120;
+    }
+
+    // --- HEURÍSTICAS EXCLUSIVAS ELITE/DEUS ---
+    if (isElite || state.aiDifficulty === 'DEUS') {
+      const nearbyAllies = myUnits.filter(u => u.id !== unit.id && getHexDistance(u.position, unit.position) === 1);
+      unitValue += nearbyAllies.length * 45;
+
+      const threatKey = `${unit.position.q},${unit.position.r}`;
+      if (threatMap[threatKey]) {
+        if (threatMap[threatKey] >= unit.hp) {
+           unitValue -= baseVal * 0.9; 
+        } else {
+           unitValue -= threatMap[threatKey] * 12;
+        }
+      }
+
+      if (unit.unitClass === 'Clerigo') {
+        const woundedNear = myUnits.filter(u => u.hp < u.maxHp && getHexDistance(unit.position, u.position) <= 2);
+        unitValue += woundedNear.length * 200;
       }
     }
-
-    // Sinergia de Classes
-    if (unit.unitClass === 'Clerigo') {
-      const woundedNear = myUnits.filter(u => u.hp < u.maxHp && getHexDistance(unit.position, u.position) <= 2);
-      unitValue += woundedNear.length * 100; // Clérigo é mais valioso perto de feridos
-    }
-
-    // Buffs e Equipamentos
-    unitValue += unit.buffs.length * 40;
-    if (unit.buffs.some(b => b.type === 'shield' || b.type === 'invulnerable')) unitValue += 150;
-    if (unit.equippedArtifacts) unitValue += unit.equippedArtifacts.length * 200;
 
     value += unitValue;
   }
 
-  // 3. Ameaça e Vulnerabilidade (Aproximação de Danger Zone)
-  // Penaliza se unidades inimigas fortes puderem alcançar nosso rei
+  // 3. Ameaça ao Rei
   if (myKing) {
     for (const opp of oppUnits) {
        const dist = getHexDistance(opp.position, myKing.position);
-       if (dist <= 4) value -= 200; // Alerta de perigo
-       if (dist <= 2) value -= 500; // Perigo crítico
+       if (dist <= 4) value -= 300; 
+       if (dist <= 2) value -= 800; // Perigo imediato
+    }
+    // Mobilidade do Rei diminuída? Ruim
+    if (state.aiDifficulty === 'DEUS') {
+        const freeSpots = getHexNeighbors(myKing.position).filter(h => isInsideBoard(h) && !Object.values(state.boardUnits).some(u => u.position.q === h.q && u.position.r === h.r)).length;
+        if (freeSpots < 2) value -= 500; // Rei cercado
     }
   }
 
   return value;
+}
+
+function getHexesInRange(center: HexCoordinates, range: number): HexCoordinates[] {
+  const result: HexCoordinates[] = [];
+  for (let q = -range; q <= range; q++) {
+    for (let r = Math.max(-range, -q - range); r <= Math.min(range, -q + range); r++) {
+       result.push({ q: center.q + q, r: center.r + r, s: center.s + (-q - r) });
+    }
+  }
+  return result;
 }
 
 /**
@@ -247,61 +311,166 @@ export function getPossibleActions(state: GameState, playerId: string): AIAction
 
 /**
  * Escolhe a melhor ação imediata baseada na heurística e previsão de resposta do oponente.
- * Implementa um Minimax simplificado de Profundidade 2.
  */
 export function getBestAction(state: GameState, playerId: string): AIAction | null {
   const possibleActions = getPossibleActions(state, playerId);
   if (possibleActions.length === 0) return null;
 
+  // BEGINNER Mode: Pequena chance de erro proposital
+  if (state.aiDifficulty === 'BEGINNER' && Math.random() < 0.2 && possibleActions.length > 2) {
+      return possibleActions[Math.floor(Math.random() * possibleActions.length)];
+  }
+
+  // Se for ELITE ou GRANDMASTER, usamos busca mais profunda
   const opponentId = playerId === 'p1' ? 'p2' : 'p1';
+  
+  // Limpa Cache em estados críticos para não sobrecarregar memória
+  if (TRANSPOSITION_TABLE.size > 50000) TRANSPOSITION_TABLE.clear();
+
+  let maxTargetDepth = state.aiDifficulty === 'DEUS' ? 4 : (state.aiDifficulty === 'GRANDMASTER' ? 3 : 2);
   let bestAction: AIAction | null = null;
   let bestScore = -Infinity;
 
-  // Para cada ação da IA...
-  for (const action of possibleActions) {
-    try {
-      const stateAfterAi = simulateAction(state, playerId, action);
-      if (!stateAfterAi) continue;
+  // Ordena ações (Ataques primeiro)
+  const sortedActions = [...possibleActions].sort((a, b) => {
+    const scoreA = a.type === 'ATTACK' ? 10 : (a.type === 'PLAY_CARD' ? 5 : 0);
+    const scoreB = b.type === 'ATTACK' ? 10 : (b.type === 'PLAY_CARD' ? 5 : 0);
+    return scoreB - scoreA;
+  });
 
-      // ...prever a melhor resposta do oponente (Minimax Depth 2)
-      const oppActions = getPossibleActions(stateAfterAi, opponentId);
-      let worstCaseOpponentScore = -Infinity;
+  // Iterative Deepening para modo DEUS
+  for (let d = 1; d <= maxTargetDepth; d++) {
+      let currentBestAction: AIAction | null = null;
+      let currentBestScore = -Infinity;
 
-      if (oppActions.length > 0) {
-        // Para performance, ordenamos as ações do oponente por score imediato
-        // e pegamos as 10 melhores para ver qual delas mais prejudica a IA
-        const sortedOppActions = oppActions
-          .map(a => ({ action: a, score: evaluateState(simulateAction(stateAfterAi, opponentId, a) || stateAfterAi, opponentId) }))
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 10);
+      for (const action of sortedActions) {
+        try {
+          const stateAfterAction = simulateAction(state, playerId, action);
+          if (!stateAfterAction) continue;
 
-        for (const item of sortedOppActions) {
-          const stateAfterOpp = simulateAction(stateAfterAi, opponentId, item.action);
-          if (!stateAfterOpp) continue;
-          
-          if (item.score > worstCaseOpponentScore) {
-            worstCaseOpponentScore = item.score;
+          const score = minimax(stateAfterAction, d - 1, -Infinity, Infinity, false, playerId, opponentId);
+
+          if (score > currentBestScore) {
+            currentBestScore = score;
+            currentBestAction = action;
           }
-        }
-      } else {
-        worstCaseOpponentScore = evaluateState(stateAfterAi, opponentId);
+        } catch (e) { continue; }
       }
-
-      // O score da IA é (Meu Valor - Pior Valor que o oponente pode me deixar)
-      // Como evaluateState já é Zero-Sum (Aliado - Inimigo), podemos apenas usar a negativa
-      // do melhor score do oponente.
-      const aiScore = evaluateState(stateAfterAi, playerId) - worstCaseOpponentScore / 2; // Peso menor para a previsão futura
-
-      if (aiScore > bestScore) {
-        bestScore = aiScore;
-        bestAction = action;
+      
+      if (currentBestAction) {
+          bestAction = currentBestAction;
+          bestScore = currentBestScore;
+          // Se encontrou vitória imediata, encerra busca
+          if (bestScore > 50000) break;
       }
-    } catch (e) {
-      continue;
-    }
   }
 
   return bestAction;
+}
+
+/**
+ * Algoritmo Minimax com Poda Alfa-Beta e Tabela de Transposição
+ */
+function minimax(
+  state: GameState,
+  depth: number,
+  alpha: number,
+  beta: number,
+  isMaximizing: boolean,
+  aiPlayerId: string,
+  opponentId: string
+): number {
+  // Verificação de Tabela de Transposição
+  const hash = getGameStateHash(state);
+  const cached = TRANSPOSITION_TABLE.get(hash);
+  if (cached && cached.depth >= depth) {
+      return cached.score;
+  }
+
+  if (depth === 0 || state.currentPhase === 'GAME_OVER') {
+    // Se for DEUS, usa busca de quietude ao final do depth
+    if (state.aiDifficulty === 'DEUS' && depth === 0 && state.currentPhase !== 'GAME_OVER') {
+        return quiescenceSearch(state, alpha, beta, aiPlayerId, opponentId, isMaximizing);
+    }
+    return evaluateState(state, aiPlayerId);
+  }
+
+  const currentPlayerId = isMaximizing ? aiPlayerId : opponentId;
+  const actions = getPossibleActions(state, currentPlayerId);
+
+  if (actions.length === 0) return evaluateState(state, aiPlayerId);
+
+  const sortedActions = actions.slice(0, 35).sort((a, b) => {
+      const typeWeight = (t: string) => (t === 'ATTACK' ? 5 : (t === 'PLAY_CARD' ? 2 : 0));
+      return typeWeight(b.type) - typeWeight(a.type);
+  });
+
+  let evalScore: number;
+  if (isMaximizing) {
+    evalScore = -Infinity;
+    for (const action of sortedActions) {
+      const nextState = simulateAction(state, aiPlayerId, action);
+      if (!nextState) continue;
+      evalScore = Math.max(evalScore, minimax(nextState, depth - 1, alpha, beta, false, aiPlayerId, opponentId));
+      alpha = Math.max(alpha, evalScore);
+      if (beta <= alpha) break;
+    }
+  } else {
+    evalScore = Infinity;
+    for (const action of sortedActions) {
+      const nextState = simulateAction(state, opponentId, action);
+      if (!nextState) continue;
+      evalScore = Math.min(evalScore, minimax(nextState, depth - 1, alpha, beta, true, aiPlayerId, opponentId));
+      beta = Math.min(beta, evalScore);
+      if (beta <= alpha) break;
+    }
+  }
+
+  // Grava na Tabela de Transposição
+  TRANSPOSITION_TABLE.set(hash, { depth, score: evalScore });
+  return evalScore;
+}
+
+/**
+ * Busca de Quietude (Evita efeito horizonte em ataques)
+ */
+function quiescenceSearch(
+    state: GameState, 
+    alpha: number, 
+    beta: number, 
+    aiPlayerId: string, 
+    opponentId: string,
+    isMaximizing: boolean
+): number {
+    const standPat = evaluateState(state, aiPlayerId);
+    
+    if (isMaximizing) {
+        if (standPat >= beta) return beta;
+        if (standPat > alpha) alpha = standPat;
+        
+        const attacks = getPossibleActions(state, aiPlayerId).filter(a => a.type === 'ATTACK');
+        for (const action of attacks) {
+            const nextState = simulateAction(state, aiPlayerId, action);
+            if (!nextState) continue;
+            const score = quiescenceSearch(nextState, alpha, beta, aiPlayerId, opponentId, false);
+            alpha = Math.max(alpha, score);
+            if (beta <= alpha) break;
+        }
+        return alpha;
+    } else {
+        if (standPat <= alpha) return alpha;
+        if (standPat < beta) beta = standPat;
+        
+        const attacks = getPossibleActions(state, opponentId).filter(a => a.type === 'ATTACK');
+        for (const action of attacks) {
+            const nextState = simulateAction(state, opponentId, action);
+            if (!nextState) continue;
+            const score = quiescenceSearch(nextState, alpha, beta, aiPlayerId, opponentId, true);
+            beta = Math.min(beta, score);
+            if (beta <= alpha) break;
+        }
+        return beta;
+    }
 }
 
 /**

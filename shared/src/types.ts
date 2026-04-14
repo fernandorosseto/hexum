@@ -41,6 +41,8 @@ export interface Unit {
   equippedArtifacts?: string[]; // IDs dos artefatos equipados (ex: 'art_escudo')
 }
 
+export type AIDifficulty = 'BEGINNER' | 'ELITE' | 'GRANDMASTER' | 'DEUS';
+
 export type Phase = 'DRAW_PHASE' | 'MAIN_PHASE' | 'END_PHASE' | 'GAME_OVER';
 
 export interface PlayerState {
@@ -72,6 +74,7 @@ export interface GameState {
   turnNumber: number;
   currentPhase: Phase;
   currentTurnPlayerId: string;
+  aiDifficulty: AIDifficulty;
   sandboxMode?: boolean;
   winner?: string; // Player que ganhou
   players: Record<string, PlayerState>;

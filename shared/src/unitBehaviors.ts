@@ -203,6 +203,18 @@ const CavaleiroBehavior: UnitBehavior = {
     } else {
       if (dist > 1 + rangeBonus) throw new Error("Cavaleiro só ataca colado.");
     }
+
+    // Validação de Pouso do Rompante de Ferro
+    if (useSpecial && dist > 1) {
+      const line = getLineOfSight(attacker.position, target.position);
+      const landingPos = line[line.length - 2];
+      const collision = Object.values(state.boardUnits).some(u => 
+        u.position.q === landingPos.q && u.position.r === landingPos.r
+      );
+      if (collision) {
+        throw new Error("Local de pouso do Rompante está ocupado!");
+      }
+    }
   },
   applyDamage(attacker, target, state, dist, useSpecial) {
     checkAndConsumeInvulnerability(attacker, state);
@@ -214,7 +226,15 @@ const CavaleiroBehavior: UnitBehavior = {
       addCombatLog(state, `🐎 Rompante de Ferro: +2 de impacto extra!`);
       const line = getLineOfSight(attacker.position, target.position);
       if (line.length > 2) {
-        attacker.position = line[line.length - 2];
+        const landingPos = line[line.length - 2];
+        const collision = Object.values(state.boardUnits).some(u => 
+          u.position.q === landingPos.q && u.position.r === landingPos.r
+        );
+        if (!collision) {
+          attacker.position = landingPos;
+        } else {
+          addCombatLog(state, `⚠️ Rompante: Local de pouso obstruído no momento do impacto!`);
+        }
       }
     }
     

@@ -4,7 +4,7 @@ import heroImg from '../assets/hexum.png';
 import backgroundImg from '../assets/background.jpg';
 
 export const MainMenu: React.FC = () => {
-  const setCurrentView = useGameStore(state => state.setCurrentView);
+  const { setCurrentView, aiDifficulty, setAiDifficulty } = useGameStore();
 
   return (
     <div
@@ -53,11 +53,64 @@ export const MainMenu: React.FC = () => {
                   Iniciar Batalha
                 </h2>
                 <p className="text-blue-200/60 text-xs font-semibold uppercase tracking-widest">
-                  Enfrente o Bot de Nível Máximo
+                  {aiDifficulty === 'DEUS' ? 'PROJETO DEUS EX: ONIPRESENÇA TÁTICA' :
+                   aiDifficulty === 'GRANDMASTER' ? 'Desafio Divino: IA Grão-Mestre' : 
+                   aiDifficulty === 'ELITE' ? 'Desafio Extremo: IA de Elite' : 'Modo Casual: IA Iniciante'}
                 </p>
               </div>
             </div>
           </button>
+
+          {/* Difficulty Selector */}
+          <div className="flex bg-black/60 p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl w-full gap-1">
+            <button
+              onClick={() => setAiDifficulty('BEGINNER')}
+              className={`flex-1 py-3 px-1 rounded-xl flex flex-col items-center justify-center transition-all duration-300 ${
+                aiDifficulty === 'BEGINNER' 
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
+                  : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+              }`}
+            >
+              <span className="text-sm">🔰</span>
+              <span className="text-[9px] font-black uppercase tracking-tighter">Iniciante</span>
+            </button>
+            <button
+              onClick={() => setAiDifficulty('ELITE')}
+              className={`flex-1 py-3 px-1 rounded-xl flex flex-col items-center justify-center transition-all duration-300 ${
+                aiDifficulty === 'ELITE' 
+                  ? 'bg-red-500/20 text-red-400 border border-red-500/40 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
+                  : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+              }`}
+            >
+              <span className="text-sm">🔥</span>
+              <span className="text-[9px] font-black uppercase tracking-tighter">Elite</span>
+            </button>
+            <button
+              onClick={() => setAiDifficulty('GRANDMASTER')}
+              className={`flex-1 py-3 px-1 rounded-xl flex flex-col items-center justify-center transition-all duration-300 ${
+                aiDifficulty === 'GRANDMASTER' 
+                  ? 'bg-purple-500/30 text-amber-400 border border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.3)]' 
+                  : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+              }`}
+            >
+              <span className="text-sm">👑</span>
+              <span className="text-[9px] font-black uppercase tracking-tighter">Mestre</span>
+            </button>
+            <button
+              onClick={() => setAiDifficulty('DEUS')}
+              className={`flex-1 py-3 px-1 rounded-xl flex flex-col items-center justify-center transition-all duration-300 relative overflow-hidden group/deus ${
+                aiDifficulty === 'DEUS' 
+                  ? 'bg-cyan-950/80 text-cyan-300 border border-cyan-400 shadow-[0_0_25px_rgba(34,211,238,0.4)]' 
+                  : 'text-slate-600 hover:text-cyan-400'
+              }`}
+            >
+              {aiDifficulty === 'DEUS' && (
+                <div className="absolute inset-0 bg-gradient-to-t from-cyan-500/20 to-transparent animate-pulse" />
+              )}
+              <span className={`text-sm ${aiDifficulty === 'DEUS' ? 'animate-bounce' : ''}`}>👁️</span>
+              <span className="text-[9px] font-black uppercase tracking-tighter">DEUS</span>
+            </button>
+          </div>
 
           <button
             onClick={() => setCurrentView('SANDBOX')}

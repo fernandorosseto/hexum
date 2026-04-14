@@ -1,0 +1,788 @@
+[
+  {
+    "matchup": "BEGINNER vs ELITE",
+    "scenario": "STANDARD",
+    "results": [
+      {
+        "winner": "p2",
+        "turns": 26,
+        "totalDamage": {
+          "p1": 15,
+          "p2": 16
+        },
+        "manaSpent": {
+          "p1": 20,
+          "p2": 39
+        },
+        "manaWasted": {
+          "p1": 49,
+          "p2": 32
+        },
+        "unitsKilled": {
+          "p1": 3,
+          "p2": 2
+        },
+        "tilesMoved": {
+          "p1": 56,
+          "p2": 65
+        },
+        "thinkingTime": 3553
+      },
+      {
+        "winner": "p2",
+        "turns": 38,
+        "totalDamage": {
+          "p1": 28,
+          "p2": 25
+        },
+        "manaSpent": {
+          "p1": 35,
+          "p2": 43
+        },
+        "manaWasted": {
+          "p1": 70,
+          "p2": 64
+        },
+        "unitsKilled": {
+          "p1": 9,
+          "p2": 6
+        },
+        "tilesMoved": {
+          "p1": 94,
+          "p2": 97
+        },
+        "thinkingTime": 3687
+      },
+      {
+        "winner": "p2",
+        "turns": 30,
+        "totalDamage": {
+          "p1": 41,
+          "p2": 23
+        },
+        "manaSpent": {
+          "p1": 36,
+          "p2": 38
+        },
+        "manaWasted": {
+          "p1": 43,
+          "p2": 44
+        },
+        "unitsKilled": {
+          "p1": 8,
+          "p2": 6
+        },
+        "tilesMoved": {
+          "p1": 54,
+          "p2": 70
+        },
+        "thinkingTime": 2987
+      },
+      {
+        "winner": "p1",
+        "turns": 28,
+        "totalDamage": {
+          "p1": 21,
+          "p2": 17
+        },
+        "manaSpent": {
+          "p1": 30,
+          "p2": 39
+        },
+        "manaWasted": {
+          "p1": 43,
+          "p2": 38
+        },
+        "unitsKilled": {
+          "p1": 3,
+          "p2": 5
+        },
+        "tilesMoved": {
+          "p1": 73,
+          "p2": 75
+        },
+        "thinkingTime": 4048
+      },
+      {
+        "winner": "p2",
+        "turns": 24,
+        "totalDamage": {
+          "p1": 14,
+          "p2": 15
+        },
+        "manaSpent": {
+          "p1": 23,
+          "p2": 29
+        },
+        "manaWasted": {
+          "p1": 38,
+          "p2": 35
+        },
+        "unitsKilled": {
+          "p1": 2,
+          "p2": 3
+        },
+        "tilesMoved": {
+          "p1": 60,
+          "p2": 50
+        },
+        "thinkingTime": 1920
+      }
+    ]
+  },
+  {
+    "matchup": "BEGINNER vs ELITE",
+    "scenario": "RANDOM",
+    "results": [
+      {
+        "winner": "p2",
+        "turns": 60,
+        "totalDamage": {
+          "p1": 92,
+          "p2": 110
+        },
+        "manaSpent": {
+          "p1": 50,
+          "p2": 54
+        },
+        "manaWasted": {
+          "p1": 119,
+          "p2": 116
+        },
+        "unitsKilled": {
+          "p1": 12,
+          "p2": 12
+        },
+        "tilesMoved": {
+          "p1": 114,
+          "p2": 121
+        },
+        "thinkingTime": 15961
+      },
+      {
+        "winner": "p1",
+        "turns": 35,
+        "totalDamage": {
+          "p1": 35,
+          "p2": 76
+        },
+        "manaSpent": {
+          "p1": 47,
+          "p2": 51
+        },
+        "manaWasted": {
+          "p1": 50,
+          "p2": 45
+        },
+        "unitsKilled": {
+          "p1": 6,
+          "p2": 8
+        },
+        "tilesMoved": {
+          "p1": 77,
+          "p2": 72
+        },
+        "thinkingTime": 7075
+      },
+      {
+        "winner": "p2",
+        "turns": 22,
+        "totalDamage": {
+          "p1": 35,
+          "p2": 68
+        },
+        "manaSpent": {
+          "p1": 26,
+          "p2": 33
+        },
+        "manaWasted": {
+          "p1": 29,
+          "p2": 23
+        },
+        "unitsKilled": {
+          "p1": 2,
+          "p2": 3
+        },
+        "tilesMoved": {
+          "p1": 43,
+          "p2": 34
+        },
+        "thinkingTime": 7477
+      },
+      {
+        "winner": "p1",
+        "turns": 35,
+        "totalDamage": {
+          "p1": 50,
+          "p2": 66
+        },
+        "manaSpent": {
+          "p1": 37,
+          "p2": 42
+        },
+        "manaWasted": {
+          "p1": 60,
+          "p2": 54
+        },
+        "unitsKilled": {
+          "p1": 5,
+          "p2": 7
+        },
+        "tilesMoved": {
+          "p1": 77,
+          "p2": 70
+        },
+        "thinkingTime": 5692
+      },
+      {
+        "winner": "p2",
+        "turns": 26,
+        "totalDamage": {
+          "p1": 70,
+          "p2": 45
+        },
+        "manaSpent": {
+          "p1": 35,
+          "p2": 33
+        },
+        "manaWasted": {
+          "p1": 32,
+          "p2": 39
+        },
+        "unitsKilled": {
+          "p1": 4,
+          "p2": 4
+        },
+        "tilesMoved": {
+          "p1": 47,
+          "p2": 46
+        },
+        "thinkingTime": 1797
+      }
+    ]
+  },
+  {
+    "matchup": "ELITE vs GRANDMASTER",
+    "scenario": "STANDARD",
+    "results": [
+      {
+        "winner": "p1",
+        "turns": 27,
+        "totalDamage": {
+          "p1": 26,
+          "p2": 17
+        },
+        "manaSpent": {
+          "p1": 38,
+          "p2": 30
+        },
+        "manaWasted": {
+          "p1": 35,
+          "p2": 40
+        },
+        "unitsKilled": {
+          "p1": 6,
+          "p2": 6
+        },
+        "tilesMoved": {
+          "p1": 76,
+          "p2": 62
+        },
+        "thinkingTime": 3726
+      },
+      {
+        "winner": "p1",
+        "turns": 43,
+        "totalDamage": {
+          "p1": 42,
+          "p2": 35
+        },
+        "manaSpent": {
+          "p1": 45,
+          "p2": 48
+        },
+        "manaWasted": {
+          "p1": 76,
+          "p2": 71
+        },
+        "unitsKilled": {
+          "p1": 11,
+          "p2": 10
+        },
+        "tilesMoved": {
+          "p1": 102,
+          "p2": 115
+        },
+        "thinkingTime": 5230
+      },
+      {
+        "winner": "p2",
+        "turns": 24,
+        "totalDamage": {
+          "p1": 19,
+          "p2": 18
+        },
+        "manaSpent": {
+          "p1": 29,
+          "p2": 33
+        },
+        "manaWasted": {
+          "p1": 32,
+          "p2": 32
+        },
+        "unitsKilled": {
+          "p1": 4,
+          "p2": 5
+        },
+        "tilesMoved": {
+          "p1": 58,
+          "p2": 57
+        },
+        "thinkingTime": 1348
+      },
+      {
+        "winner": "p1",
+        "turns": 43,
+        "totalDamage": {
+          "p1": 51,
+          "p2": 35
+        },
+        "manaSpent": {
+          "p1": 50,
+          "p2": 51
+        },
+        "manaWasted": {
+          "p1": 71,
+          "p2": 68
+        },
+        "unitsKilled": {
+          "p1": 13,
+          "p2": 10
+        },
+        "tilesMoved": {
+          "p1": 118,
+          "p2": 98
+        },
+        "thinkingTime": 4034
+      },
+      {
+        "winner": "p2",
+        "turns": 26,
+        "totalDamage": {
+          "p1": 14,
+          "p2": 32
+        },
+        "manaSpent": {
+          "p1": 29,
+          "p2": 30
+        },
+        "manaWasted": {
+          "p1": 38,
+          "p2": 42
+        },
+        "unitsKilled": {
+          "p1": 3,
+          "p2": 7
+        },
+        "tilesMoved": {
+          "p1": 70,
+          "p2": 63
+        },
+        "thinkingTime": 4100
+      }
+    ]
+  },
+  {
+    "matchup": "ELITE vs GRANDMASTER",
+    "scenario": "RANDOM",
+    "results": [
+      {
+        "winner": "p1",
+        "turns": 41,
+        "totalDamage": {
+          "p1": 32,
+          "p2": 74
+        },
+        "manaSpent": {
+          "p1": 46,
+          "p2": 45
+        },
+        "manaWasted": {
+          "p1": 69,
+          "p2": 69
+        },
+        "unitsKilled": {
+          "p1": 5,
+          "p2": 8
+        },
+        "tilesMoved": {
+          "p1": 100,
+          "p2": 83
+        },
+        "thinkingTime": 7746
+      },
+      {
+        "winner": "p2",
+        "turns": 34,
+        "totalDamage": {
+          "p1": 69,
+          "p2": 52
+        },
+        "manaSpent": {
+          "p1": 32,
+          "p2": 38
+        },
+        "manaWasted": {
+          "p1": 59,
+          "p2": 57
+        },
+        "unitsKilled": {
+          "p1": 6,
+          "p2": 3
+        },
+        "tilesMoved": {
+          "p1": 60,
+          "p2": 76
+        },
+        "thinkingTime": 11290
+      },
+      {
+        "winner": "p1",
+        "turns": 25,
+        "totalDamage": {
+          "p1": 37,
+          "p2": 53
+        },
+        "manaSpent": {
+          "p1": 32,
+          "p2": 34
+        },
+        "manaWasted": {
+          "p1": 35,
+          "p2": 31
+        },
+        "unitsKilled": {
+          "p1": 6,
+          "p2": 6
+        },
+        "tilesMoved": {
+          "p1": 56,
+          "p2": 47
+        },
+        "thinkingTime": 4264
+      },
+      {
+        "winner": "p1",
+        "turns": 15,
+        "totalDamage": {
+          "p1": 28,
+          "p2": 17
+        },
+        "manaSpent": {
+          "p1": 19,
+          "p2": 15
+        },
+        "manaWasted": {
+          "p1": 19,
+          "p2": 20
+        },
+        "unitsKilled": {
+          "p1": 3,
+          "p2": 0
+        },
+        "tilesMoved": {
+          "p1": 32,
+          "p2": 26
+        },
+        "thinkingTime": 1871
+      },
+      {
+        "winner": "p2",
+        "turns": 14,
+        "totalDamage": {
+          "p1": 24,
+          "p2": 27
+        },
+        "manaSpent": {
+          "p1": 14,
+          "p2": 22
+        },
+        "manaWasted": {
+          "p1": 15,
+          "p2": 13
+        },
+        "unitsKilled": {
+          "p1": 2,
+          "p2": 1
+        },
+        "tilesMoved": {
+          "p1": 23,
+          "p2": 30
+        },
+        "thinkingTime": 1823
+      }
+    ]
+  },
+  {
+    "matchup": "GRANDMASTER vs DEUS",
+    "scenario": "STANDARD",
+    "results": [
+      {
+        "winner": "p2",
+        "turns": 20,
+        "totalDamage": {
+          "p1": 18,
+          "p2": 21
+        },
+        "manaSpent": {
+          "p1": 18,
+          "p2": 32
+        },
+        "manaWasted": {
+          "p1": 29,
+          "p2": 20
+        },
+        "unitsKilled": {
+          "p1": 4,
+          "p2": 4
+        },
+        "tilesMoved": {
+          "p1": 47,
+          "p2": 40
+        },
+        "thinkingTime": 1165
+      },
+      {
+        "winner": "p2",
+        "turns": 28,
+        "totalDamage": {
+          "p1": 15,
+          "p2": 25
+        },
+        "manaSpent": {
+          "p1": 28,
+          "p2": 32
+        },
+        "manaWasted": {
+          "p1": 45,
+          "p2": 45
+        },
+        "unitsKilled": {
+          "p1": 3,
+          "p2": 7
+        },
+        "tilesMoved": {
+          "p1": 74,
+          "p2": 54
+        },
+        "thinkingTime": 2257
+      },
+      {
+        "winner": "p2",
+        "turns": 36,
+        "totalDamage": {
+          "p1": 32,
+          "p2": 26
+        },
+        "manaSpent": {
+          "p1": 44,
+          "p2": 46
+        },
+        "manaWasted": {
+          "p1": 53,
+          "p2": 55
+        },
+        "unitsKilled": {
+          "p1": 7,
+          "p2": 7
+        },
+        "tilesMoved": {
+          "p1": 84,
+          "p2": 95
+        },
+        "thinkingTime": 4171
+      },
+      {
+        "winner": "p2",
+        "turns": 16,
+        "totalDamage": {
+          "p1": 12,
+          "p2": 16
+        },
+        "manaSpent": {
+          "p1": 15,
+          "p2": 19
+        },
+        "manaWasted": {
+          "p1": 24,
+          "p2": 22
+        },
+        "unitsKilled": {
+          "p1": 3,
+          "p2": 4
+        },
+        "tilesMoved": {
+          "p1": 38,
+          "p2": 38
+        },
+        "thinkingTime": 1766
+      },
+      {
+        "winner": "p2",
+        "turns": 24,
+        "totalDamage": {
+          "p1": 31,
+          "p2": 20
+        },
+        "manaSpent": {
+          "p1": 34,
+          "p2": 32
+        },
+        "manaWasted": {
+          "p1": 27,
+          "p2": 33
+        },
+        "unitsKilled": {
+          "p1": 7,
+          "p2": 3
+        },
+        "tilesMoved": {
+          "p1": 59,
+          "p2": 57
+        },
+        "thinkingTime": 4326
+      }
+    ]
+  },
+  {
+    "matchup": "GRANDMASTER vs DEUS",
+    "scenario": "RANDOM",
+    "results": [
+      {
+        "winner": "p1",
+        "turns": 27,
+        "totalDamage": {
+          "p1": 56,
+          "p2": 44
+        },
+        "manaSpent": {
+          "p1": 39,
+          "p2": 38
+        },
+        "manaWasted": {
+          "p1": 34,
+          "p2": 33
+        },
+        "unitsKilled": {
+          "p1": 6,
+          "p2": 5
+        },
+        "tilesMoved": {
+          "p1": 46,
+          "p2": 52
+        },
+        "thinkingTime": 6533
+      },
+      {
+        "winner": "p1",
+        "turns": 21,
+        "totalDamage": {
+          "p1": 51,
+          "p2": 39
+        },
+        "manaSpent": {
+          "p1": 25,
+          "p2": 32
+        },
+        "manaWasted": {
+          "p1": 30,
+          "p2": 21
+        },
+        "unitsKilled": {
+          "p1": 5,
+          "p2": 1
+        },
+        "tilesMoved": {
+          "p1": 26,
+          "p2": 35
+        },
+        "thinkingTime": 6719
+      },
+      {
+        "winner": "p1",
+        "turns": 31,
+        "totalDamage": {
+          "p1": 62,
+          "p2": 99
+        },
+        "manaSpent": {
+          "p1": 45,
+          "p2": 59
+        },
+        "manaWasted": {
+          "p1": 40,
+          "p2": 24
+        },
+        "unitsKilled": {
+          "p1": 5,
+          "p2": 10
+        },
+        "tilesMoved": {
+          "p1": 57,
+          "p2": 53
+        },
+        "thinkingTime": 17105
+      },
+      {
+        "winner": "p1",
+        "turns": 31,
+        "totalDamage": {
+          "p1": 51,
+          "p2": 50
+        },
+        "manaSpent": {
+          "p1": 33,
+          "p2": 30
+        },
+        "manaWasted": {
+          "p1": 52,
+          "p2": 53
+        },
+        "unitsKilled": {
+          "p1": 6,
+          "p2": 4
+        },
+        "tilesMoved": {
+          "p1": 65,
+          "p2": 61
+        },
+        "thinkingTime": 7648
+      },
+      {
+        "winner": "p2",
+        "turns": 24,
+        "totalDamage": {
+          "p1": 64,
+          "p2": 41
+        },
+        "manaSpent": {
+          "p1": 31,
+          "p2": 30
+        },
+        "manaWasted": {
+          "p1": 30,
+          "p2": 34
+        },
+        "unitsKilled": {
+          "p1": 2,
+          "p2": 4
+        },
+        "tilesMoved": {
+          "p1": 26,
+          "p2": 45
+        },
+        "thinkingTime": 5955
+      }
+    ]
+  }
+]
