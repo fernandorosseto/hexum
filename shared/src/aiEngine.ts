@@ -182,7 +182,7 @@ function negamax(state: GameState, depth: number, alpha: number, beta: number, p
         return quiesce(state, alpha, beta, pId);
     }
 
-    if (depth >= 3 && state.currentPhase !== 'GAME_OVER') {
+    if (depth >= 3) {
         const next = { ...state, currentTurnPlayerId: pId === 'p1' ? 'p2' : 'p1' };
         const score = -negamax(next, depth - 3, -beta, -beta + 1, pId === 'p1' ? 'p2' : 'p1');
         if (score >= beta) return beta;

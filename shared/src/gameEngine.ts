@@ -231,6 +231,7 @@ export function cloneGameState(state: GameState): GameState {
     turnNumber: state.turnNumber,
     currentPhase: state.currentPhase,
     currentTurnPlayerId: state.currentTurnPlayerId,
+    aiDifficulty: state.aiDifficulty,
     sandboxMode: state.sandboxMode,
     winner: state.winner,
     players: newPlayers,
