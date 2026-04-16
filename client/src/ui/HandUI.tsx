@@ -29,13 +29,41 @@ export const HandUI: React.FC = () => {
   const offerCard = useGameStore(state => state.offerCard);
   const isAiThinking = useGameStore(state => state.isAiThinking);
   
-  // SEMPRE mostra a mão do P1 (jogador humano)
   const humanPlayer = players['p1'];
+  const aiPlayer = players['p2'];
   const isMyTurn = currentTurnPlayerId === 'p1';
 
   return (
-    <div className="relative flex flex-col items-center">
+    <div className="relative flex flex-col items-center gap-4">
       
+      {/* 🟢 Mão da IA (REVELADA PARA DEBUG) */}
+      <div className="flex flex-col items-center">
+        <h5 className="text-[8px] font-black text-purple-400 uppercase tracking-widest mb-1 opacity-60">Visão do Oráculo (Mão da IA)</h5>
+        <div className="flex gap-1 opacity-80 scale-90">
+          {aiPlayer.hand.map((cardId, idx) => {
+            const card = getCardDetails(cardId);
+            if (!card) return null;
+            return (
+              <div key={`ai-${cardId}-${idx}`} className="w-14 h-20 bg-purple-900/40 border border-purple-500/50 rounded-lg flex flex-col items-center p-1 relative overflow-hidden">
+                <div className="absolute top-1 right-1 text-[7px] font-bold text-purple-200 bg-purple-800 rounded-full w-3 h-3 flex items-center justify-center">
+                  {card.cost}
+                </div>
+                <div className="text-xs mt-1">
+                  {card.type === 'Unidade' ? (
+                    <img src={card.icon} alt="" className="w-4 h-4 grayscale opacity-70" />
+                  ) : card.type === 'Mágica' ? (
+                    <SpellIcon id={card.id} size={16} className="text-purple-300" />
+                  ) : (
+                    <ArtifactIcon id={card.id} size={16} className="text-amber-500" />
+                  )}
+                </div>
+                <span className="text-[6px] text-white/50 font-bold mt-1 line-clamp-1">{card.class}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {selectedCard && humanPlayer.canOfferCard && isMyTurn && (
         <button 
           onClick={() => {
@@ -126,3 +154,4 @@ export const HandUI: React.FC = () => {
     </div>
   );
 };
+
