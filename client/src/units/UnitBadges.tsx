@@ -16,7 +16,7 @@ export const UnitBadges: React.FC<Props> = ({ unit, isAttackSpent }) => {
 
   return (
     <div className={`
-      absolute -bottom-5 flex items-center gap-2 font-black text-base bg-slate-950 rounded-lg px-3 py-1 border-2 shadow-[0_2px_8px_rgba(0,0,0,0.8)] relative z-10 transition-all
+      absolute -bottom-5 flex items-center gap-2 font-black text-base bg-slate-950 rounded-lg px-3 py-1 border-2 shadow-[0_2px_8px_rgba(0,0,0,0.8)] z-10 transition-all
       ${isP1 ? 'border-[#0b622f]' : 'border-[#602471]'}
     `}>
       <span className={`drop-shadow-sm transition-all duration-1000 ease-in-out ${!isAttackSpent ? 'text-yellow-300' : 'text-slate-500 opacity-40 grayscale'}`}>

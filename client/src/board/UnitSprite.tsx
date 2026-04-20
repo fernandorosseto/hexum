@@ -4,6 +4,7 @@ import type { Unit, HexCoordinates } from 'shared';
 import { getFearStatus } from 'shared';
 import { useGameStore } from '../store/gameStore';
 import { CLASS_ICONS } from '../constants/unitIcons';
+import kingImg from '../assets/icons/king.png';
 import { LightningAnimation } from '../animations';
 import { StructureSprite, UnitBadges, UnitBuffs, ShieldAura, UnitEquipment } from '../units';
 
@@ -53,6 +54,7 @@ export const UnitSprite: React.FC<Props> = ({
   const isAttackSpent = isCurrentTurn && !unit.canAttack && !unit.summoningSickness;
   const hasSickness = unit.summoningSickness;
   const hasShield = unit.buffs.some(b => b.type === 'shield');
+  const isReiAliado = isP1 && unit.unitClass.toLowerCase() === 'rei';
 
   return (
     <motion.div 
@@ -61,7 +63,7 @@ export const UnitSprite: React.FC<Props> = ({
       exit={{ scale: 0, opacity: 0, transition: { duration: 0.3 } }}
       className={`
         relative flex flex-col items-center justify-center 
-        w-[78%] h-[78%] rounded-full shadow-2xl
+        w-[78%] h-[78%] rounded-full
         ${isSelected ? 'ring-4 ring-yellow-400 scale-110 drop-shadow-[0_0_20px_rgba(250,204,21,0.6)]' : ''}
         ${isTargetable 
           ? targetColor === 'green'
@@ -73,17 +75,28 @@ export const UnitSprite: React.FC<Props> = ({
       `}
     >
       {/* Camada de Fundo: ATIVA (Colorida) */}
-      <div className={`
-        absolute inset-0 rounded-full border-[3px] bg-gradient-to-br shadow-2xl transition-opacity duration-1000 ease-in-out
-        ${isP1 ? 'from-blue-500 to-blue-700 border-blue-400 shadow-blue-900/40' : 'from-red-500 to-red-600 border-red-400 shadow-red-900/40'}
-        ${isMovementSpent ? 'opacity-0' : 'opacity-100'}
-      `} />
+      <div 
+        className={`
+          absolute inset-0 rounded-full transition-all duration-1000 ease-in-out
+          ${isReiAliado 
+            ? 'opacity-100 shadow-none border-none border-0' 
+            : (isMovementSpent ? 'opacity-0' : 'opacity-100') + ' border-[3px] shadow-2xl ' + (isP1 ? 'from-blue-600 to-blue-800 border-blue-400 shadow-blue-900/40' : 'from-red-600 to-red-800 border-red-400 shadow-red-900/40') + ' bg-gradient-to-br '}
+        `}
+        style={isReiAliado ? { 
+          backgroundImage: `url(${kingImg})`, 
+          backgroundSize: '110%',
+          backgroundPosition: 'center',
+          filter: isMovementSpent ? 'grayscale(0.8) brightness(0.5)' : 'none'
+        } : {}}
+      />
 
-      {/* Camada de Fundo: EXAUSTA (Cinza) */}
-      <div className={`
-        absolute inset-0 rounded-full border-[3px] bg-gradient-to-br from-slate-700 to-slate-900 border-slate-600 shadow-inner transition-opacity duration-1000 ease-in-out
-        ${isMovementSpent ? 'opacity-100' : 'opacity-0'}
-      `} />
+      {/* Camada de Fundo: EXAUSTA (Cinza) - Apenas para unidades comuns */}
+      {!isReiAliado && (
+        <div className={`
+          absolute inset-0 rounded-full border-[3px] bg-gradient-to-br from-slate-700 to-slate-900 border-slate-600 shadow-inner transition-opacity duration-1000 ease-in-out
+          ${isMovementSpent ? 'opacity-100' : 'opacity-0'}
+        `} />
+      )}
 
       {/* Anel pulsante de alvo atacável */}
       {isTargetable && (
@@ -94,18 +107,22 @@ export const UnitSprite: React.FC<Props> = ({
       )}
 
       {/* Aura de Identificação (Time) */}
-      <div className={`
-        absolute inset-[-4px] rounded-full blur-md opacity-40 transition-all duration-1000
-        ${isMovementSpent ? 'bg-slate-700 opacity-20 shadow-inner' : isP1 ? 'bg-[#0b622f] animate-pulse' : 'bg-[#602471] animate-pulse'}
-      `} />
+      {!isReiAliado && (
+        <div className={`
+          absolute inset-[-4px] rounded-full blur-md opacity-40 transition-all duration-1000
+          ${isMovementSpent ? 'bg-slate-700 opacity-20 shadow-inner' : isP1 ? 'bg-[#0b622f] animate-pulse' : 'bg-[#602471] animate-pulse'}
+        `} />
+      )}
       
       {/* Base / Sombra */}
-      <div className={`
-        absolute inset-0 rounded-full border-2 transition-all duration-1000 ease-in-out
-        ${isP1 ? 'border-[#0b622f]/50 bg-[#0b622f]/20' : 'border-[#602471]/50 bg-[#602471]/20'}
-        ${isMovementSpent ? 'grayscale-[1] brightness-[0.4] saturate-0' : 'saturate-[1.4] brightness-[1.1]'}
-        ${hasSickness ? 'grayscale-[0.2] brightness-[0.9]' : ''}
-      `} />
+      {!isReiAliado && (
+        <div className={`
+          absolute inset-0 rounded-full border-2 transition-all duration-1000 ease-in-out
+          ${isP1 ? 'border-[#0b622f]/50 bg-[#0b622f]/20' : 'border-[#602471]/50 bg-[#602471]/20'}
+          ${isMovementSpent ? 'grayscale-[1] brightness-[0.4] saturate-0' : 'saturate-[1.4] brightness-[1.1]'}
+          ${hasSickness ? 'grayscale-[0.2] brightness-[0.9]' : ''}
+        `} />
+      )}
 
       {/* Escudo Protetor (Aura Branca) */}
       <AnimatePresence>
@@ -127,7 +144,7 @@ export const UnitSprite: React.FC<Props> = ({
       {/* Artefatos Equipados */}
       <UnitEquipment artifacts={unit.equippedArtifacts || []} />
 
-      {/* Ícone da Classe */}
+      {/* Ícone da Classe ou Spacer para o Rei */}
       <motion.div 
         animate={{ 
           y: [0, -3, 0],
@@ -138,11 +155,13 @@ export const UnitSprite: React.FC<Props> = ({
           y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
           default: { duration: 1, ease: "easeInOut" }
         }}
-        className={`relative z-10 flex items-center justify-center transition-opacity duration-1000 
+        className={`relative z-10 flex items-center justify-center transition-opacity duration-1000 min-h-[40px]
           ${isMovementSpent ? 'opacity-60' : 'opacity-100'}
         `}
       >
-        {CLASS_ICONS[unit.unitClass] ? (
+        {isP1 && unit.unitClass === 'Rei' ? (
+          <div className="w-10 h-10" /> // Spacer para manter o layout flexbox intacto
+        ) : CLASS_ICONS[unit.unitClass] ? (
           <img 
             src={CLASS_ICONS[unit.unitClass]} 
             className={`
