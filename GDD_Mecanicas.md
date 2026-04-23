@@ -24,7 +24,7 @@ Esta seção define as peças medievais do jogo e suas identidades semânticas.
 ### 2.1 Movimentação (Geografia no Tabuleiro)
 
 * **Rei:** Move-se **1 casa em qualquer direção** (6 opções).
-* **Clérigo / Mago / Arqueiro / Lanceiro:** Movimentação base de **1 casa** (com restrições específicas para o Lanceiro que só move para frente/trás).
+* **Clérigo / Alquimista / Arqueiro / Lanceiro:** Movimentação base de **1 casa** (com restrições específicas para o Lanceiro que só move para frente/trás).
 * **Cavaleiro:** Move-se **até 2 casas em linha reta**. Com **Corcel de Guerra**, estende para **3 casas**.
 * **Assassino:** 
   1. Passo padrão: **1 casa em qualquer direção**.
@@ -42,7 +42,7 @@ Esta seção define as peças medievais do jogo e suas identidades semânticas.
   * **Impacto de Falange:** Ataca em linha vertical (alcance 2). Chance de **Empurrar** o alvo 1 casa para trás.
 * **Arqueiro:**
   * **Tiro Preciso:** Ataca a distância (alcance 3). Chance de **Atordoar**.
-* **Mago:**
+* **Alquimista:**
   * **Cataclismo Arcano (AoE):** Explosão rúnica em um alvo (alcance 3) com splash em raio 1. Chance de **Queimadura**.
 * **Clérigo:**
   * **Prece de Alento:** Restaura **2 HP** de um aliado adjacente. Chance de conceder **Escudo Sagrado**.
@@ -66,8 +66,22 @@ Esta seção define as peças medievais do jogo e suas identidades semânticas.
 | **🔱 Lanceiro** | 1 | 1 | 3 | Defensor Vertical |
 | **🏹 Arqueiro** | 1 | 1 | 2 | Dano à Distância |
 | **🗡️ Assassino** | 2 | 1 | 3 | Furtividade e Sangramento |
-| **🔮 Mago** | 3 | 1 (AoE) | 3 | Dano em Área |
+| **⚗️ Alquimista** | 3 | 1 (AoE) | 3 | Dano em Área |
 | **📿 Clérigo** | 3 | 0 | 4 | Healer / Conversão |
+
+### 2.4 Heróis Históricos (Variantes em Jogo)
+
+A identidade do jogo baseia-se em "Heróis" que utilizam as mecânicas das Classes Base. Isso permite criar diferentes cartas de comandantes icônicos (cada um com possivelmente variações sutis no custo ou HP) compartilhando as habilidades principais.
+
+| Classe Base | Herói 1 | Herói 2 |
+| :--- | :--- | :--- |
+| **👑 Rei** | **Balduíno IV** (Aura de Medo do rei leproso) | **Leônidas I** (Sobrevivência de Esparta) |
+| **🛡️ Cavaleiro** | **Joana d'Arc** (Fé e avanço de vanguarda) | **William Marshall** (Foco em defesa e lealdade) |
+| **🔱 Lanceiro** | **El Cid** (Defesa impassível) | **Mestre Landsknecht** (Controle de área com lanças) |
+| **🏹 Arqueiro** | **Robin Hood** (Precisão icônica) | **Nasu no Yoichi** (Ápice do arco naval) |
+| **🗡️ Assassino** | **Hassan-i Sabbah** (Fundador da ordem) | **Hattori Hanzo** (Sombras e letalidade) |
+| **⚗️ Alquimista** | **Roger Bacon** (Pólvora e reações alquímicas) | **Sun Simiao** (Elixires e fogo arcano) |
+| **📿 Clérigo** | **Cardeal Richelieu** (Apoio tático intenso) | **Papa Urbano II** (Conversão de tropas aliadas) |
 
 ---
 
@@ -81,7 +95,7 @@ Itens equipáveis que concedem bônus passivos ou novas capacidades às unidades
 | **🪓 Lâmina do Carrasco** | 3 | Aumenta o Ataque em +2. |
 | **🏹 Arco Longo Élfico** | 2 | Aumenta o alcance de ataque em +1. |
 | **🐍 Adagas Envenenadas** | 2 | Ataques causam +1 de dano real e aplicam Veneno. |
-| **💍 Anel do Arquimago** | 3 | Aumenta o alcance de magias/curas e o raio de explosão do Mago. |
+| **💍 Anel do Arquimago** | 3 | Aumenta o alcance de magias/curas e o raio de explosão do Alquimista. |
 | **🐴 Corcel de Guerra** | 2 | Permite mover 2 casas. Cavaleiros ganham imunidade a conversão. |
 | **👑 Coroa do Regente** | 3 | Concede +3 de HP Máximo e dobra o alcance da Aura de Medo do Rei. |
 | **📖 Tomo Sagrado** | 1 | Aumenta a cura em +1 e remove efeitos negativos. |

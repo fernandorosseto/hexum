@@ -1,7 +1,7 @@
 import type { HexCoordinates } from './hexMath';
 
 export type CardType = 'Unit' | 'Spell' | 'Artifact';
-export type UnitClass = 'Rei' | 'Clerigo' | 'Cavaleiro' | 'Lanceiro' | 'Arqueiro' | 'Mago' | 'Assassino' | 'Estrutura';
+export type UnitClass = 'Rei' | 'Clerigo' | 'Cavaleiro' | 'Lanceiro' | 'Arqueiro' | 'Alquimista' | 'Assassino' | 'Estrutura';
 
 export interface Card {
   id: string;
@@ -15,6 +15,8 @@ export interface UnitCard extends Card {
   unitClass: UnitClass;
   baseHp: number;
   baseAttack: number;
+  flavor?: string;
+  role?: string;
 }
 
 export interface Buff {

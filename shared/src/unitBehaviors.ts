@@ -400,23 +400,23 @@ const AssassinoBehavior: UnitBehavior = {
 };
 
 // ══════════════════════════════════════════════
-//  Mago
+//  Alquimista
 // ══════════════════════════════════════════════
 
-const MagoBehavior: UnitBehavior = {
+const AlquimistaBehavior: UnitBehavior = {
   validateMove(unit, target, dist, maxMoveDist) {
-    if (dist > maxMoveDist) throw new Error("Mago só move 1.");
+    if (dist > maxMoveDist) throw new Error("Alquimista só move 1.");
   },
   isValidMovePosition(unit, targetPos, dist) {
     return dist === 1;
   },
   validateAttack(attacker, target, dist, rangeBonus) {
-    if (dist > 3 + rangeBonus) throw new Error("Mago: Alcance 3.");
+    if (dist > 3 + rangeBonus) throw new Error("Alquimista: Alcance 3.");
   },
   applyDamage(attacker, target, state) {
     checkAndConsumeInvulnerability(attacker, state);
     const splashRadius = (attacker.equippedArtifacts || []).includes('art_anel') ? 2 : 1;
-    addCombatLog(state, `🔮 Cataclismo Arcano: Iníciando explosão!`);
+    addCombatLog(state, `⚗️ Cataclismo Alquímico: Iniciando reação!`);
     
     // Lista de unidades a serem afetadas ANTES de modificar o HP (para evitar problemas de iteração)
     const affectedUnits: Unit[] = [];
@@ -436,7 +436,7 @@ const MagoBehavior: UnitBehavior = {
       }
       if (Math.random() < 0.3) {
         applyDoT(u, 'burn', 2, 1);
-        addCombatLog(state, `🔥 Chama Rúnica: Incendiou o ${u.unitClass}!`);
+        addCombatLog(state, `🔥 Fogo Alquímico: Incendiou o ${u.unitClass}!`);
       }
       handleUnitDeath(state, u, attacker.playerId);
     });
@@ -497,7 +497,7 @@ export const UNIT_BEHAVIORS: Record<UnitClass, UnitBehavior> = {
   Lanceiro: LanceiroBehavior,
   Arqueiro: ArqueiroBehavior,
   Assassino: AssassinoBehavior,
-  Mago: MagoBehavior,
+  Alquimista: AlquimistaBehavior,
   Clerigo: ClerigoBehavior,
   Estrutura: EstruturaBehavior,
 };

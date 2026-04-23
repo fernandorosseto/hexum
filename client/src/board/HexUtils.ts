@@ -1,6 +1,6 @@
 import type { HexCoordinates } from 'shared';
 
-export const HEX_SIZE = 75; // Aumentado para melhor visibilidade conforme solicitado
+export const HEX_SIZE = 90; // Aumentado para melhor visibilidade e preenchimento da tela
 
 export function hexToPixel(hex: HexCoordinates): { x: number; y: number } {
   // Projeção "Pointy Top" clássica (Bico do hexágono apontando para cima)

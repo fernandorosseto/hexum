@@ -4,7 +4,7 @@ export interface HexCoordinates {
   s: number;
 }
 
-export const BOARD_RADIUS = 5;
+export const BOARD_RADIUS = 4;
 
 export function isInsideBoard(hex: HexCoordinates): boolean {
   return Math.abs(hex.q) <= BOARD_RADIUS && 

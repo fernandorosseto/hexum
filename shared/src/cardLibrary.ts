@@ -1,23 +1,37 @@
 import { UnitCard, Card } from './types';
 
-export const UNIT_STATS: Record<string, { hp: number, attack: number, mana: number }> = {
-  'Rei': { hp: 6, attack: 1, mana: 0 },
-  'Cavaleiro': { hp: 5, attack: 3, mana: 4 },
-  'Lanceiro': { hp: 3, attack: 1, mana: 1 },
-  'Arqueiro': { hp: 2, attack: 1, mana: 1 },
-  'Assassino': { hp: 3, attack: 2, mana: 2 },
-  'Mago': { hp: 3, attack: 1, mana: 3 },
-  'Clerigo': { hp: 4, attack: 0, mana: 3 },
+export const CLASS_ABILITIES: Record<string, string> = {
+  'Rei': 'Aura de Medo — Inimigos adjacentes têm chance de errar seus ataques. A chance aumenta +1% a cada rodada em campo.',
+  'Cavaleiro': 'Rompante de Ferro (3 Mana) — Avança em linha reta e ataca com +2 de Dano. Chance de Atordoar. (Cooldown: 2 Ciclos)',
+  'Lanceiro': 'Impacto de Falange — Ao acertar, tem chance de empurrar o alvo 1 casa para trás na mesma direção.',
+  'Arqueiro': 'Tiro Preciso — Ataca a distância (alcance 3). Chance de Atordoar o alvo.',
+  'Assassino': 'Toque Letal — Todo ataque aplica Sangramento (1 dano/turno, 2 turnos).\\nTransposição Etérea (3 Mana) — Salta 2 casas e ataca com +2 de Dano Bônus. (Cooldown: 2 Ciclos)',
+  'Alquimista': 'Cataclismo Arcano — Dano em Área no alvo e adjacentes (raio 1). Chance de aplicar Queimadura (1 dano/turno, 2 turnos).',
+  'Clerigo': 'Prece de Alento — Restaura 2 HP de um aliado adjacente. Chance de conceder Escudo Sagrado.\\nChamado da Fé — Tenta converter um inimigo adjacente (chance escala por rodada).'
 };
 
-export const UNIT_DESCRIPTIONS: Record<string, { ability: string, flavor: string, role: string }> = {
-  'Rei': { ability: 'Aura de Medo — Inimigos adjacentes têm chance de errar seus ataques. A chance aumenta +1% a cada rodada em campo.', flavor: '"O trono não se defende com espada, mas com a sombra que projeta."', role: 'Líder · Suporte' },
-  'Cavaleiro': { ability: 'Rompante de Ferro (3 Mana) — Avança em linha reta e ataca com +2 de Dano. Chance de Atordoar. (Cooldown: 2 Ciclos)', flavor: '"Quando a terra treme, já é tarde para fugir."', role: 'Tanque · Rompedor' },
-  'Lanceiro': { ability: 'Impacto de Falange — Ao acertar, tem chance de empurrar o alvo 1 casa para trás na mesma direção.', flavor: '"Nenhuma linha avança enquanto as hastes estiverem firmes."', role: 'Defensor · Controle' },
-  'Arqueiro': { ability: 'Tiro Preciso — Ataca a distância (alcance 3). Chance de Atordoar o alvo.', flavor: '"Uma flecha bem mirada vale mais que cem espadas cegas."', role: 'Suporte · Dano à Distância' },
-  'Assassino': { ability: 'Toque Letal — Todo ataque aplica Sangramento (1 dano/turno, 2 turnos).\nTransposição Etérea (3 Mana) — Salta 2 casas e ataca com +2 de Dano Bônus. (Cooldown: 2 Ciclos)', flavor: '"Nas sombras, o silêncio é a lâmina mais afiada. Quem vê o brilho do aço já habita o reino das cinzas."', role: 'Assassino · Mobilidade' },
-  'Mago': { ability: 'Cataclismo Arcano — Dano em Área no alvo e adjacentes (raio 1). Chance de aplicar Queimadura (1 dano/turno, 2 turnos).', flavor: '"O fogo que nasce das runas não conhece aliados."', role: 'AoE · Controle de Área' },
-  'Clerigo': { ability: 'Prece de Alento — Restaura 2 HP de um aliado adjacente. Chance de conceder Escudo Sagrado.\nChamado da Fé — Tenta converter um inimigo adjacente (chance escala por rodada).', flavor: '"A fé cura feridas que o aço não alcança."', role: 'Healer · Conversão' },
+export const HERO_ROSTER: Record<string, { class: string, name: string, hp: number, attack: number, mana: number, flavor: string, role: string }> = {
+  // Rei
+  'hero_balduino': { class: 'Rei', name: 'Balduíno IV', hp: 6, attack: 1, mana: 0, flavor: '"Eu sou Jerusalém."', role: 'Líder · Suporte' },
+  'hero_leonidas': { class: 'Rei', name: 'Leônidas I', hp: 7, attack: 2, mana: 0, flavor: '"Molon Labe."', role: 'Líder · Resistência' },
+  // Cavaleiro
+  'hero_joana': { class: 'Cavaleiro', name: "Joana d'Arc", hp: 5, attack: 3, mana: 4, flavor: '"A vitória pertence aos que creem."', role: 'Tanque · Vanguarda' },
+  'hero_marshall': { class: 'Cavaleiro', name: 'William Marshall', hp: 6, attack: 2, mana: 4, flavor: '"A lealdade é meu escudo."', role: 'Tanque · Defensor' },
+  // Lanceiro
+  'hero_elcid': { class: 'Lanceiro', name: 'El Cid', hp: 4, attack: 1, mana: 1, flavor: '"Nem a morte me fará recuar."', role: 'Defensor Vertical' },
+  'hero_landsknecht': { class: 'Lanceiro', name: 'Mestre Landsknecht', hp: 3, attack: 2, mana: 1, flavor: '"A guerra é um negócio, e a lança é minha moeda."', role: 'Controle de Área' },
+  // Arqueiro
+  'hero_robin': { class: 'Arqueiro', name: 'Robin Hood', hp: 2, attack: 1, mana: 1, flavor: '"Uma flecha bem mirada vale mais que cem espadas cegas."', role: 'Suporte · Precisão' },
+  'hero_nasu': { class: 'Arqueiro', name: 'Nasu no Yoichi', hp: 2, attack: 2, mana: 2, flavor: '"Meu arco divide as águas e os ventos."', role: 'Sniper' },
+  // Assassino
+  'hero_hassan': { class: 'Assassino', name: 'Hassan-i Sabbah', hp: 3, attack: 2, mana: 2, flavor: '"Nada é verdade, tudo é permitido."', role: 'Assassino · Mobilidade' },
+  'hero_hanzo': { class: 'Assassino', name: 'Hattori Hanzo', hp: 4, attack: 1, mana: 2, flavor: '"Sou a sombra que a lâmina projeta."', role: 'Assassino Furtivo' },
+  // Alquimista
+  'hero_bacon': { class: 'Alquimista', name: 'Roger Bacon', hp: 3, attack: 1, mana: 3, flavor: '"A pólvora é a fúria da ciência engarrafada."', role: 'AoE · Controle de Área' },
+  'hero_simiao': { class: 'Alquimista', name: 'Sun Simiao', hp: 4, attack: 0, mana: 3, flavor: '"O fogo que queima é o mesmo que purifica."', role: 'AoE · Suporte Híbrido' },
+  // Clérigo
+  'hero_richelieu': { class: 'Clerigo', name: 'Cardeal Richelieu', hp: 4, attack: 0, mana: 3, flavor: '"A vontade do estado e a de Deus são uma só."', role: 'Healer · Estratégia' },
+  'hero_urbano': { class: 'Clerigo', name: 'Papa Urbano II', hp: 5, attack: 0, mana: 4, flavor: '"Deus lo vult! (Deus o quer!)"', role: 'Healer · Conversão' }
 };
 
 export const ARTIFACTS: Card[] = [
@@ -74,15 +88,51 @@ export const SPELLS: Card[] = [
   { id: 'spl_reforcos', name: 'Chamado dos Reforços', type: 'Spell', manaCost: 3 },
 ];
 
-export function getUnitCard(unitClass: string): UnitCard {
-  const stats = UNIT_STATS[unitClass];
+export function getUnitCard(heroIdOrClass: string): UnitCard {
+  // Retro-compatibilidade se pedirem por unit_...
+  if (heroIdOrClass.startsWith('unit_')) {
+    const fallbackMap: Record<string, string> = {
+      'unit_rei': 'hero_balduino',
+      'unit_cavaleiro': 'hero_joana',
+      'unit_lanceiro': 'hero_elcid',
+      'unit_arqueiro': 'hero_robin',
+      'unit_assassino': 'hero_hassan',
+      'unit_mago': 'hero_bacon',
+      'unit_alquimista': 'hero_bacon',
+      'unit_clerigo': 'hero_richelieu'
+    };
+    heroIdOrClass = fallbackMap[heroIdOrClass] || 'hero_balduino';
+  }
+
+  // Retro-compatibilidade se a chamada vier pela classe crua (ex: "Cavaleiro" na Forja/UI)
+  const rawClassFallback: Record<string, string> = {
+    'Rei': 'hero_balduino',
+    'Cavaleiro': 'hero_joana',
+    'Lanceiro': 'hero_elcid',
+    'Arqueiro': 'hero_robin',
+    'Assassino': 'hero_hassan',
+    'Mago': 'hero_bacon',
+    'Alquimista': 'hero_bacon',
+    'Clerigo': 'hero_richelieu'
+  };
+  if (rawClassFallback[heroIdOrClass]) {
+    heroIdOrClass = rawClassFallback[heroIdOrClass];
+  }
+
+  const hero = HERO_ROSTER[heroIdOrClass];
+  if (!hero) {
+    throw new Error(`Herói ou Módulo Base não encontrado: ${heroIdOrClass}`);
+  }
+
   return {
-    id: `unit_${unitClass.toLowerCase()}`,
-    name: unitClass,
+    id: heroIdOrClass,
+    name: hero.name,
     type: 'Unit',
-    unitClass: unitClass as any,
-    baseHp: stats.hp,
-    baseAttack: stats.attack,
-    manaCost: stats.mana
+    unitClass: hero.class as any,
+    baseHp: hero.hp,
+    baseAttack: hero.attack,
+    manaCost: hero.mana,
+    flavor: hero.flavor,
+    role: hero.role
   };
 }

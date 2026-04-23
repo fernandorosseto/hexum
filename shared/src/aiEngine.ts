@@ -27,7 +27,7 @@ function initZobrist() {
 initZobrist();
 
 function getUnitStateIndex(unit: Unit): number {
-    const classMap: Record<string, number> = { 'Rei': 0, 'Cavaleiro': 1, 'Lanceiro': 2, 'Arqueiro': 3, 'Assassino': 4, 'Mago': 5, 'Clerigo': 6, 'Estrutura': 7 };
+    const classMap: Record<string, number> = { 'Rei': 0, 'Cavaleiro': 1, 'Lanceiro': 2, 'Arqueiro': 3, 'Assassino': 4, 'Alquimista': 5, 'Clerigo': 6, 'Estrutura': 7 };
     const classId = classMap[unit.unitClass] ?? 0;
     const playerId = unit.playerId === 'p1' ? 0 : 1;
     const posId = (unit.position.q + 5) * 11 + (unit.position.r + 5);
@@ -100,7 +100,7 @@ function calculateSideValue(state: GameState, playerId: string, opponentId: stri
 
   // 2. Unidades e Táticas Berserker
   const classWeights: Record<string, number> = { 
-    'Rei': 500000, 'Mago': 1500, 'Cavaleiro': 1300, 'Assassino': 1400, 'Clerigo': 1100, 'Arqueiro': 1000, 'Lanceiro': 800, 'Estrutura': 400 
+    'Rei': 500000, 'Alquimista': 1500, 'Cavaleiro': 1300, 'Assassino': 1400, 'Clerigo': 1100, 'Arqueiro': 1000, 'Lanceiro': 800, 'Estrutura': 400 
   };
 // ... rest of side value remains same ...
 
@@ -112,7 +112,7 @@ function calculateSideValue(state: GameState, playerId: string, opponentId: stri
 
     if (isDeus && oppKing) {
         const dKing = getHexDistance(unit.position, oppKing.position);
-        if (unit.unitClass === 'Arqueiro' || unit.unitClass === 'Mago') {
+        if (unit.unitClass === 'Arqueiro' || unit.unitClass === 'Alquimista') {
             if (dKing === 3) value += 1500;
         } else {
             value += (10 - dKing) * 200;

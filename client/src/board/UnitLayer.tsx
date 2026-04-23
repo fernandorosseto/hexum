@@ -54,37 +54,43 @@ export const UnitLayer: React.FC<UnitLayerProps> = ({ validAttacks, validSpawns 
         }
 
         return (
-          <motion.g 
+          <motion.foreignObject 
             key={`unit-group-${unit.id}`} 
-            animate={{ x: x + thrustOffset.x, y: y + thrustOffset.y }}
+            initial={false}
+            animate={{ 
+              x: x + thrustOffset.x - HEX_SIZE, 
+              y: y + thrustOffset.y - HEX_SIZE 
+            }}
             transition={isThrusting ? {
-              duration: 0.15, // Estocada rápida
+              duration: 0.15,
               repeat: 1,
               repeatType: "reverse",
               ease: "easeOut"
             } : { type: 'spring', stiffness: 300, damping: 30 }}
+            width={HEX_SIZE * 2} 
+            height={HEX_SIZE * 2}
+            className="overflow-visible pointer-events-none"
+            style={{
+              // Força o iOS Safari a usar aceleração de hardware apenas onde necessário e respeitar SVG
+              WebkitTransform: 'translateZ(0)'
+            }}
           >
-            <foreignObject 
-              x={-HEX_SIZE} 
-              y={-HEX_SIZE} 
-              width={HEX_SIZE * 2} 
-              height={HEX_SIZE * 2}
-              className="overflow-visible pointer-events-none"
+            <div 
+              className="flex items-center justify-center pointer-events-none relative" 
+              style={{ width: `${HEX_SIZE * 2}px`, height: `${HEX_SIZE * 2}px` }}
             >
-              <div className="w-full h-full flex items-center justify-center pointer-events-none">
-                <UnitSprite 
-                  unit={unit} 
-                  isSelected={isSelected} 
-                  isTargetable={isAttackTarget || isCardTarget}
-                  targetColor={targetColor}
-                  animation={isThrusting ? 'attacking' : animatingUnits[unit.id]}
-                  thrustTarget={isThrusting ? activeThrust!.target : undefined}
-                  thrustDistance={isThrusting ? thrustDistance : undefined}
-                  thrustAngle={isThrusting ? thrustAngle : undefined}
-                />
-              </div>
-            </foreignObject>
-          </motion.g>
+              <UnitSprite 
+                unit={unit} 
+                isSelected={isSelected} 
+                isTargetable={isAttackTarget || isCardTarget}
+                targetColor={targetColor}
+                animation={isThrusting ? 'attacking' : animatingUnits[unit.id]}
+                thrustTarget={isThrusting ? activeThrust!.target : undefined}
+                thrustDistance={isThrusting ? thrustDistance : undefined}
+                thrustAngle={isThrusting ? thrustAngle : undefined}
+              />
+            </div>
+          </motion.foreignObject>
         );
       })}
     </g>

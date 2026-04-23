@@ -4,6 +4,7 @@ import type { Unit, HexCoordinates } from 'shared';
 import { getFearStatus } from 'shared';
 import { useGameStore } from '../store/gameStore';
 import { CLASS_ICONS } from '../constants/unitIcons';
+import { HEX_SIZE } from './HexUtils';
 import kingImg from '../assets/icons/king.png';
 import { LightningAnimation } from '../animations';
 import { StructureSprite, UnitBadges, UnitBuffs, ShieldAura, UnitEquipment } from '../units';
@@ -63,7 +64,7 @@ export const UnitSprite: React.FC<Props> = ({
       exit={{ scale: 0, opacity: 0, transition: { duration: 0.3 } }}
       className={`
         relative flex flex-col items-center justify-center 
-        w-[78%] h-[78%] rounded-full
+        rounded-full
         ${isSelected ? 'ring-4 ring-yellow-400 scale-110 drop-shadow-[0_0_20px_rgba(250,204,21,0.6)]' : ''}
         ${isTargetable 
           ? targetColor === 'green'
@@ -73,6 +74,7 @@ export const UnitSprite: React.FC<Props> = ({
         pointer-events-none transition-all duration-700
         ${animClass}
       `}
+      style={{ width: HEX_SIZE * 1.56, height: HEX_SIZE * 1.56 }}
     >
       {/* Camada de Fundo: ATIVA (Colorida) */}
       <div 

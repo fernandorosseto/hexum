@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, useDragControls } from 'framer-motion';
 import { useGameStore } from '../store/gameStore';
-import { UNIT_STATS, ARTIFACTS, SPELLS } from 'shared';
+import { HERO_ROSTER, ARTIFACTS, SPELLS } from 'shared';
 
 // ══════════════════════════════════════════════
 //  Janela 1: Arsenal do Jogador (P1)
@@ -14,7 +14,7 @@ const ArsenalBoxP1: React.FC = () => {
   const [size, setSize] = useState({ width: 260, height: 420 });
   const dragControls = useDragControls();
 
-  const unitNames = Object.keys(UNIT_STATS);
+  const unitNames = Object.keys(HERO_ROSTER);
 
   return (
     <motion.div 

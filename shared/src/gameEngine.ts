@@ -1,7 +1,7 @@
 import type { GameState, Unit, Card, UnitCard } from './types';
-import { getHexDistance, getHexNeighbors, isInsideBoard } from './hexMath';
+import { getHexDistance, getHexNeighbors, isInsideBoard, BOARD_RADIUS } from './hexMath';
 import type { HexCoordinates } from './hexMath';
-import { ARTIFACTS, SPELLS, UNIT_STATS, getUnitCard } from './cardLibrary';
+import { ARTIFACTS, SPELLS, getUnitCard } from './cardLibrary';
 import { UNIT_BEHAVIORS, isPathBlocked, checkEffectTrigger } from './unitBehaviors';
 import { SPELL_REGISTRY } from './spellHandlers';
 import { ARTIFACT_REGISTRY } from './artifactHandlers';
@@ -23,9 +23,9 @@ import { ARTIFACT_REGISTRY } from './artifactHandlers';
 export function getValidSpawnCoordinates(state: GameState, playerId: string, cardId: string): HexCoordinates[] {
   const boardUnits = Object.values(state.boardUnits);
   const myKing = boardUnits.find(u => u.unitClass === 'Rei' && u.playerId === playerId);
-  const range = 5; // BOARD_RADIUS
+  const range = BOARD_RADIUS;
 
-  if (cardId.startsWith('unit_')) {
+  if (cardId.startsWith('unit_') || cardId.startsWith('hero_')) {
     if (state.sandboxMode) return getAllEmptyHexes(boardUnits, range);
     
     const valid: HexCoordinates[] = [];
@@ -33,9 +33,8 @@ export function getValidSpawnCoordinates(state: GameState, playerId: string, car
       for (let r = Math.max(-range, -q - range); r <= Math.min(range, -q + range); r++) {
         const hex = { q, r, s: -q - r };
         if (boardUnits.some(u => u.position.q === hex.q && u.position.r === hex.r)) continue;
-        const isStartingZone = playerId === 'p1' ? hex.r >= 4 : hex.r <= -4;
         const isAdjacentToKing = myKing ? getHexDistance(myKing.position, hex) === 1 : false;
-        if (isStartingZone || isAdjacentToKing) valid.push(hex);
+        if (isAdjacentToKing) valid.push(hex);
       }
     }
     return valid;
@@ -133,15 +132,15 @@ export function createInitialState(): GameState {
     boardUnits: {}
   };
 
-  addInitialUnit(state, p1Id, 'Rei', { q: -2, r: 4, s: -2 });
-  addInitialUnit(state, p1Id, 'Lanceiro', { q: -2, r: 3, s: -1 });
-  addInitialUnit(state, p1Id, 'Lanceiro', { q: -1, r: 3, s: -2 });
+  addInitialUnit(state, p1Id, 'hero_balduino', { q: -2, r: 4, s: -2 });
+  addInitialUnit(state, p1Id, 'hero_elcid', { q: -2, r: 3, s: -1 });
+  addInitialUnit(state, p1Id, 'hero_elcid', { q: -1, r: 3, s: -2 });
   // [Balanço Experimental] Arqueiro bônus para P1 combater Vantagem do Segundo Jogador
-  addInitialUnit(state, p1Id, 'Arqueiro', { q: -3, r: 4, s: -1 });
+  addInitialUnit(state, p1Id, 'hero_robin', { q: -3, r: 4, s: -1 });
 
-  addInitialUnit(state, p2Id, 'Rei', { q: 2, r: -4, s: 2 });
-  addInitialUnit(state, p2Id, 'Lanceiro', { q: 2, r: -3, s: 1 });
-  addInitialUnit(state, p2Id, 'Lanceiro', { q: 1, r: -3, s: 2 });
+  addInitialUnit(state, p2Id, 'hero_leonidas', { q: 2, r: -4, s: 2 });
+  addInitialUnit(state, p2Id, 'hero_landsknecht', { q: 2, r: -3, s: 1 });
+  addInitialUnit(state, p2Id, 'hero_landsknecht', { q: 1, r: -3, s: 2 });
 
   drawInitialHand(state, p1Id);
   drawInitialHand(state, p2Id);
@@ -151,8 +150,15 @@ export function createInitialState(): GameState {
 
 function createInitialPlayer(id: string) {
   const deck: string[] = [];
-  const units = ['Lanceiro', 'Lanceiro', 'Lanceiro', 'Lanceiro', 'Cavaleiro', 'Cavaleiro', 'Arqueiro', 'Arqueiro', 'Arqueiro', 'Clerigo', 'Mago', 'Assassino'];
-  units.forEach(u => deck.push(`unit_${u.toLowerCase()}`));
+  const heroes = [
+    'hero_elcid', 'hero_elcid', 'hero_landsknecht', 'hero_landsknecht', // 4 Lanceiros
+    'hero_joana', 'hero_marshall', // 2 Cavaleiros
+    'hero_robin', 'hero_nasu', 'hero_robin', // 3 Arqueiros
+    'hero_richelieu', // 1 Clerigo
+    'hero_bacon', // 1 Alquimista
+    'hero_hassan' // 1 Assassino
+  ];
+  heroes.forEach(h => deck.push(h));
 
   const randomArts = [...ARTIFACTS].sort(() => 0.5 - Math.random()).slice(0, 4);
   randomArts.forEach(a => deck.push(a.id));
@@ -164,12 +170,12 @@ function createInitialPlayer(id: string) {
   return { id, mana: 1, maxMana: 1, canOfferCard: true, hand: [] as string[], deck, graveyard: [] as string[] };
 }
 
-function addInitialUnit(state: GameState, playerId: string, unitClass: string, pos: HexCoordinates) {
-  const stats = UNIT_STATS[unitClass];
-  const id = `u_${Math.random().toString(36).substr(2, 5)}_${unitClass.toLowerCase()}`;
+function addInitialUnit(state: GameState, playerId: string, heroId: string, pos: HexCoordinates) {
+  const card = getUnitCard(heroId);
+  const id = `u_${Math.random().toString(36).substr(2, 5)}_${card.unitClass.toLowerCase()}`;
   state.boardUnits[id] = {
-    id, playerId, cardId: `unit_${unitClass.toLowerCase()}`, unitClass: unitClass as any,
-    hp: stats.hp, maxHp: stats.hp, attack: stats.attack, position: pos,
+    id, playerId, cardId: heroId, unitClass: card.unitClass,
+    hp: card.baseHp, maxHp: card.baseHp, attack: card.baseAttack, position: pos,
     buffs: [], roundsInField: 0, summoningSickness: false, canMove: true, canAttack: true, 
     abilityCooldown: 0, equippedArtifacts: []
   };
@@ -448,7 +454,7 @@ export function attack(state: GameState, attackerId: string, targetId: string, u
   // Bônus de Alcance (Artefatos)
   let rangeBonus = 0;
   if ((attacker.equippedArtifacts || []).includes('art_arco')) rangeBonus += 1;
-  if ((attacker.equippedArtifacts || []).includes('art_anel') && (attacker.unitClass === 'Mago' || attacker.unitClass === 'Clerigo')) rangeBonus += 1;
+  if ((attacker.equippedArtifacts || []).includes('art_anel') && (attacker.unitClass === 'Alquimista' || attacker.unitClass === 'Clerigo')) rangeBonus += 1;
 
   // Delega validação à behavior da classe
   const behavior = UNIT_BEHAVIORS[attacker.unitClass];
@@ -486,10 +492,8 @@ export function playCard(state: GameState, playerId: string, cardId: string, tar
   if (!player.hand.includes(cardId)) throw new Error("Carta não está na mão.");
 
   let card: Card | UnitCard | undefined;
-  if (cardId.startsWith('unit_')) {
-    const unitClass = cardId.replace('unit_', '');
-    const capitalizedClass = unitClass.charAt(0).toUpperCase() + unitClass.slice(1);
-    card = getUnitCard(capitalizedClass);
+  if (cardId.startsWith('unit_') || cardId.startsWith('hero_')) {
+    card = getUnitCard(cardId);
   } else {
     card = ARTIFACTS.find(a => a.id === cardId) || SPELLS.find(s => s.id === cardId);
   }
@@ -501,11 +505,10 @@ export function playCard(state: GameState, playerId: string, cardId: string, tar
     const unitCard = card as UnitCard;
     const myKing = Object.values(newState.boardUnits).find(u => u.unitClass === 'Rei' && u.playerId === playerId);
     const distToKing = myKing ? getHexDistance(myKing.position, targetHex) : 999;
-    const isStartingZone = playerId === 'p1' ? targetHex.r >= 4 : targetHex.r <= -4;
     const isAdjacentToKing = distToKing === 1;
 
     if (!isInsideBoard(targetHex)) throw new Error("Não pode invocar fora do tabuleiro!");
-    if (!newState.sandboxMode && !isStartingZone && !isAdjacentToKing) throw new Error("Posicionamento inválido! Deve ser adjacente ao Rei ou na zona inicial.");
+    if (!newState.sandboxMode && !isAdjacentToKing) throw new Error("Posicionamento inválido! As unidades devem ser invocadas em uma casa adjacente ao seu Rei.");
 
     const collision = Object.values(newState.boardUnits).find(u =>
       u.position.q === targetHex.q && u.position.r === targetHex.r && u.position.s === targetHex.s

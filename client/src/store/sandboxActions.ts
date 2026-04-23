@@ -1,20 +1,21 @@
 import type { HexCoordinates } from 'shared';
-import { UNIT_STATS } from 'shared';
+import { getUnitCard } from 'shared';
 
 export const createSandboxActions = (set: any, get: any) => ({
   spawnUnit: (unitName: string, hex: HexCoordinates, playerId: string) => {
-    const stats = UNIT_STATS[unitName];
-    if (!stats) return;
+    let card;
+    try { card = getUnitCard(unitName); } catch(e){}
+    if (!card) return;
 
-    const unitId = `u_sbx_${Math.random().toString(36).substr(2, 5)}_${unitName.toLowerCase()}`;
+    const unitId = `u_sbx_${Math.random().toString(36).substr(2, 5)}_${card.unitClass.toLowerCase()}`;
     const newUnit = {
       id: unitId,
       playerId,
-      cardId: `unit_${unitName.toLowerCase()}`,
-      unitClass: unitName as any,
-      hp: stats.hp,
-      maxHp: stats.hp,
-      attack: stats.attack,
+      cardId: card.id,
+      unitClass: card.unitClass,
+      hp: card.baseHp,
+      maxHp: card.baseHp,
+      attack: card.baseAttack,
       position: hex,
       buffs: [],
       roundsInField: 0,

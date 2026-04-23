@@ -26,7 +26,7 @@ export function getValidAttackTargets(state: GameState, unitId: string, useSpeci
 
   let rangeBonus = 0;
   if ((unit.equippedArtifacts || []).includes('art_arco')) rangeBonus += 1;
-  if ((unit.equippedArtifacts || []).includes('art_anel') && (unit.unitClass === 'Mago' || unit.unitClass === 'Clerigo')) rangeBonus += 1;
+  if ((unit.equippedArtifacts || []).includes('art_anel') && (unit.unitClass === 'Alquimista' || unit.unitClass === 'Clerigo')) rangeBonus += 1;
 
   const behavior = UNIT_BEHAVIORS[unit.unitClass];
 

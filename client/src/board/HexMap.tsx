@@ -161,7 +161,7 @@ export const HexMap: React.FC = () => {
         dragConstraints={{ left: -1000, right: 1000, top: -800, bottom: 800 }}
         onClick={() => { setSelectedHex(null); setTargetHex(null); }}
       >
-        <svg viewBox="-800 -800 1600 1600" className="w-full h-full overflow-visible pointer-events-none">
+        <svg viewBox="-700 -650 1400 1300" className="w-full h-full overflow-visible pointer-events-none">
           <SvgDefs />
 
           <HexGrid 

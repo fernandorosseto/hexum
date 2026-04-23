@@ -54,7 +54,7 @@ export const ARTIFACT_REGISTRY: Record<string, ArtifactHandler> = {
   'art_lamina': LaminaDoCarrasco,
   'art_arco': PassiveOnly,        // +1 alcance (verificado em attack)
   'art_adagas': PassiveOnly,      // +1 dano real (verificado em applyDamage)
-  'art_anel': PassiveOnly,        // +1 alcance mago/clerigo (verificado em attack)
+  'art_anel': PassiveOnly,        // +1 alcance alquimista/clerigo (verificado em attack)
   'art_corcel': PassiveOnly,      // +1 movimento (verificado em moveTo)
   'art_coroa': CoroaDoRegente,
   'art_tomo': PassiveOnly,        // +1 cura + limpeza (verificado em heal/endTurn)

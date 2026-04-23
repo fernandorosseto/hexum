@@ -1,6 +1,6 @@
 import React from 'react';
 import { useGameStore } from '../store/gameStore';
-import { UNIT_DESCRIPTIONS, UNIT_STATS, ARTIFACTS, SPELLS, ARTIFACT_DESCRIPTIONS, SPELL_DESCRIPTIONS, getFearStatus, buffLabels } from 'shared';
+import { CLASS_ABILITIES, getUnitCard, ARTIFACTS, SPELLS, ARTIFACT_DESCRIPTIONS, SPELL_DESCRIPTIONS, getFearStatus, buffLabels } from 'shared';
 import { motion } from 'framer-motion';
 import { CLASS_ICONS as UNIT_ICONS, UNIT_ART_COLORS } from '../constants/unitIcons';
 import { SpellIcon, ArtifactIcon } from '../assets/icons/VectorIcons';
@@ -41,20 +41,18 @@ export const CardDetailsUI: React.FC = () => {
 
   // 1. Try from selected card in hand
   if (selectedCardId) {
-    if (selectedCardId.startsWith('unit_')) {
-      const unitClass = selectedCardId.replace('unit_', '');
-      const cap = unitClass.charAt(0).toUpperCase() + unitClass.slice(1);
-      const stats = UNIT_STATS[cap];
-      const desc = UNIT_DESCRIPTIONS[cap];
-      if (stats && desc) {
+    if (selectedCardId.startsWith('unit_') || selectedCardId.startsWith('hero_')) {
+      try {
+        const card = getUnitCard(selectedCardId);
+        const ability = CLASS_ABILITIES[card.unitClass] || '';
         data = {
-          kind: 'unit', title: cap, icon: UNIT_ICONS[cap] || '👤',
-          manaCost: stats.mana, atk: stats.attack, hp: `${stats.hp}`,
-          role: desc.role, ability: desc.ability, flavor: desc.flavor,
-          unitClass: cap,
-          colors: UNIT_ART_COLORS[cap] || UNIT_ART_COLORS['Rei'],
+          kind: 'unit', title: card.name, icon: UNIT_ICONS[card.unitClass] || '👤',
+          manaCost: card.manaCost, atk: card.baseAttack, hp: `${card.baseHp}`,
+          role: card.role, ability: ability, flavor: card.flavor,
+          unitClass: card.unitClass,
+          colors: UNIT_ART_COLORS[card.unitClass] || UNIT_ART_COLORS['Rei'],
         };
-      }
+      } catch(e) {}
     } else {
       const art = ARTIFACTS.find(a => a.id === selectedCardId);
       if (art) {
@@ -83,20 +81,19 @@ export const CardDetailsUI: React.FC = () => {
       u => u.position.q === selectedHex.q && u.position.r === selectedHex.r
     );
     if (unitOnHex) {
-      const cap = unitOnHex.unitClass;
-      const stats = UNIT_STATS[cap];
-      const desc = UNIT_DESCRIPTIONS[cap];
-      if (stats && desc) {
+      try {
+        const card = getUnitCard(unitOnHex.cardId);
+        const ability = CLASS_ABILITIES[card.unitClass] || '';
         data = {
-          kind: 'unit', title: cap, icon: UNIT_ICONS[cap] || '👤',
-          manaCost: stats.mana, atk: unitOnHex.attack, hp: `${unitOnHex.hp}`,
-          role: desc.role, ability: desc.ability, flavor: desc.flavor,
-          unitClass: cap, unitOwner: unitOnHex.playerId,
-          colors: UNIT_ART_COLORS[cap] || UNIT_ART_COLORS['Rei'],
+          kind: 'unit', title: card.name, icon: UNIT_ICONS[card.unitClass] || '👤',
+          manaCost: card.manaCost, atk: unitOnHex.attack, hp: `${unitOnHex.hp}`,
+          role: card.role, ability: ability, flavor: card.flavor,
+          unitClass: card.unitClass, unitOwner: unitOnHex.playerId,
+          colors: UNIT_ART_COLORS[card.unitClass] || UNIT_ART_COLORS['Rei'],
           buffs: unitOnHex.buffs,
           artifacts: unitOnHex.equippedArtifacts,
         };
-      }
+      } catch (e) {}
     }
   }
 
