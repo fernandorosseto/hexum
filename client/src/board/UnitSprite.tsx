@@ -31,12 +31,6 @@ export const UnitSprite: React.FC<Props> = ({
     displayBuffs.push({ type: 'fear' as any, duration: 0 });
   }
 
-  const animClass = animation === 'damaged' ? 'animate-shake animate-damage-flash' 
-    : animation === 'attacking' ? 'animate-attack-pulse'
-    : animation === 'healing' ? 'animate-heal-glow'
-    : animation === 'lightning' ? 'animate-lightning'
-    : '';
-
   if (unit.unitClass === 'Estrutura') {
     return (
       <StructureSprite 
@@ -44,7 +38,7 @@ export const UnitSprite: React.FC<Props> = ({
         isSelected={isSelected} 
         isTargetable={isTargetable} 
         targetColor={targetColor} 
-        animClass={animClass} 
+        animClass={animation === 'damaged' ? 'animate-shake animate-damage-flash' : ''} 
       />
     );
   }
@@ -57,74 +51,113 @@ export const UnitSprite: React.FC<Props> = ({
   const hasShield = unit.buffs.some(b => b.type === 'shield');
   const isReiAliado = isP1 && unit.unitClass.toLowerCase() === 'rei';
 
+  // Cores SVG
+  const activeGradient = isP1 ? 'url(#unit-p1-bg)' : 'url(#unit-p2-bg)';
+  const exhaustedGradient = 'url(#unit-exhausted-bg)';
+  const activeStroke = isP1 ? '#22d3ee' : '#fb7185'; // cyan-400 / rose-400
+  const exhaustedStroke = '#475569'; // slate-600
+  const auraColor = isP1 ? '#0e7490' : '#be123c'; // cyan-700 / rose-700
+
+  let groupFilter = '';
+  if (isSelected) groupFilter = 'drop-shadow(0px 0px 20px rgba(250,204,21,0.6))';
+  else if (isTargetable) groupFilter = targetColor === 'green' ? 'drop-shadow(0px 0px 16px rgba(34,197,94,0.7))' : 'drop-shadow(0px 0px 16px rgba(239,68,68,0.7))';
+
+  let animClass = '';
+  if (animation === 'damaged') animClass = 'animate-shake animate-damage-flash';
+  else if (animation === 'attacking') animClass = 'animate-attack-pulse';
+  else if (animation === 'healing') animClass = 'animate-heal-glow';
+  else if (animation === 'lightning') animClass = 'animate-lightning';
+
   return (
-    <motion.div 
+    <motion.g 
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0, opacity: 0, transition: { duration: 0.3 } }}
-      className={`
-        relative flex flex-col items-center justify-center 
-        rounded-full
-        ${isSelected ? 'ring-4 ring-yellow-400 scale-110 drop-shadow-[0_0_20px_rgba(250,204,21,0.6)]' : ''}
-        ${isTargetable 
-          ? targetColor === 'green'
-            ? 'ring-4 ring-green-500 drop-shadow-[0_0_16px_rgba(34,197,94,0.7)]' 
-            : 'ring-4 ring-red-500 drop-shadow-[0_0_16px_rgba(239,68,68,0.7)]' 
-          : ''}
-        pointer-events-none transition-all duration-700
-        ${animClass}
-      `}
-      style={{ width: HEX_SIZE * 1.56, height: HEX_SIZE * 1.56 }}
+      className={`pointer-events-none ${animClass}`}
+      style={{ filter: groupFilter }}
     >
-      {/* Camada de Fundo: ATIVA (Colorida) */}
-      <div 
-        className={`
-          absolute inset-0 rounded-full transition-all duration-1000 ease-in-out
-          ${isReiAliado 
-            ? 'opacity-100 shadow-none border-none border-0' 
-            : (isMovementSpent ? 'opacity-0' : 'opacity-100') + ' border-[3px] shadow-2xl ' + (isP1 ? 'from-blue-600 to-blue-800 border-blue-400 shadow-blue-900/40' : 'from-red-600 to-red-800 border-red-400 shadow-red-900/40') + ' bg-gradient-to-br '}
-        `}
-        style={isReiAliado ? { 
-          backgroundImage: `url(${kingImg})`, 
-          backgroundSize: '110%',
-          backgroundPosition: 'center',
-          filter: isMovementSpent ? 'grayscale(0.8) brightness(0.5)' : 'none'
-        } : {}}
-      />
-
-      {/* Camada de Fundo: EXAUSTA (Cinza) - Apenas para unidades comuns */}
+      {/* Aura de Identificação (Time) */}
       {!isReiAliado && (
-        <div className={`
-          absolute inset-0 rounded-full border-[3px] bg-gradient-to-br from-slate-700 to-slate-900 border-slate-600 shadow-inner transition-opacity duration-1000 ease-in-out
-          ${isMovementSpent ? 'opacity-100' : 'opacity-0'}
-        `} />
+        <circle 
+          cx="0" cy="0" r="74"
+          fill={auraColor}
+          opacity={isMovementSpent ? 0.2 : 0.4}
+          filter="blur(8px)"
+          className={!isMovementSpent ? 'animate-pulse' : ''}
+        />
       )}
 
       {/* Anel pulsante de alvo atacável */}
       {isTargetable && (
-        <div className={`
-          absolute -inset-2 rounded-full border-2 animate-ping
-          ${targetColor === 'green' ? 'border-green-500/60' : 'border-red-500/60'}
-        `} />
+        <circle 
+          cx="0" cy="0" r="78"
+          fill="none"
+          stroke={targetColor === 'green' ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)'}
+          strokeWidth="4"
+          className="animate-ping"
+        />
       )}
 
-      {/* Aura de Identificação (Time) */}
-      {!isReiAliado && (
-        <div className={`
-          absolute inset-[-4px] rounded-full blur-md opacity-40 transition-all duration-1000
-          ${isMovementSpent ? 'bg-slate-700 opacity-20 shadow-inner' : isP1 ? 'bg-[#0b622f] animate-pulse' : 'bg-[#602471] animate-pulse'}
-        `} />
+      {/* Anel de Seleção */}
+      {isSelected && (
+        <circle cx="0" cy="0" r="76" fill="none" stroke="#facc15" strokeWidth="6" />
       )}
-      
-      {/* Base / Sombra */}
-      {!isReiAliado && (
-        <div className={`
-          absolute inset-0 rounded-full border-2 transition-all duration-1000 ease-in-out
-          ${isP1 ? 'border-[#0b622f]/50 bg-[#0b622f]/20' : 'border-[#602471]/50 bg-[#602471]/20'}
-          ${isMovementSpent ? 'grayscale-[1] brightness-[0.4] saturate-0' : 'saturate-[1.4] brightness-[1.1]'}
-          ${hasSickness ? 'grayscale-[0.2] brightness-[0.9]' : ''}
-        `} />
+      {isTargetable && !isSelected && (
+        <circle cx="0" cy="0" r="76" fill="none" stroke={targetColor === 'green' ? '#22c55e' : '#ef4444'} strokeWidth="6" />
       )}
+
+      {/* Fundo Exausto */}
+      {!isReiAliado && (
+        <circle 
+          cx="0" cy="0" r="70"
+          fill={exhaustedGradient}
+          stroke={exhaustedStroke}
+          strokeWidth="6"
+          opacity={isMovementSpent ? 1 : 0}
+          style={{ transition: 'opacity 1s ease-in-out' }}
+        />
+      )}
+
+      {/* Fundo Ativo */}
+      {!isReiAliado && (
+        <circle 
+          cx="0" cy="0" r="70"
+          fill={activeGradient}
+          stroke={activeStroke}
+          strokeWidth="6"
+          opacity={isMovementSpent ? 0 : 1}
+          style={{ 
+            transition: 'opacity 1s ease-in-out',
+            filter: 'saturate(1.2) brightness(1.1)' 
+          }}
+        />
+      )}
+
+      {/* Fundo do Rei (Imagem) */}
+      {isReiAliado && (
+        <g>
+          {/* Círculo base para clip ou fundo se a imagem falhar */}
+          <circle cx="0" cy="0" r="70" fill="#1e293b" />
+          <image 
+            href={kingImg} 
+            x="-77" y="-77" 
+            width="154" height="154"
+            style={{
+              filter: isMovementSpent ? 'grayscale(0.8) brightness(0.5)' : 'none',
+              transition: 'filter 1s ease-in-out'
+            }}
+            clipPath="url(#unit-clip)"
+          />
+        </g>
+      )}
+
+      <defs>
+        <clipPath id="unit-clip">
+          <circle cx="0" cy="0" r="70" />
+        </clipPath>
+      </defs>
+
+
 
       {/* Escudo Protetor (Aura Branca) */}
       <AnimatePresence>
@@ -133,11 +166,11 @@ export const UnitSprite: React.FC<Props> = ({
 
       {/* Indicador de Summoning Sickness (Enjoo de Invocação) */}
       {hasSickness && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-indigo-900/10 rounded-full backdrop-blur-[1px]">
-          <div className="bg-slate-900/80 p-1.5 rounded-full border border-indigo-400/30 animate-pulse shadow-lg">
-             <span className="text-sm">⏳</span>
-          </div>
-        </div>
+        <g>
+          <circle cx="0" cy="0" r="70" fill="rgba(49, 46, 129, 0.5)" />
+          <circle cx="0" cy="0" r="24" fill="rgba(15, 23, 42, 0.8)" stroke="rgba(129, 140, 248, 0.3)" strokeWidth="2" className="animate-pulse" />
+          <text x="0" y="6" fontSize="18" textAnchor="middle">⏳</text>
+        </g>
       )}
 
       {/* Indicadores de Status (Buffs) */}
@@ -146,36 +179,31 @@ export const UnitSprite: React.FC<Props> = ({
       {/* Artefatos Equipados */}
       <UnitEquipment artifacts={unit.equippedArtifacts || []} />
 
-      {/* Ícone da Classe ou Spacer para o Rei */}
-      <motion.div 
+      {/* Ícone da Classe */}
+      <motion.g 
         animate={{ 
-          y: [0, -3, 0],
-          scale: isMovementSpent ? 0.9 : 1,
-          filter: isMovementSpent ? 'grayscale(1) brightness(0.5)' : 'grayscale(0) brightness(1.2)'
+          y: [0, -4, 0]
         }}
         transition={{ 
-          y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
-          default: { duration: 1, ease: "easeInOut" }
+          y: { duration: 3, repeat: Infinity, ease: "easeInOut" }
         }}
-        className={`relative z-10 flex items-center justify-center transition-opacity duration-1000 min-h-[40px]
-          ${isMovementSpent ? 'opacity-60' : 'opacity-100'}
-        `}
+        style={{
+          opacity: isMovementSpent ? 0.6 : 1.0,
+          filter: isMovementSpent ? 'grayscale(1) brightness(0.5)' : 'grayscale(0) brightness(1.2)',
+          transition: 'opacity 1s, filter 1s'
+        }}
       >
-        {isP1 && unit.unitClass === 'Rei' ? (
-          <div className="w-10 h-10" /> // Spacer para manter o layout flexbox intacto
-        ) : CLASS_ICONS[unit.unitClass] ? (
-          <img 
-            src={CLASS_ICONS[unit.unitClass]} 
-            className={`
-              object-contain drop-shadow-xl brightness-110
-              ${unit.unitClass === 'Rei' ? 'w-10 h-10 -mt-1' : 'w-9 h-9'}
-            `} 
-            alt={unit.unitClass} 
+        {!isReiAliado && CLASS_ICONS[unit.unitClass] ? (
+          <image 
+            href={CLASS_ICONS[unit.unitClass]} 
+            x="-30" y="-35" 
+            width="60" height="60" 
+            filter="drop-shadow(0px 10px 15px rgba(0,0,0,0.5))"
           />
-        ) : (
-          <span className="text-3xl drop-shadow-lg">❓</span>
-        )}
-      </motion.div>
+        ) : !isReiAliado ? (
+          <text x="0" y="8" fontSize="40" textAnchor="middle" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.5))">❓</text>
+        ) : null}
+      </motion.g>
 
       {/* Badges de Atributo (ATK / HP) */}
       <UnitBadges unit={unit} isAttackSpent={isAttackSpent} />
@@ -185,6 +213,6 @@ export const UnitSprite: React.FC<Props> = ({
         {animation === 'lightning' && <LightningAnimation />}
       </AnimatePresence>
 
-    </motion.div>
+    </motion.g>
   );
 };

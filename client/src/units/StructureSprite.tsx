@@ -14,24 +14,19 @@ export const StructureSprite: React.FC<Props> = ({ unit, isSelected, isTargetabl
   const isP1 = unit.playerId === 'p1';
   const scale = 0.82; // Ajuste para não transbordar
 
+  let dropShadow = '';
+  if (isSelected) dropShadow = 'drop-shadow(0px 0px 15px rgba(250,204,21,0.5))';
+  else if (isTargetable) dropShadow = targetColor === 'green' ? 'drop-shadow(0px 0px 15px rgba(34,197,94,0.6))' : 'drop-shadow(0px 0px 15px rgba(239,68,68,0.6))';
+
   return (
-    <motion.div 
+    <motion.g 
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0, opacity: 0, transition: { duration: 0.3 } }}
-      className={`
-        relative flex flex-col items-center justify-center 
-        w-full h-full pointer-events-none drop-shadow-2xl
-        ${isSelected ? 'drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]' : ''}
-        ${isTargetable 
-          ? targetColor === 'green'
-            ? 'drop-shadow-[0_0_15px_rgba(34,197,94,0.6)]' 
-            : 'drop-shadow-[0_0_15px_rgba(239,68,68,0.6)]' 
-          : ''}
-        ${animClass || ''}
-      `}
+      className={`pointer-events-none ${animClass || ''}`}
+      style={{ filter: dropShadow }}
     >
-      <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
+      <g transform="translate(-50, -50)">
         {/* Sombra projetada no chão */}
         <polygon 
           points="50,4 90,27 90,73 50,96 10,73 10,27" 
@@ -42,13 +37,12 @@ export const StructureSprite: React.FC<Props> = ({ unit, isSelected, isTargetabl
         
         {/* Corpo Principal (Vidro/Gelo) */}
         <g transform={`scale(${scale}) translate(${(1-scale)*50/scale}, ${(1-scale)*50/scale})`}>
-          {/* Base com Glassmorphism */}
+          {/* Base com Glassmorphism (SVG filters instead of backdrop-filter) */}
           <polygon 
             points="50,0 93.3,25 93.3,75 50,100 6.7,75 6.7,25" 
             fill="rgba(186, 230, 253, 0.2)"
             stroke="rgba(255, 255, 255, 0.4)"
             strokeWidth="1.5"
-            style={{ backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
           />
           
           {/* Gradiente de profundidade */}
@@ -79,16 +73,19 @@ export const StructureSprite: React.FC<Props> = ({ unit, isSelected, isTargetabl
             />
           ))}
         </g>
-      </svg>
+      </g>
 
       {/* HP da Muralha (Dentro do bloco e maior) */}
-      <div className={`
-        absolute flex items-center gap-1 font-black text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,1)] z-20 transition-all
-        ${isP1 ? 'text-white' : 'text-cyan-100'}
-      `}>
-        <span className="text-2xl">♥</span>
-        {unit.hp}
-      </div>
-    </motion.div>
+      <text 
+        x="0" y="8" 
+        fontSize="24" 
+        fontWeight="900" 
+        textAnchor="middle" 
+        fill={isP1 ? '#ffffff' : '#cffafe'}
+        filter="drop-shadow(0px 2px 4px rgba(0,0,0,1))"
+      >
+        ♥ {unit.hp}
+      </text>
+    </motion.g>
   );
 };

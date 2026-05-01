@@ -15,8 +15,6 @@ export interface UnitCard extends Card {
   unitClass: UnitClass;
   baseHp: number;
   baseAttack: number;
-  flavor?: string;
-  role?: string;
 }
 
 export interface Buff {

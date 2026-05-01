@@ -9,22 +9,27 @@ interface Props {
 export const UnitEquipment: React.FC<Props> = ({ artifacts }) => {
   if (!artifacts || artifacts.length === 0) return null;
 
+  const totalHeight = artifacts.length * 24;
+  const startY = -(totalHeight / 2) + 12;
+
   return (
-    <div className="absolute -right-8 top-1/2 -translate-y-1/2 flex flex-col gap-1 z-30">
+    <g className="pointer-events-none" style={{ zIndex: 30 }}>
       <AnimatePresence>
         {artifacts.map((artId, idx) => (
-          <motion.div
+          <motion.g
             key={`${artId}-${idx}`}
             initial={{ x: 10, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 10, opacity: 0 }}
-            className="bg-slate-900/90 rounded border border-amber-500/50 p-1 shadow-lg flex items-center justify-center"
-            title={artId}
+            transform={`translate(65, ${startY + idx * 24})`}
           >
-            <ArtifactIcon id={artId} size={18} className="text-amber-400 drop-shadow-[0_0_4px_rgba(251,191,36,0.6)]" />
-          </motion.div>
+            <rect x="-11" y="-11" width="22" height="22" rx="3" fill="rgba(15, 23, 42, 0.9)" stroke="rgba(245, 158, 11, 0.5)" strokeWidth="1" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.5))" />
+            <svg x="-9" y="-9" width="18" height="18" overflow="visible">
+              <ArtifactIcon id={artId} size={18} style={{ color: '#fbbf24', filter: 'drop-shadow(0 0 4px rgba(251,191,36,0.6))' }} />
+            </svg>
+          </motion.g>
         ))}
       </AnimatePresence>
-    </div>
+    </g>
   );
 };

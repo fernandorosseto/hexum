@@ -93,11 +93,10 @@ export const SpellIcon: React.FC<IconProps> = ({ id, size = 32, className = '', 
     }
   };
 
-  return (
-    <div className={className} style={{ width: size, height: size, ...style }}>
-      {getSpellSVG()}
-    </div>
-  );
+  return React.cloneElement(getSpellSVG() as React.ReactElement, {
+    className,
+    style: { width: size, height: size, ...style }
+  });
 };
 
 // ────────────────────────────────────────────────────────
@@ -183,9 +182,8 @@ export const ArtifactIcon: React.FC<IconProps> = ({ id, size = 32, className = '
     }
   };
 
-  return (
-    <div className={className} style={{ width: size, height: size, ...style }}>
-      {getArtifactSVG()}
-    </div>
-  );
+  return React.cloneElement(getArtifactSVG() as React.ReactElement, {
+    className,
+    style: { width: size, height: size, ...style }
+  });
 };

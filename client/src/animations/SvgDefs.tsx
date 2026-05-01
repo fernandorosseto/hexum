@@ -21,10 +21,26 @@ export const SvgDefs: React.FC = () => (
       <stop offset="50%" stopColor="rgba(220, 220, 255, 0.4)" />
       <stop offset="100%" stopColor="rgba(200, 200, 255, 0)" />
     </radialGradient>
+    <radialGradient id="shield-radial">
+      <stop offset="0%" stopColor="rgba(255, 255, 255, 0.1)" />
+      <stop offset="70%" stopColor="transparent" />
+    </radialGradient>
     <linearGradient id="ice-wall-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stopColor="#bae6fd" />
       <stop offset="50%" stopColor="#38bdf8" />
       <stop offset="100%" stopColor="#bae6fd" />
+    </linearGradient>
+    <linearGradient id="unit-p1-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#0891b2" /> {/* cyan-600 */}
+      <stop offset="100%" stopColor="#155e75" /> {/* cyan-800 */}
+    </linearGradient>
+    <linearGradient id="unit-p2-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#e11d48" /> {/* rose-600 */}
+      <stop offset="100%" stopColor="#9f1239" /> {/* rose-800 */}
+    </linearGradient>
+    <linearGradient id="unit-exhausted-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#334155" /> {/* slate-700 */}
+      <stop offset="100%" stopColor="#0f172a" /> {/* slate-900 */}
     </linearGradient>
     <linearGradient id="meteor-trail" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stopColor="transparent" />

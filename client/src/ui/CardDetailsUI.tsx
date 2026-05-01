@@ -1,6 +1,6 @@
 import React from 'react';
 import { useGameStore } from '../store/gameStore';
-import { CLASS_ABILITIES, getUnitCard, ARTIFACTS, SPELLS, ARTIFACT_DESCRIPTIONS, SPELL_DESCRIPTIONS, getFearStatus, buffLabels } from 'shared';
+import { UNIT_DESCRIPTIONS, getUnitCard, ARTIFACTS, SPELLS, ARTIFACT_DESCRIPTIONS, SPELL_DESCRIPTIONS, getFearStatus, buffLabels } from 'shared';
 import { motion } from 'framer-motion';
 import { CLASS_ICONS as UNIT_ICONS, UNIT_ART_COLORS } from '../constants/unitIcons';
 import { SpellIcon, ArtifactIcon } from '../assets/icons/VectorIcons';
@@ -27,9 +27,7 @@ export const CardDetailsUI: React.FC = () => {
     manaCost: number;
     atk?: number;
     hp?: string;
-    role?: string;
     ability: string;
-    flavor?: string;
     unitClass?: string;
     unitOwner?: string;
     colors: { bg: string; glow: string; border: string };
@@ -44,11 +42,11 @@ export const CardDetailsUI: React.FC = () => {
     if (selectedCardId.startsWith('unit_') || selectedCardId.startsWith('hero_')) {
       try {
         const card = getUnitCard(selectedCardId);
-        const ability = CLASS_ABILITIES[card.unitClass] || '';
+        const ability = UNIT_DESCRIPTIONS[card.unitClass] || '';
         data = {
           kind: 'unit', title: card.name, icon: UNIT_ICONS[card.unitClass] || '👤',
           manaCost: card.manaCost, atk: card.baseAttack, hp: `${card.baseHp}`,
-          role: card.role, ability: ability, flavor: card.flavor,
+          ability: ability,
           unitClass: card.unitClass,
           colors: UNIT_ART_COLORS[card.unitClass] || UNIT_ART_COLORS['Rei'],
         };
@@ -83,11 +81,11 @@ export const CardDetailsUI: React.FC = () => {
     if (unitOnHex) {
       try {
         const card = getUnitCard(unitOnHex.cardId);
-        const ability = CLASS_ABILITIES[card.unitClass] || '';
+        const ability = UNIT_DESCRIPTIONS[card.unitClass] || '';
         data = {
           kind: 'unit', title: card.name, icon: UNIT_ICONS[card.unitClass] || '👤',
           manaCost: card.manaCost, atk: unitOnHex.attack, hp: `${unitOnHex.hp}`,
-          role: card.role, ability: ability, flavor: card.flavor,
+          ability: ability,
           unitClass: card.unitClass, unitOwner: unitOnHex.playerId,
           colors: UNIT_ART_COLORS[card.unitClass] || UNIT_ART_COLORS['Rei'],
           buffs: unitOnHex.buffs,
@@ -170,9 +168,6 @@ export const CardDetailsUI: React.FC = () => {
         <span className={`px-2 py-0.5 rounded-full text-[10px] md:text-[10px] font-black uppercase tracking-wider ${typeBadgeColor}`}>
           {typeLabel}
         </span>
-        {data.role && (
-          <span className="text-[10px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">{data.role}</span>
-        )}
       </div>
 
       <div className="flex-1 bg-slate-900/50 overflow-y-auto flex flex-col">
@@ -193,15 +188,6 @@ export const CardDetailsUI: React.FC = () => {
             ))}
           </div>
 
-          {/* Flavor text (MTG italic flavor) */}
-          {data.flavor && (
-            <div className="pt-2">
-              <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-700/50 to-transparent mb-2" />
-              <p className="text-[10px] italic text-slate-400/80 leading-snug px-1">
-                "{data.flavor}"
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Spacer to push buffs/artifacts down gracefully if small text */}
