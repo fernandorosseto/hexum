@@ -93,7 +93,7 @@ export const SpellIcon: React.FC<IconProps> = ({ id, size = 32, className = '', 
     }
   };
 
-  return React.cloneElement(getSpellSVG() as React.ReactElement, {
+  return React.cloneElement(getSpellSVG() as React.ReactElement<React.SVGProps<SVGSVGElement>>, {
     className,
     style: { width: size, height: size, ...style }
   });
@@ -182,7 +182,7 @@ export const ArtifactIcon: React.FC<IconProps> = ({ id, size = 32, className = '
     }
   };
 
-  return React.cloneElement(getArtifactSVG() as React.ReactElement, {
+  return React.cloneElement(getArtifactSVG() as React.ReactElement<React.SVGProps<SVGSVGElement>>, {
     className,
     style: { width: size, height: size, ...style }
   });
