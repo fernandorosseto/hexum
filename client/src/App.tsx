@@ -12,14 +12,48 @@ import { AnimatePresence, motion } from 'framer-motion';
 import './index.css';
 import backgroundImg from './assets/background.jpg';
 
+import { useEffect } from 'react';
+
 function App() {
   useBot();
   const currentTurnPlayerId = useGameStore(s => s.currentTurnPlayerId);
   const phase = useGameStore(s => s.currentPhase);
   const currentView = useGameStore(s => s.currentView);
   const isLogVisible = useGameStore(s => s.isLogVisible);
-  const selectedHex = useGameStore(s => s.selectedHex);
   const selectedCard = useGameStore(s => s.selectedCard);
+  const isHandExpanded = useGameStore(s => s.isHandExpanded);
+  const toggleHandExpanded = useGameStore(s => s.toggleHandExpanded);
+  const isInspectMode = useGameStore(s => s.isInspectMode);
+  const toggleInspectMode = useGameStore(s => s.toggleInspectMode);
+
+  const startTimer = useGameStore(s => s.startTimer);
+  const decrementTimer = useGameStore(s => s.decrementTimer);
+  const turnTimer = useGameStore(s => s.turnTimer);
+  const isTimerRunning = useGameStore(s => s.isTimerRunning);
+  const triggerEndTurn = useGameStore(s => s.triggerEndTurn);
+  const sandboxMode = useGameStore(s => s.sandboxMode);
+
+  // Efeito do Timer de Turno
+  useEffect(() => {
+    if (currentView === 'PLAY' && !sandboxMode && !isTimerRunning && phase === 'MAIN_PHASE') {
+      startTimer();
+    }
+
+    if (!isTimerRunning) return;
+
+    const interval = setInterval(() => {
+      decrementTimer();
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isTimerRunning, currentView, sandboxMode, phase, startTimer, decrementTimer]);
+
+  // Se o tempo acabar, passa o turno automaticamente
+  useEffect(() => {
+    if (isTimerRunning && turnTimer <= 0 && currentView === 'PLAY' && !sandboxMode) {
+      triggerEndTurn();
+    }
+  }, [turnTimer, isTimerRunning, triggerEndTurn, currentView, sandboxMode]);
 
   // Se estiver no MENU, renderiza apenas o MainMenu
   if (currentView === 'MENU') {
@@ -28,7 +62,7 @@ function App() {
 
   return (
     <div
-      className="w-screen h-[100dvh] relative overflow-hidden bg-transparent"
+      className="w-full h-[100dvh] relative overflow-hidden bg-transparent"
       style={{
         backgroundImage: `url(${backgroundImg})`,
         backgroundSize: 'cover',
@@ -70,12 +104,14 @@ function App() {
         <CardDetailsUI />
       </div>
 
-      {/* CAMADA 4: Mão de Cartas (Oculta apenas no mobile durante seleção) */}
-      <div className="fixed bottom-12 md:bottom-4 left-0 right-0 z-20 flex justify-center md:justify-end p-2 md:p-4 pointer-events-none">
-        <div className={`
-          w-full md:w-auto flex justify-center md:justify-end pointer-events-auto transition-all duration-500
-          ${(selectedHex || selectedCard) ? 'max-md:opacity-0 max-md:translate-y-32 max-md:pointer-events-none' : 'opacity-100 translate-y-0'}
-        `}>
+      {/* CAMADA 4: Mão de Cartas */}
+      <div className={`
+        fixed z-20 pointer-events-none flex transition-all duration-500
+        md:bottom-4 md:left-0 md:right-0 md:justify-end md:p-6
+        max-md:bottom-20 max-md:right-2 max-md:flex-col max-md:items-end
+        ${!isHandExpanded ? 'max-md:translate-x-[150%] max-md:opacity-0 max-md:pointer-events-none' : 'max-md:translate-x-0 max-md:opacity-100'}
+      `}>
+        <div className="pointer-events-auto">
           <HandUI />
         </div>
       </div>
@@ -101,11 +137,36 @@ function App() {
         animate={{ opacity: 0.5 }}
         whileHover={{ opacity: 1, scale: 1.05 }}
         onClick={() => window.open('https://forms.gle/c9ReRbd2SAc5dggr7', '_blank')}
-        className="fixed bottom-4 left-4 z-50 p-2 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg shadow-xl pointer-events-auto flex items-center gap-2 group transition-all"
+        className="fixed top-24 left-2 md:top-20 md:left-4 z-50 p-2 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg shadow-xl pointer-events-auto flex items-center gap-2 group transition-all"
       >
         <span className="text-lg">📩</span>
         <span className="text-[10px] text-white/70 group-hover:text-white font-bold tracking-widest uppercase hidden md:block">Feedback Beta</span>
       </motion.button>
+
+      {/* Botões de Ação Mobile */}
+      <div className="fixed bottom-4 left-4 z-50 pointer-events-auto md:hidden">
+        <button 
+          onClick={toggleInspectMode}
+          className={`px-4 py-2.5 backdrop-blur-md border rounded-xl shadow-[0_0_15px_rgba(0,0,0,0.5)] flex items-center gap-2 font-black text-xs uppercase tracking-wider transition-all active:scale-95 ${
+            isInspectMode 
+              ? 'bg-amber-600/90 border-amber-400 text-white shadow-[0_0_15px_rgba(217,119,6,0.5)] hover:bg-amber-500' 
+              : 'bg-slate-900/90 border-slate-600 text-slate-200 hover:bg-slate-800'
+          }`}
+        >
+          <span className="text-lg">ℹ️</span>
+          <span>{isInspectMode ? 'Fechar Info' : 'Info Carta'}</span>
+        </button>
+      </div>
+
+      <div className="fixed bottom-4 right-4 z-50 pointer-events-auto md:hidden">
+        <button 
+          onClick={toggleHandExpanded}
+          className="px-4 py-2.5 bg-[#0b622f]/90 backdrop-blur-md border border-green-500/50 rounded-xl shadow-[0_0_15px_rgba(11,98,47,0.5)] flex items-center gap-2 text-white font-black text-xs uppercase tracking-wider hover:bg-[#0b622f] transition-all active:scale-95"
+        >
+          <span className="text-lg">🃏</span>
+          <span>{isHandExpanded ? 'Esconder Mão' : 'Ver Mão'}</span>
+        </button>
+      </div>
     </div>
   );
 }

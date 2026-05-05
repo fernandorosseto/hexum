@@ -1,12 +1,34 @@
 import type { HexCoordinates, Unit } from 'shared';
-import { moveTo, attack, heal, playCard, offerCard, getHexDistance, getHexNeighbors } from 'shared';
+import { 
+  moveTo, attack, heal, playCard, offerCard, getHexDistance, getHexNeighbors, 
+  hasAnyValidAction 
+} from 'shared';
 import { 
   scheduleProjectileAnimation, scheduleThrustAnimation, scheduleMeleeAnimation, 
   scheduleMageAttack, scheduleAssassinAttack, scheduleHeavyMelee, scheduleCleaveAttack,
   scheduleSpellCardAnimation, AnimationType 
 } from './animationActions';
 
-export const createCombatActions = (set: any, get: any) => ({
+export const createCombatActions = (set: any, get: any) => {
+  const checkAutoPass = () => {
+    const state = get();
+    // No modo Sandbox ou se já acabou o jogo, não fazemos auto-pass
+    if (state.sandboxMode || state.currentPhase !== 'MAIN_PHASE') return;
+    
+    // Se não houver mais NENHUMA ação válida possível para o jogador atual
+    if (!hasAnyValidAction(state, state.currentTurnPlayerId)) {
+      // Pequeno delay para o jogador ver o resultado da última ação antes de passar
+      setTimeout(() => {
+        const latestState = get();
+        // Verifica novamente se ainda é o mesmo turno e se ainda não tem ações (segurança anti-race condition)
+        if (latestState.currentTurnPlayerId === state.currentTurnPlayerId && !hasAnyValidAction(latestState, latestState.currentTurnPlayerId)) {
+          get().triggerEndTurn();
+        }
+      }, 1500);
+    }
+  };
+
+  return {
   attemptMove: (unitId: string, targetHex: HexCoordinates, useSpecial = false) => {
     try {
       const currentGameState = get();
@@ -39,6 +61,7 @@ export const createCombatActions = (set: any, get: any) => ({
       ];
       const moveMsg = moveTemplates[Math.floor(Math.random() * moveTemplates.length)];
       get().addLog(moveMsg, unit.playerId);
+      checkAutoPass();
     } catch (err: any) {
       console.warn("Erro de Regra:", err.message);
       set({ selectedHex: null, selectedAbility: null });
@@ -107,6 +130,7 @@ export const createCombatActions = (set: any, get: any) => ({
       } else {
         scheduleMeleeAnimation(set, get, attacker, target, newState, animations, attackMsg, targetDied);
       }
+      checkAutoPass();
     } catch (err: any) {
       console.warn("Erro de Ataque:", err.message);
       set({ selectedHex: null, targetHex: null, selectedAbility: null });
@@ -134,6 +158,7 @@ export const createCombatActions = (set: any, get: any) => ({
       set({ ...newState, selectedHex: null, animatingUnits: { [targetId]: 'healing' } });
       get().addLog(`O ${healer.unitClass} usou preces divinas para curar o ${target.unitClass}!`, healer.playerId);
       setTimeout(() => set({ animatingUnits: {} }), 600);
+      checkAutoPass();
     } catch (err: any) {
       console.warn("Erro de Cura:", err.message);
       set({ selectedHex: null });
@@ -271,6 +296,7 @@ export const createCombatActions = (set: any, get: any) => ({
       else if (cardId.startsWith('art_')) playMsg = `O artefato sagrado ${cardName} foi revelado.`;
 
       get().addLog(playMsg, currentGameState.currentTurnPlayerId);
+      checkAutoPass();
     } catch (err: any) {
       console.warn("Erro ao jogar carta:", err.message);
       set({ selectedCard: null, selectedHex: null });
@@ -299,6 +325,7 @@ export const createCombatActions = (set: any, get: any) => ({
 
       set({ ...newState });
       get().addLog(`Uma oferenda de mana foi feita por ${currentGameState.currentTurnPlayerId === 'p1' ? 'Azul' : 'Roxo'}.`, currentGameState.currentTurnPlayerId);
+      checkAutoPass();
     } catch (err: any) {
       console.warn("Erro ao oferecer carta:", err.message);
     }
@@ -313,8 +340,10 @@ export const createCombatActions = (set: any, get: any) => ({
       set({ ...newState, animatingUnits: { [targetId]: 'healing' } });
       get().addLog(`${healer.unitClass} curou ${target.unitClass}`, healer.playerId);
       setTimeout(() => set({ animatingUnits: {} }), 600);
+      checkAutoPass();
     } catch (err: any) {
       console.warn("Erro ao curar:", err.message);
     }
   }
-});
+}
+};

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { endTurn, createInitialState } from 'shared';
+import { endTurn, createInitialState, hasAnyValidAction } from 'shared';
 import { getBestAction } from 'shared/src/aiEngine';
 import type { GameState, HexCoordinates } from 'shared';
 import { createCombatActions } from './combatActions';
@@ -30,8 +30,10 @@ interface GameStore extends GameState {
   sandboxMode: boolean;
   isVsAI: boolean;
   isAiThinking: boolean;
-  isCardExpanded: boolean;
-  toggleCardExpanded: () => void;
+  isInspectMode: boolean;
+  toggleInspectMode: () => void;
+  isHandExpanded: boolean;
+  toggleHandExpanded: () => void;
   setSelectedHex: (hex: HexCoordinates | null) => void;
   setSelectedCard: (cardId: string | null) => void;
   setTargetHex: (hex: HexCoordinates | null) => void;
@@ -73,6 +75,11 @@ interface GameStore extends GameState {
   isAutoPlay: boolean;
   toggleAutoPlay: () => void;
   setAiDifficulty: (difficulty: import('shared').AIDifficulty) => void;
+  turnTimer: number;
+  isTimerRunning: boolean;
+  startTimer: () => void;
+  stopTimer: () => void;
+  decrementTimer: () => void;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -137,6 +144,16 @@ export const useGameStore = create<GameStore>()(
       activeWallFormation: null,
       activeMistImpact: null,
       activeWindTrail: null,
+      turnTimer: 60,
+      isTimerRunning: false,
+      startTimer: () => set({ isTimerRunning: true, turnTimer: 60 }),
+      stopTimer: () => set({ isTimerRunning: false }),
+      decrementTimer: () => set(state => {
+        if (state.turnTimer <= 0) {
+          return { turnTimer: 0 };
+        }
+        return { turnTimer: state.turnTimer - 1 };
+      }),
       isAutoPlay: false,
       toggleAutoPlay: () => {
         const newVal = !get().isAutoPlay;
@@ -150,13 +167,16 @@ export const useGameStore = create<GameStore>()(
       isLogVisible: false,
       toggleLog: () => set(state => ({ isLogVisible: !state.isLogVisible })),
 
-      isCardExpanded: false,
-      toggleCardExpanded: () => set(state => ({ isCardExpanded: !state.isCardExpanded })),
+      isInspectMode: false,
+      toggleInspectMode: () => set(state => ({ isInspectMode: !state.isInspectMode })),
+
+      isHandExpanded: false,
+      toggleHandExpanded: () => set(state => ({ isHandExpanded: !state.isHandExpanded })),
 
       setSandboxMode: (enabled) => set({ sandboxMode: enabled }),
 
-      setSelectedHex: (hex) => set({ selectedHex: hex, targetHex: null, selectedAbility: null, isCardExpanded: false }),
-      setSelectedCard: (cardId) => set({ selectedCard: cardId, selectedHex: null, targetHex: null, selectedAbility: null, isCardExpanded: false }),
+      setSelectedHex: (hex) => set({ selectedHex: hex, targetHex: null, selectedAbility: null }),
+      setSelectedCard: (cardId) => set({ selectedCard: cardId, selectedHex: null, targetHex: null, selectedAbility: null }),
       setTargetHex: (hex) => set({ targetHex: hex }),
       setSelectedAbility: (ability) => set({ selectedAbility: ability }),
       setInspectedItem: (item) => set({ inspectedItem: item }),
@@ -174,13 +194,20 @@ export const useGameStore = create<GameStore>()(
           const currentGameState = get();
           const pId = currentGameState.currentTurnPlayerId;
           const newState = endTurn(currentGameState);
-          set({ ...newState, selectedHex: null });
+          set({ ...newState, selectedHex: null, turnTimer: 60, isTimerRunning: true });
           get().addLog(`O turno de ${pId === 'p1' ? 'Azul' : 'Roxo'} chegou ao fim.`, pId);
 
           const updatedState = get();
           const autoBattleTarget = updatedState.isAutoPlay ? 200 : 1000;
           if (updatedState.currentPhase !== 'GAME_OVER' && (updatedState.isAutoPlay || (updatedState.isVsAI && updatedState.currentTurnPlayerId === 'p2'))) {
             setTimeout(() => get().runAiTurn(), autoBattleTarget);
+          } else if (updatedState.currentPhase === 'MAIN_PHASE' && !updatedState.sandboxMode && !hasAnyValidAction(updatedState, updatedState.currentTurnPlayerId)) {
+            // Se o PRÓXIMO jogador (p1) não tem ações logo de cara
+            setTimeout(() => {
+              if (get().currentTurnPlayerId === updatedState.currentTurnPlayerId) {
+                get().triggerEndTurn();
+              }
+            }, 1500);
           }
         } catch (err: any) {
           console.warn("Erro de Turno:", err.message);
@@ -273,7 +300,8 @@ export const useGameStore = create<GameStore>()(
           activeWallFormation,
           activeMistImpact,
           activeWindTrail,
-          isCardExpanded,
+          isInspectMode,
+          isHandExpanded,
           ...rest
         } = state;
         return rest;

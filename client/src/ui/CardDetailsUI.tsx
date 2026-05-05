@@ -16,8 +16,8 @@ export const CardDetailsUI: React.FC = () => {
   const activePlayer = useGameStore(state => state.players[currentPlayerId]);
   const setSelectedHex = useGameStore(state => state.setSelectedHex);
   const setSelectedCard = useGameStore(state => state.setSelectedCard);
-  const isCardExpanded = useGameStore(state => state.isCardExpanded);
-  const toggleCardExpanded = useGameStore(state => state.toggleCardExpanded);
+  const isInspectMode = useGameStore(state => state.isInspectMode);
+  const toggleInspectMode = useGameStore(state => state.toggleInspectMode);
 
   // ── Data Resolution ──
   type CardData = {
@@ -95,7 +95,30 @@ export const CardDetailsUI: React.FC = () => {
     }
   }
 
-  if (!data) return null;
+  if (!data) {
+    if (!isInspectMode || (typeof window !== 'undefined' && window.innerWidth >= 768)) return null;
+
+    // Se estiver no modo inspeção no mobile mas nada foi selecionado ainda, mostra um placeholder amigável
+    return (
+      <motion.div 
+        initial={{ x: "-100%", opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: "-100%", opacity: 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="flex flex-col z-40 fixed left-0 top-1/2 -translate-y-1/2 h-[420px] max-h-[65vh] w-[65%] max-w-[240px]"
+      >
+        <div className="absolute inset-0 bg-slate-900/95 backdrop-blur-xl border border-amber-500/30 shadow-[0_0_20px_rgba(217,119,6,0.2)] rounded-r-3xl overflow-hidden flex flex-col items-center justify-center p-6 text-center z-10">
+          <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mb-4 border border-amber-500/50">
+            <span className="text-3xl">👆</span>
+          </div>
+          <h2 className="text-lg font-black text-amber-400 mb-2 tracking-wide uppercase">Modo Inspeção</h2>
+          <p className="text-xs text-slate-300 font-medium leading-relaxed">
+            Toque em qualquer unidade no tabuleiro ou carta na mão para ver todos os detalhes e atributos.
+          </p>
+        </div>
+      </motion.div>
+    );
+  }
 
   const typeLabel = data.kind === 'unit' ? 'Unidade' : data.kind === 'artifact' ? 'Artefato' : 'Mágica';
   const typeBadgeColor = data.kind === 'unit' ? 'bg-[#0b622f]/80 text-[#a7f3d0]' : data.kind === 'artifact' ? 'bg-amber-700/80 text-amber-100' : 'bg-[#602471]/80 text-[#f5d0f9]';
@@ -103,50 +126,40 @@ export const CardDetailsUI: React.FC = () => {
 
   return (
     <motion.div 
-      initial={{ x: -300, opacity: 0 }}
+      initial={{ x: "-100%", opacity: 0 }}
       animate={{ 
         x: typeof window !== 'undefined' && window.innerWidth < 768 
-          ? (isCardExpanded ? 0 : -250) 
+          ? (isInspectMode ? 0 : "-100%") 
           : 0, 
         opacity: 1 
       }}
-      exit={{ x: -300, opacity: 0 }}
+      exit={{ x: "-100%", opacity: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className={`
-        bg-slate-900/95 backdrop-blur-xl border border-white/10 shadow-2xl overflow-hidden flex flex-col relative
+        flex flex-col z-40
         ${typeof window !== 'undefined' && window.innerWidth < 768 
-          ? 'fixed left-0 top-[90px] bottom-[110px] w-[80%] max-w-[300px] rounded-r-3xl z-40' 
-          : 'rounded-2xl md:h-[360px] md:max-h-none h-full w-full'
+          ? 'fixed left-0 top-1/2 -translate-y-1/2 h-[420px] max-h-[65vh] w-[65%] max-w-[240px]' 
+          : 'relative md:h-[360px] md:max-h-none h-full w-full'
         }
       `}
     >
-      <div className="flex items-center justify-between px-3 py-2 bg-black/40 border-b border-white/5 min-h-[44px]">
-        <h2 className="text-sm font-black text-white tracking-tight truncate pr-2">{data.title}</h2>
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Botão de Toggle - apenas em mobile */}
-          {typeof window !== 'undefined' && window.innerWidth < 768 && (
+      <div className={`absolute inset-0 bg-slate-900/95 backdrop-blur-xl border border-white/10 shadow-2xl overflow-hidden flex flex-col z-10 ${typeof window !== 'undefined' && window.innerWidth < 768 ? 'rounded-r-3xl' : 'rounded-2xl'}`}>
+        <div className="flex items-center justify-between px-3 py-2 bg-black/40 border-b border-white/5 min-h-[44px]">
+          <h2 className="text-sm font-black text-white tracking-tight truncate pr-2">{data.title}</h2>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-6 h-6 rounded-full bg-[#0b622f]/90 border border-[#0b622f]/50 flex items-center justify-center text-[11px] font-black text-white shadow-[0_0_8px_rgba(11,98,47,0.4)]">
+              {data.manaCost}
+            </div>
             <button 
-              onClick={toggleCardExpanded}
+              onClick={() => { setSelectedHex(null); setSelectedCard(null); }}
               className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={isCardExpanded ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"} />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-          )}
-          <div className="w-6 h-6 rounded-full bg-[#0b622f]/90 border border-[#0b622f]/50 flex items-center justify-center text-[11px] font-black text-white shadow-[0_0_8px_rgba(11,98,47,0.4)]">
-            {data.manaCost}
           </div>
-          <button 
-            onClick={() => { setSelectedHex(null); setSelectedCard(null); }}
-            className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
         </div>
-      </div>
 
       <div className="relative h-20 md:h-32 bg-slate-950/50 flex items-center justify-center border-b border-white/5 overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -296,6 +309,9 @@ export const CardDetailsUI: React.FC = () => {
           </div>
         </div>
       )}
+
+      </div> {/* End of inner content div */}
+
     </motion.div>
   );
 };

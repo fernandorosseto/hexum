@@ -10,6 +10,8 @@ export const BattleHUD: React.FC = () => {
   const isAiThinking = useGameStore(state => state.isAiThinking);
   const isLogVisible = useGameStore(state => state.isLogVisible);
   const toggleLog = useGameStore(state => state.toggleLog);
+  const turnTimer = useGameStore(state => state.turnTimer);
+  const isTimerRunning = useGameStore(state => state.isTimerRunning);
   
   const renderMana = (current: number, max: number) => {
     return Array.from({ length: 6 }).map((_, i) => (
@@ -60,6 +62,11 @@ export const BattleHUD: React.FC = () => {
         <div className="hidden sm:flex flex-col items-center gap-1">
           <span className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] whitespace-nowrap">
             {sandboxMode ? 'SIMULADOR DE GUERRA' : `Turno ${turnNumber}`}
+            {!sandboxMode && isTimerRunning && (
+              <span className={`ml-2 ${turnTimer <= 10 ? 'text-red-500 animate-pulse' : 'text-blue-400'}`}>
+                ⏳ {turnTimer}s
+              </span>
+            )}
           </span>
           {isAiThinking && (
             <div className="flex items-center gap-2 px-3 py-1 bg-purple-900/30 border border-purple-500/30 rounded-lg animate-pulse">
@@ -122,6 +129,17 @@ export const BattleHUD: React.FC = () => {
           >
             Passar Turno
           </button>
+        </div>
+      )}
+      {/* Barra de Tempo (Pavio) estilo Arena */}
+      {!sandboxMode && isTimerRunning && (
+        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-slate-800 overflow-hidden">
+          <div 
+            className={`h-full transition-all duration-1000 ease-linear ${
+              turnTimer <= 10 ? 'bg-gradient-to-r from-red-600 via-orange-500 to-red-600 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-blue-500'
+            }`}
+            style={{ width: `${(turnTimer / 60) * 100}%` }}
+          />
         </div>
       )}
     </div>
