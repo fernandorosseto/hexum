@@ -18,8 +18,14 @@ interface GameLog {
 }
 
 interface GameStore extends GameState {
-  currentView: 'MENU' | 'PLAY' | 'SANDBOX';
-  setCurrentView: (view: 'MENU' | 'PLAY' | 'SANDBOX') => void;
+  currentView: 'MENU' | 'PLAY' | 'SANDBOX' | 'PVP';
+  setCurrentView: (view: 'MENU' | 'PLAY' | 'SANDBOX' | 'PVP') => void;
+  // PvP
+  lobbyId: string | null;
+  myRole: 'p1' | 'p2' | null;
+  isPvP: boolean;
+  setLobbySession: (lobbyId: string, myRole: 'p1' | 'p2') => void;
+  clearLobbySession: () => void;
   selectedHex: HexCoordinates | null;
   selectedCard: string | null;
   targetHex: HexCoordinates | null;
@@ -87,6 +93,12 @@ export const useGameStore = create<GameStore>()(
     (set, get) => ({
       ...createInitialState(),
       currentView: 'MENU',
+      // PvP state
+      lobbyId: null,
+      myRole: null,
+      isPvP: false,
+      setLobbySession: (lobbyId, myRole) => set({ lobbyId, myRole, isPvP: true }),
+      clearLobbySession: () => set({ lobbyId: null, myRole: null, isPvP: false }),
       setCurrentView: (view) => {
         if (view === 'SANDBOX') {
           const initialState = createInitialState();
@@ -115,6 +127,9 @@ export const useGameStore = create<GameStore>()(
             selectedHex: null,
             selectedCard: null
           });
+        } else if (view === 'PVP') {
+          // Modo PvP: não reseta o estado — o lobby já inicializou via createInitialState
+          set({ currentView: 'PVP', sandboxMode: false, isVsAI: false });
         } else {
           set({ currentView: view });
         }

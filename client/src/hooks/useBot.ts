@@ -15,7 +15,9 @@ export function useBot() {
   const isThinking = useRef(false);
 
   useEffect(() => {
-    // Só age se for o turno do P2 e não estiver já processando
+    // Só age se for o turno do P2 E não for PvP (PvP não usa bot)
+    const isPvP = useGameStore.getState().isPvP;
+    if (isPvP) return;
     if (currentTurnPlayerId === 'p2' && currentPhase === 'MAIN_PHASE' && !isThinking.current) {
       console.log("IA ativada para turno do P2");
       processBotTurn();

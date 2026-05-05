@@ -5,5 +5,8 @@
     "shared",
     "client",
     "server"
-  ]
+  ],
+  "dependencies": {
+    "firebase": "^12.12.1"
+  }
 }

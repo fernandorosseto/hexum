@@ -6,8 +6,12 @@ import { CardDetailsUI } from './ui/CardDetailsUI';
 import { SandboxUI } from './ui/SandboxUI';
 import { MainMenu } from './ui/MainMenu';
 import { GameOverUI } from './ui/GameOverUI';
+import { LoginPage } from './ui/LoginPage';
+import { LobbyPage } from './ui/LobbyPage';
 import { useBot } from './hooks/useBot';
 import { useGameStore } from './store/gameStore';
+import { useAuth } from './hooks/useAuth';
+import { useMultiplayer } from './hooks/useMultiplayer';
 import { AnimatePresence, motion } from 'framer-motion';
 import './index.css';
 import backgroundImg from './assets/background.jpg';
@@ -16,9 +20,29 @@ import { useEffect } from 'react';
 
 function App() {
   useBot();
+  const { user, loading: authLoading } = useAuth();
   const currentTurnPlayerId = useGameStore(s => s.currentTurnPlayerId);
+  const isPvP    = useGameStore(s => s.isPvP);
+  const lobbyId  = useGameStore(s => s.lobbyId);
+  const myRole   = useGameStore(s => s.myRole);
+
+  // Liga sincronização multiplayer apenas quando em modo PvP
+  const { syncAction } = useMultiplayer({ lobbyId: isPvP ? lobbyId : null, myRole });
   const phase = useGameStore(s => s.currentPhase);
   const currentView = useGameStore(s => s.currentView);
+
+  // Sincroni za o estado com o Firestore após cada ação do jogador local no PvP
+  useEffect(() => {
+    if (!isPvP || !myRole) return;
+    // Só sincroniza quando é a vez do oponente (significa que acabamos de agir)
+    const state = useGameStore.getState();
+    const justActed = state.currentTurnPlayerId !== myRole;
+    if (justActed) {
+      syncAction(state);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTurnPlayerId, isPvP, myRole]);
+
   const isLogVisible = useGameStore(s => s.isLogVisible);
   const selectedCard = useGameStore(s => s.selectedCard);
   const isHandExpanded = useGameStore(s => s.isHandExpanded);
@@ -54,6 +78,36 @@ function App() {
       triggerEndTurn();
     }
   }, [turnTimer, isTimerRunning, triggerEndTurn, currentView, sandboxMode]);
+
+  // Tela de carregamento enquanto o Firebase resolve o estado de auth
+  if (authLoading) {
+    return (
+      <div
+        className="fixed inset-0 flex items-center justify-center bg-black"
+        style={{
+          backgroundImage: `url(${backgroundImg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="absolute inset-0 bg-black/70" />
+        <div className="relative z-10 flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-2 border-amber-500/40 border-t-amber-500 rounded-full animate-spin" />
+          <p className="text-slate-500 text-xs uppercase tracking-widest">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Página de Login — exibida se o usuário não está autenticado
+  if (!user) {
+    return <LoginPage onAuthenticated={() => {}} />;
+  }
+
+  // Lobby PvP (sala de espera) — view PVP mas ainda sem sessão iniciada
+  if (currentView === 'PVP' && !isPvP) {
+    return <LobbyPage />;
+  }
 
   // Se estiver no MENU, renderiza apenas o MainMenu
   if (currentView === 'MENU') {
