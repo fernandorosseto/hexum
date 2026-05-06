@@ -128,16 +128,16 @@ export const BattleHUD: React.FC = () => {
         ) : <div className="hidden md:block w-48" />}
 
         {/* Centro — Turno (Ou Lab) */}
-        <div className="hidden sm:flex flex-col items-center gap-1">
-          <span className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] whitespace-nowrap">
-            {sandboxMode ? 'SIMULADOR DE GUERRA' : `Turno ${turnNumber}`}
+        <div className="flex flex-col items-center gap-0.5 md:gap-1">
+          <span className="text-[8px] md:text-[10px] font-bold text-slate-500 uppercase tracking-[0.1em] md:tracking-[0.2em] whitespace-nowrap">
+            {sandboxMode ? 'SIMULADOR' : `Turno ${turnNumber}`}
             {isPvP && lobbyCode && (
-              <span className="ml-3 text-indigo-400/60 border border-indigo-400/20 px-1.5 py-0.5 rounded text-[8px] tracking-widest">
+              <span className="ml-1.5 md:ml-3 text-indigo-400/60 border border-indigo-400/20 px-1 md:px-1.5 py-0.5 rounded text-[7px] md:text-[8px] tracking-widest">
                 ID: {lobbyCode}
               </span>
             )}
             {!sandboxMode && isTimerRunning && (
-              <span className={`ml-2 ${turnTimer <= 10 ? 'text-red-500 animate-pulse' : 'text-blue-400'}`}>
+              <span className={`ml-1.5 md:ml-2 ${turnTimer <= 10 ? 'text-red-500 animate-pulse' : 'text-blue-400'}`}>
                 ⏳ {turnTimer}s
               </span>
             )}
