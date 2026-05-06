@@ -82,7 +82,6 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
       if (!lobbyId) return;
       isSyncing.current = true;
       try {
-        // Extrai apenas o que pertence ao GameState compartilhado
         const gameState: GameState = {
           matchId:             fullState.matchId,
           turnNumber:          fullState.turnNumber,
@@ -91,17 +90,49 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
           aiDifficulty:        fullState.aiDifficulty,
           players:             fullState.players,
           boardUnits:          fullState.boardUnits,
-          combatLogs:          fullState.combatLogs,
-          winner:              fullState.winner,
+          combatLogs:          fullState.combatLogs || [],
+          winner:              fullState.winner || null,
         };
         await pushGameState(lobbyId, gameState);
       } finally {
-        // Libera flag após um pequeno delay para evitar echo
         setTimeout(() => { isSyncing.current = false; }, 300);
       }
     },
     [lobbyId]
   );
+
+  // ── Inscrição direta no store para sincronização de saída ──
+  useEffect(() => {
+    if (!lobbyId || !myRole) return;
+
+    let prevTurnId = useGameStore.getState().currentTurnPlayerId;
+
+    const unsubStore = useGameStore.subscribe((state, prevState) => {
+      // Ignora se não for PvP
+      if (!state.isPvP) return;
+
+      // Detecta se houve mudança real no GameState (evita loops com UI local)
+      const hasChanged = 
+        state.boardUnits !== prevState.boardUnits || 
+        state.players !== prevState.players || 
+        state.currentTurnPlayerId !== prevState.currentTurnPlayerId ||
+        state.currentPhase !== prevState.currentPhase;
+
+      if (!hasChanged) return;
+
+      // Sincroniza se for o NOSSO turno OU se acabamos de passar o turno
+      const isMyTurn = state.currentTurnPlayerId === myRole;
+      const iJustPassedTurn = prevTurnId === myRole && !isMyTurn;
+
+      if (isMyTurn || iJustPassedTurn) {
+        syncAction(state);
+      }
+
+      prevTurnId = state.currentTurnPlayerId;
+    });
+
+    return () => unsubStore();
+  }, [lobbyId, myRole, syncAction]);
 
   // ── Encerra a sala quando o jogo termina ──
   useEffect(() => {

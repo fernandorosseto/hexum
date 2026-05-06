@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, subscribeWithSelector } from 'zustand/middleware';
 import { endTurn, createInitialState, hasAnyValidAction } from 'shared';
 import { getBestAction } from 'shared/src/aiEngine';
 import type { GameState, HexCoordinates } from 'shared';
@@ -97,8 +97,9 @@ interface GameStore extends GameState {
 }
 
 export const useGameStore = create<GameStore>()(
-  persist(
-    (set, get) => ({
+  subscribeWithSelector(
+    persist(
+      (set, get) => ({
       ...createInitialState(),
       currentView: 'MENU',
       // PvP state
@@ -369,4 +370,5 @@ export const useGameStore = create<GameStore>()(
       },
     }
   )
+)
 );

@@ -35,23 +35,8 @@ function App() {
   const boardUnits = useGameStore(s => s.boardUnits);
   const players = useGameStore(s => s.players);
 
-  const prevTurnId = useRef(currentTurnPlayerId);
-
-  // Sincroniza o estado com o Firestore após cada ação do jogador local no PvP
-  useEffect(() => {
-    if (!isPvP || !myRole) return;
-    
-    const state = useGameStore.getState();
-    // Sincroniza se for o NOSSO turno OU se acabamos de passar o turno
-    const isMyTurn = state.currentTurnPlayerId === myRole;
-    const iJustPassedTurn = prevTurnId.current === myRole && !isMyTurn;
-
-    if (isMyTurn || iJustPassedTurn) {
-      syncAction(state as any);
-    }
-    
-    prevTurnId.current = state.currentTurnPlayerId;
-  }, [boardUnits, players, currentTurnPlayerId, isPvP, myRole, syncAction]);
+  // O hook useMultiplayer agora gerencia a sincronização interna via subscribe()
+  // para garantir que cada mudança no store seja enviada sem depender do ciclo de render do React.
 
   const isLogVisible = useGameStore(s => s.isLogVisible);
   const selectedCard = useGameStore(s => s.selectedCard);
