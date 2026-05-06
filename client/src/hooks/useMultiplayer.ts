@@ -95,7 +95,8 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
         };
         await pushGameState(lobbyId, gameState);
       } finally {
-        setTimeout(() => { isSyncing.current = false; }, 300);
+        // Reduzido para 100ms para ser mais responsivo
+        setTimeout(() => { isSyncing.current = false; }, 100);
       }
     },
     [lobbyId]
@@ -105,31 +106,30 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
   useEffect(() => {
     if (!lobbyId || !myRole) return;
 
-    let prevTurnId = useGameStore.getState().currentTurnPlayerId;
+    const unsubStore = useGameStore.subscribe(
+      (state) => state,
+      (state, prevState) => {
+        if (!state.isPvP) return;
 
-    const unsubStore = useGameStore.subscribe((state, prevState) => {
-      // Ignora se não for PvP
-      if (!state.isPvP) return;
+        // Detecta mudanças no estado vital do jogo
+        const hasChanged = 
+          state.boardUnits !== prevState.boardUnits || 
+          state.players !== prevState.players || 
+          state.currentTurnPlayerId !== prevState.currentTurnPlayerId ||
+          state.currentPhase !== prevState.currentPhase ||
+          state.winner !== prevState.winner ||
+          state.turnNumber !== prevState.turnNumber;
 
-      // Detecta se houve mudança real no GameState (evita loops com UI local)
-      const hasChanged = 
-        state.boardUnits !== prevState.boardUnits || 
-        state.players !== prevState.players || 
-        state.currentTurnPlayerId !== prevState.currentTurnPlayerId ||
-        state.currentPhase !== prevState.currentPhase;
+        if (!hasChanged) return;
 
-      if (!hasChanged) return;
+        const isMyTurn = state.currentTurnPlayerId === myRole;
+        const iJustPassedTurn = prevState.currentTurnPlayerId === myRole && !isMyTurn;
 
-      // Sincroniza se for o NOSSO turno OU se acabamos de passar o turno
-      const isMyTurn = state.currentTurnPlayerId === myRole;
-      const iJustPassedTurn = prevTurnId === myRole && !isMyTurn;
-
-      if (isMyTurn || iJustPassedTurn) {
-        syncAction(state);
+        if (isMyTurn || iJustPassedTurn) {
+          syncAction(state);
+        }
       }
-
-      prevTurnId = state.currentTurnPlayerId;
-    });
+    );
 
     return () => unsubStore();
   }, [lobbyId, myRole, syncAction]);
