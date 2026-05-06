@@ -36,6 +36,7 @@ export const BattleHUD: React.FC = () => {
   const clearLobbySession = useGameStore(state => state.clearLobbySession);
   const phase = useGameStore(state => state.currentPhase);
   const sandboxMode = useGameStore(state => state.sandboxMode);
+  const lobbyId = useGameStore(state => state.lobbyId);
   
   const isMyTurn = isPvP ? (currentTurnPlayerId === myRole) : (currentTurnPlayerId === 'p1');
   const [showConfirm, setShowConfirm] = React.useState(false);
@@ -222,6 +223,30 @@ export const BattleHUD: React.FC = () => {
             }`}
             style={{ width: `${(turnTimer / 60) * 100}%` }}
           />
+        </div>
+      )}
+      {/* Debug Info para Mobile/PvP */}
+      {isPvP && (
+        <div className="fixed bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-4 text-[8px] text-white/30 z-[100] bg-black/60 px-3 py-1 rounded-full backdrop-blur-md border border-white/10">
+          <div className="flex gap-2">
+            <span>ROOM: {lobbyCode}</span>
+            <span>ROLE: {myRole}</span>
+            <span className={currentTurnPlayerId === myRole ? 'text-green-400 font-bold' : ''}>
+              TURN: {currentTurnPlayerId}
+            </span>
+          </div>
+          <button 
+            onClick={() => {
+              const state = useGameStore.getState();
+              // Força a limpeza do cache de sincronia para garantir o envio
+              // A função syncAction será chamada pelo componente pai ou via ref se necessário
+              // Mas aqui podemos disparar um evento customizado ou usar uma técnica simples:
+              window.dispatchEvent(new CustomEvent('force-pvp-sync'));
+            }}
+            className="bg-white/10 hover:bg-white/20 active:bg-white/30 px-2 py-0.5 rounded border border-white/20 transition-colors pointer-events-auto"
+          >
+            FORÇAR SYNC
+          </button>
         </div>
       )}
     </div>

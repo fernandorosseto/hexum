@@ -32,7 +32,7 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
   const currentPhase   = useGameStore(s => s.currentPhase);
 
   // Ref para evitar loop: não aplicar o snapshot que nós mesmos geramos
-  const isSyncing = useRef(false);
+  const lastSyncedState = useRef<string>('');
 
   // ── Recebe snapshot do Firestore e aplica no store local ──
   useEffect(() => {
@@ -45,8 +45,9 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
         return;
       }
 
-      // Ignora o snapshot que nós mesmos enviamos
-      if (isSyncing.current) return;
+      // Ignora o snapshot se for idêntico ao que acabamos de enviar
+      const incomingJson = JSON.stringify(lobby.gameState);
+      if (incomingJson === lastSyncedState.current) return;
 
       // Aplica apenas os campos do GameState, sem sobrescrever o papel (myRole) ou IDs de sala
       if (lobby.gameState) {
@@ -80,23 +81,27 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
   const syncAction = useCallback(
     async (fullState: any) => {
       if (!lobbyId) return;
-      isSyncing.current = true;
+      
+      const gameState: GameState = {
+        matchId:             fullState.matchId,
+        turnNumber:          fullState.turnNumber,
+        currentPhase:        fullState.currentPhase,
+        currentTurnPlayerId: fullState.currentTurnPlayerId,
+        aiDifficulty:        fullState.aiDifficulty,
+        players:             fullState.players,
+        boardUnits:          fullState.boardUnits,
+        combatLogs:          fullState.combatLogs || [],
+        winner:              fullState.winner || null,
+      };
+
+      const stateJson = JSON.stringify(gameState);
+      if (stateJson === lastSyncedState.current) return;
+
+      lastSyncedState.current = stateJson;
       try {
-        const gameState: GameState = {
-          matchId:             fullState.matchId,
-          turnNumber:          fullState.turnNumber,
-          currentPhase:        fullState.currentPhase,
-          currentTurnPlayerId: fullState.currentTurnPlayerId,
-          aiDifficulty:        fullState.aiDifficulty,
-          players:             fullState.players,
-          boardUnits:          fullState.boardUnits,
-          combatLogs:          fullState.combatLogs || [],
-          winner:              fullState.winner || null,
-        };
         await pushGameState(lobbyId, gameState);
-      } finally {
-        // Reduzido para 100ms para ser mais responsivo
-        setTimeout(() => { isSyncing.current = false; }, 100);
+      } catch (err) {
+        console.error('Falha ao sincronizar PvP:', err);
       }
     },
     [lobbyId]
@@ -138,7 +143,17 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
     );
 
     return () => unsubStore();
-  }, [lobbyId, myRole]); // syncAction removido das dependências
+  }, [lobbyId, myRole]);
+
+  // ── Listener para o botão "FORÇAR SYNC" do Debug ──
+  useEffect(() => {
+    const handleForceSync = () => {
+      lastSyncedState.current = ''; // Limpa o cache para garantir que o sync dispare
+      syncActionRef.current(useGameStore.getState());
+    };
+    window.addEventListener('force-pvp-sync', handleForceSync);
+    return () => window.removeEventListener('force-pvp-sync', handleForceSync);
+  }, []);
 
   // ── Encerra a sala quando o jogo termina ──
   useEffect(() => {
