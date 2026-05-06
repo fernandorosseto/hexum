@@ -64,6 +64,8 @@ export const HexMap: React.FC = () => {
   const activeWindTrail = useGameStore(state => state.activeWindTrail);
   const sandboxMode = useGameStore(state => state.sandboxMode);
   const isInspectMode = useGameStore(state => state.isInspectMode);
+  const isPvP = useGameStore(state => state.isPvP);
+  const myRole = useGameStore(state => state.myRole);
 
   const [dragConstraints, setDragConstraints] = useState({ left: -400, right: 400, top: -400, bottom: 400 });
 
@@ -136,6 +138,10 @@ export const HexMap: React.FC = () => {
       return;
     }
 
+    // No PvP, você só pode interagir no seu turno (a menos que seja inspeção)
+    const isMyTurn = isPvP ? (currentTurnPlayerId === myRole) : (currentTurnPlayerId === 'p1');
+    if (isPvP && !isMyTurn) return;
+
     if (selectedCard) {
       attemptPlayCard(selectedCard, hex);
       return;
@@ -144,7 +150,15 @@ export const HexMap: React.FC = () => {
     const selectedUnit = selectedHex ? getUnitAt(selectedHex.q, selectedHex.r) : null;
 
     if (!selectedHex) {
-      if (clickedUnit || sandboxMode) setSelectedHex(hex);
+      if (clickedUnit || sandboxMode) {
+        // No PvP, você só pode selecionar suas próprias unidades para agir
+        if (isPvP && clickedUnit && clickedUnit.playerId !== myRole) {
+          // Permite apenas "ver" a unidade, mas não selecioná-la para movimento (limpamos a seleção se não for sua)
+          setSelectedHex(hex);
+          return;
+        }
+        setSelectedHex(hex);
+      }
       return;
     }
 

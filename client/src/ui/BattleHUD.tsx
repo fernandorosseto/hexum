@@ -27,13 +27,17 @@ export const BattleHUD: React.FC = () => {
   };
 
 
-  const isMyTurn = currentTurnPlayerId === 'p1';
-  const sandboxMode = useGameStore(state => state.sandboxMode);
-  const lobbyCode = useGameStore(state => state.lobbyCode);
+  const myRole = useGameStore(state => state.myRole);
   const isPvP = useGameStore(state => state.isPvP);
+  const lobbyCode = useGameStore(state => state.lobbyCode);
+  const p1Name = useGameStore(state => state.p1Name);
+  const p2Name = useGameStore(state => state.p2Name);
   const surrender = useGameStore(state => state.surrender);
   const clearLobbySession = useGameStore(state => state.clearLobbySession);
   const phase = useGameStore(state => state.currentPhase);
+  const sandboxMode = useGameStore(state => state.sandboxMode);
+  
+  const isMyTurn = isPvP ? (currentTurnPlayerId === myRole) : (currentTurnPlayerId === 'p1');
   const [showConfirm, setShowConfirm] = React.useState(false);
 
   const handleQuit = () => {
@@ -121,7 +125,9 @@ export const BattleHUD: React.FC = () => {
           <div className={`flex items-center gap-2 md:gap-3 px-2 md:px-4 py-1 md:py-2 rounded-xl transition-all duration-300 ${isMyTurn ? 'bg-[#0b622f]/20 ring-1 ring-[#0b622f]/60' : 'opacity-50'}`}>
             <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[#0b622f] to-[#084822] border-2 border-[#0b622f]/30 flex items-center justify-center text-white font-black text-[9px] md:text-xs shadow-md">P1</div>
             <div>
-              <span className="text-[#a7f3d0] font-bold text-[10px] md:text-sm block leading-none">P1</span>
+              <span className="text-[#a7f3d0] font-bold text-[10px] md:text-sm block leading-none">
+                {isPvP ? p1Name : 'P1'} {isPvP && myRole === 'p1' && <span className="text-[7px] md:text-[8px] opacity-60 font-medium ml-1">VOCÊ</span>}
+              </span>
               <div className="flex gap-0.5 mt-0.5 md:mt-1">{renderMana(players['p1'].mana, players['p1'].maxMana)}</div>
             </div>
           </div>
@@ -162,7 +168,9 @@ export const BattleHUD: React.FC = () => {
         {!sandboxMode ? (
           <div className={`flex items-center gap-2 md:gap-3 px-2 md:px-4 py-1 md:py-2 rounded-xl transition-all duration-300 ${!isMyTurn ? 'bg-[#602471]/20 ring-1 ring-[#602471]/60' : 'opacity-50'}`}>
             <div className="text-right">
-              <span className="text-[#f5d0f9] font-bold text-[10px] md:text-sm block leading-none">P2</span>
+              <span className="text-[#f5d0f9] font-bold text-[10px] md:text-sm block leading-none">
+                {isPvP ? p2Name : 'P2'} {isPvP && myRole === 'p2' && <span className="text-[7px] md:text-[8px] opacity-60 font-medium ml-1">VOCÊ</span>}
+              </span>
               <div className="flex gap-0.5 mt-0.5 md:mt-1 justify-end">{renderMana(players['p2'].mana, players['p2'].maxMana)}</div>
             </div>
             <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[#602471] to-[#40184b] border-2 border-[#a855f7]/30 flex items-center justify-center text-white font-black text-[9px] md:text-xs shadow-md">P2</div>

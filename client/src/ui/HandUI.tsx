@@ -23,20 +23,27 @@ function getCardDetails(cardId: string) {
 export const HandUI: React.FC = () => {
   const currentTurnPlayerId = useGameStore(state => state.currentTurnPlayerId);
   const players = useGameStore(state => state.players);
+  const myRole = useGameStore(state => state.myRole);
+  const isPvP = useGameStore(state => state.isPvP);
+  
+  // Em PvP, mostramos sempre a mão do MEU papel. 
+  // Em Single Player, mostramos a mão do jogador da vez (p1).
+  const targetPlayerId = isPvP ? (myRole || 'p1') : 'p1';
+  const player = players[targetPlayerId];
+  const hand = player?.hand || [];
+  
   const selectedCard = useGameStore(state => state.selectedCard);
   const setSelectedCard = useGameStore(state => state.setSelectedCard);
   const setSelectedHex = useGameStore(state => state.setSelectedHex);
   const offerCard = useGameStore(state => state.offerCard);
   const isAiThinking = useGameStore(state => state.isAiThinking);
   
-  const humanPlayer = players['p1'];
-  const aiPlayer = players['p2'];
-  const isMyTurn = currentTurnPlayerId === 'p1';
+  const isMyTurn = currentTurnPlayerId === targetPlayerId;
 
   return (
     <div className="relative flex flex-col md:flex-col items-center gap-4">
 
-      {selectedCard && humanPlayer.canOfferCard && isMyTurn && (
+      {selectedCard && player?.canOfferCard && isMyTurn && (
         <button 
           onClick={() => {
             offerCard(selectedCard);
@@ -49,10 +56,10 @@ export const HandUI: React.FC = () => {
       )}
 
       <div className={`flex flex-col md:flex-row gap-6 md:gap-2 transition-all duration-300 ${!isMyTurn ? 'opacity-40 pointer-events-none scale-95' : ''}`}>
-        {humanPlayer.hand.map((cardId, idx) => {
+        {hand.map((cardId, idx) => {
           const card = getCardDetails(cardId);
           if (!card) return null;
-          const canAfford = isMyTurn && humanPlayer.mana >= card.cost;
+          const canAfford = isMyTurn && player.mana >= card.cost;
           const isSelected = selectedCard === card.id;
           
           return (

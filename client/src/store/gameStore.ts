@@ -23,10 +23,13 @@ interface GameStore extends GameState {
   // PvP
   lobbyId: string | null;
   lobbyCode: string | null;
+  p1Name: string;
+  p2Name: string;
   myRole: 'p1' | 'p2' | null;
   isPvP: boolean;
   isMatchStarted: boolean;
   setLobbySession: (lobbyId: string, lobbyCode: string, myRole: 'p1' | 'p2') => void;
+  setPlayerNames: (p1: string, p2: string) => void;
   setMatchStarted: (started: boolean) => void;
   clearLobbySession: () => void;
   selectedHex: HexCoordinates | null;
@@ -101,10 +104,13 @@ export const useGameStore = create<GameStore>()(
       // PvP state
       lobbyId: null,
       lobbyCode: null,
+      p1Name: 'Jogador 1',
+      p2Name: 'Jogador 2',
       myRole: null,
       isPvP: false,
       isMatchStarted: false,
       setLobbySession: (lobbyId, lobbyCode, myRole) => set({ lobbyId, lobbyCode, myRole, isPvP: true, isMatchStarted: false }),
+      setPlayerNames: (p1, p2) => set({ p1Name: p1, p2Name: p2 }),
       setMatchStarted: (started) => set({ isMatchStarted: started }),
       clearLobbySession: () => {
         const initialState = createInitialState();
@@ -112,6 +118,8 @@ export const useGameStore = create<GameStore>()(
           ...initialState,
           lobbyId: null, 
           lobbyCode: null,
+          p1Name: 'Jogador 1',
+          p2Name: 'Jogador 2',
           myRole: null, 
           isMatchStarted: false,
           logs: [],
