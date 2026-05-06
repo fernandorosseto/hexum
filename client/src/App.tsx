@@ -16,7 +16,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import './index.css';
 import backgroundImg from './assets/background.jpg';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 function App() {
   useBot();
@@ -35,15 +35,22 @@ function App() {
   const boardUnits = useGameStore(s => s.boardUnits);
   const players = useGameStore(s => s.players);
 
+  const prevTurnId = useRef(currentTurnPlayerId);
+
   // Sincroniza o estado com o Firestore após cada ação do jogador local no PvP
   useEffect(() => {
     if (!isPvP || !myRole) return;
     
-    // Sincroniza sempre que for o NOSSO turno e algo mudar (unidades ou mana)
     const state = useGameStore.getState();
-    if (state.currentTurnPlayerId === myRole) {
+    // Sincroniza se for o NOSSO turno OU se acabamos de passar o turno
+    const isMyTurn = state.currentTurnPlayerId === myRole;
+    const iJustPassedTurn = prevTurnId.current === myRole && !isMyTurn;
+
+    if (isMyTurn || iJustPassedTurn) {
       syncAction(state as any);
     }
+    
+    prevTurnId.current = state.currentTurnPlayerId;
   }, [boardUnits, players, currentTurnPlayerId, isPvP, myRole, syncAction]);
 
   const isLogVisible = useGameStore(s => s.isLogVisible);
