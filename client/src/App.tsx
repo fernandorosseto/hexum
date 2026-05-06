@@ -104,8 +104,10 @@ function App() {
     return <LoginPage onAuthenticated={() => {}} />;
   }
 
-  // Lobby PvP (sala de espera) — view PVP mas ainda sem sessão iniciada
-  if (currentView === 'PVP' && !isPvP) {
+  // Lobby PvP (sala de espera) — view PVP mas ainda sem adversário (p2)
+  // No caso do Host, isPvP fica true mas o guestId no store ainda seria nulo ou o status do lobby seria waiting.
+  // Uma forma simples: se estiver em PVP mas não tivermos um lobbyId ativo vindo do useMultiplayer ou se o estado local ainda indicar espera.
+  if (currentView === 'PVP' && (!isPvP || !lobbyId)) {
     return <LobbyPage />;
   }
 
