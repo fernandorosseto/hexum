@@ -12,7 +12,6 @@ export const ShadowSlash: React.FC<Props> = ({ target }) => {
   const size = HEX_SIZE * 1.5;
 
   return (
-  return (
     <g transform={`translate(${center.x}, ${center.y})`}>
       <motion.g className="pointer-events-none z-50 overflow-visible">
       

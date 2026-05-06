@@ -11,7 +11,6 @@ export const ShockwaveAnimation: React.FC<Props> = ({ target }) => {
   const center = hexToPixel(target);
 
   return (
-  return (
     <g transform={`translate(${center.x}, ${center.y})`}>
       <motion.g className="pointer-events-none z-50">
       

@@ -19,7 +19,6 @@ export const MistEffect: React.FC<MistEffectProps> = ({ unit }) => {
   const { x, y } = hexToPixel(unit.position);
 
   return (
-  return (
     <g transform={`translate(${x}, ${y})`}>
       <motion.g
         initial={{ opacity: 0 }}

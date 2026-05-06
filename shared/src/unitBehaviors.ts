@@ -498,6 +498,7 @@ export const UNIT_BEHAVIORS: Record<UnitClass, UnitBehavior> = {
   Arqueiro: ArqueiroBehavior,
   Assassino: AssassinoBehavior,
   Alquimista: AlquimistaBehavior,
+  Mago: AlquimistaBehavior,
   Clerigo: ClerigoBehavior,
   Estrutura: EstruturaBehavior,
 };

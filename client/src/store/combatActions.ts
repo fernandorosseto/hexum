@@ -56,7 +56,7 @@ export const createCombatActions = (set: any, get: any) => {
         ...newState, 
         selectedHex: null, 
         selectedAbility: null,
-        lastActionVfx: { type: 'MOVE', sourceId: unitId, targetPos: targetHex, timestamp: Date.now() }
+        lastActionVfx: { type: 'MOVE', sourceId: unitId, sourcePos: unit.position, targetPos: targetHex, timestamp: Date.now() }
       });
 
       const moveTemplates = [
@@ -122,7 +122,9 @@ export const createCombatActions = (set: any, get: any) => {
       newState.lastActionVfx = { 
         type: 'ATTACK', 
         sourceId: attackerId, 
+        sourcePos: attacker.position,
         targetId: targetId, 
+        targetPos: target.position,
         timestamp: Date.now() 
       };
 
@@ -172,7 +174,7 @@ export const createCombatActions = (set: any, get: any) => {
         ...newState, 
         selectedHex: null, 
         animatingUnits: { [targetId]: 'healing' },
-        lastActionVfx: { type: 'HEAL', sourceId: healerId, targetId: targetId, timestamp: Date.now() }
+        lastActionVfx: { type: 'HEAL', sourceId: healerId, sourcePos: healer.position, targetId: targetId, targetPos: target.position, timestamp: Date.now() }
       });
       get().addLog(`O ${healer.unitClass} usou preces divinas para curar o ${target.unitClass}!`, healer.playerId);
       setTimeout(() => set({ animatingUnits: {} }), 600);
@@ -302,6 +304,7 @@ export const createCombatActions = (set: any, get: any) => {
         lastActionVfx: { 
           type: 'SPELL', 
           sourceId: cardId === 'spl_transfusao' ? boardUnitsArr.find(u => u.unitClass === 'Rei' && u.playerId === currentGameState.currentTurnPlayerId)?.id : undefined,
+          sourcePos: cardId === 'spl_transfusao' ? boardUnitsArr.find(u => u.unitClass === 'Rei' && u.playerId === currentGameState.currentTurnPlayerId)?.position : undefined,
           targetPos: targetHex, 
           abilityId: cardId, 
           timestamp: Date.now() 

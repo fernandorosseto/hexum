@@ -1,7 +1,7 @@
 import type { HexCoordinates } from './hexMath';
 
 export type CardType = 'Unit' | 'Spell' | 'Artifact';
-export type UnitClass = 'Rei' | 'Clerigo' | 'Cavaleiro' | 'Lanceiro' | 'Arqueiro' | 'Alquimista' | 'Assassino' | 'Estrutura';
+export type UnitClass = 'Rei' | 'Clerigo' | 'Cavaleiro' | 'Lanceiro' | 'Arqueiro' | 'Alquimista' | 'Assassino' | 'Mago' | 'Estrutura';
 
 export interface Card {
   id: string;
@@ -83,6 +83,7 @@ export interface GameState {
   lastActionVfx?: {
     type: 'ATTACK' | 'SPELL' | 'MOVE' | 'HEAL' | 'SPECIAL';
     sourceId?: string;
+    sourcePos?: HexCoordinates;
     targetId?: string;
     targetPos?: HexCoordinates;
     abilityId?: string;
