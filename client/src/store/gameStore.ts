@@ -225,7 +225,7 @@ export const useGameStore = create<GameStore>()(
 
         set({
           currentPhase: 'GAME_OVER',
-          winnerId: opponentId,
+          winner: opponentId,
           isTimerRunning: false
         });
 
