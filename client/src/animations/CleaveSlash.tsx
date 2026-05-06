@@ -28,13 +28,13 @@ export const CleaveSlash: React.FC<Props> = ({ source, target, color }) => {
   const glowColor = color === 'gold' ? 'rgba(234, 179, 8, 0.8)' : 'rgba(6, 182, 212, 0.8)'; // amber-500 ou cyan-500
 
   return (
-    <motion.g 
-      x={slashCenter.x}
-      y={slashCenter.y}
-      rotate={angle}
-      scale={scale}
-      className="pointer-events-none z-50 overflow-visible"
-    >
+  return (
+    <g transform={`translate(${slashCenter.x}, ${slashCenter.y})`}>
+      <motion.g 
+        rotate={angle}
+        scale={scale}
+        className="pointer-events-none z-50 overflow-visible"
+      >
       {/* O arco (cleave) */}
       <motion.path
         d={`M ${-HEX_SIZE} ${-HEX_SIZE*1.2} Q ${HEX_SIZE*1.5} 0 ${-HEX_SIZE} ${HEX_SIZE*1.2}`}
@@ -60,6 +60,7 @@ export const CleaveSlash: React.FC<Props> = ({ source, target, color }) => {
         animate={{ pathLength: [0, 1], opacity: [1, 0] }}
         transition={{ duration: 0.25, ease: "easeOut" }}
       />
-    </motion.g>
+      </motion.g>
+    </g>
   );
 };

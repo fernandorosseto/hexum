@@ -10,6 +10,10 @@ import type {
   CleaveAnimation, ShockwaveAnimationData, ShadowSlashAnimation, ArcaneExplosionAnimation,
   SimpleSpellAnimation, WallSpellAnimation
 } from './animationActions';
+import { 
+  scheduleProjectileAnimation, scheduleThrustAnimation, scheduleMageAttack,
+  scheduleAssassinAttack, scheduleHeavyMelee, scheduleCleaveAttack, scheduleMeleeAnimation
+} from './animationActions';
 
 interface GameLog {
   id: string;
@@ -94,6 +98,7 @@ interface GameStore extends GameState {
   startTimer: () => void;
   stopTimer: () => void;
   decrementTimer: () => void;
+  triggerRemoteVfx: (vfx: NonNullable<GameState['lastActionVfx']>) => void;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -250,6 +255,70 @@ export const useGameStore = create<GameStore>()(
 
       ...createCombatActions(set, get),
       ...createSandboxActions(set, get),
+
+      lastActionVfx: undefined,
+
+      triggerRemoteVfx: (vfx) => {
+        const { type, sourceId, targetId, targetPos, abilityId } = vfx;
+        const state = get();
+        
+        if (type === 'ATTACK' && sourceId && targetId) {
+          const attacker = state.boardUnits[sourceId];
+          const target = state.boardUnits[targetId];
+          if (attacker && target) {
+            // Reaproveita as lógicas de agendamento do combatActions/animationActions
+            // Mas sem atualizar o estado de HP (pois o snapshot já trouxe o HP novo)
+            const animations: Record<string, any> = { [sourceId]: 'attacking', [targetId]: 'damaged' };
+            const dummyState = { ...state }; // Snapshot já aplicado
+            const dummyMsg = ""; // Log já aplicado
+            const targetDied = target.hp <= 0;
+
+            if (attacker.unitClass === 'Arqueiro') scheduleProjectileAnimation(set, get, attacker, target, dummyState, animations, dummyMsg, targetDied);
+            else if (attacker.unitClass === 'Lanceiro') scheduleThrustAnimation(set, get, attacker, target, dummyState, animations, dummyMsg, targetDied);
+            else if (attacker.unitClass === 'Mago') scheduleMageAttack(set, get, attacker, target, dummyState, animations, dummyMsg, targetDied);
+            else if (attacker.unitClass === 'Assassino') scheduleAssassinAttack(set, get, attacker, target, dummyState, animations, dummyMsg, targetDied);
+            else if (attacker.unitClass === 'Cavaleiro') scheduleHeavyMelee(set, get, attacker, target, dummyState, animations, dummyMsg, targetDied);
+            else if (attacker.unitClass === 'Rei') scheduleCleaveAttack(set, get, attacker, target, dummyState, animations, dummyMsg, targetDied, 'gold');
+            else if (attacker.unitClass === 'Clerigo') scheduleCleaveAttack(set, get, attacker, target, dummyState, animations, dummyMsg, targetDied, 'cyan');
+            else scheduleMeleeAnimation(set, get, attacker, target, dummyState, animations, dummyMsg, targetDied);
+          }
+        } else if (type === 'HEAL' && sourceId && targetId) {
+          set({ animatingUnits: { [targetId]: 'healing' } });
+          setTimeout(() => set({ animatingUnits: {} }), 600);
+        } else if (type === 'SPELL' && abilityId && targetPos) {
+           // Lógica para magias remotas
+           if (abilityId === 'spl_meteoro') {
+             set({ activeMeteor: targetPos });
+             setTimeout(() => set({ activeMeteor: null }), 1000);
+           } else if (abilityId === 'spl_transfusao' && sourceId) {
+             const targetUnit = state.boardUnits[sourceId]; // Em transfusão, sourceId é quem recebe
+             if (targetUnit) {
+               set({ activeTransfusion: { source: targetPos, target: targetUnit.position } });
+               setTimeout(() => set({ activeTransfusion: null }), 1000);
+             }
+           } else if (abilityId === 'spl_raio') {
+             // Raio é mais complexo pois anima múltiplas unidades
+             set({ animatingUnits: { [targetId || '']: 'lightning' } });
+             setTimeout(() => set({ animatingUnits: {} }), 800);
+           } else {
+             // Agendador genérico para outras magias
+             const keyMap: Record<string, string> = {
+               'spl_aurarunica': 'activeAuraRunica',
+               'spl_nevoa': 'activeMistImpact',
+               'spl_muralha': 'activeWallFormation',
+               'spl_passos': 'activeWindTrail',
+               'spl_bencao': 'activeDivineBlessing',
+               'spl_raizes': 'activeEarthRoots',
+               'spl_furia': 'activeFuryPulse'
+             };
+             const stateKey = keyMap[abilityId];
+             if (stateKey) {
+               set({ [stateKey]: targetPos });
+               setTimeout(() => set({ [stateKey]: null }), 800);
+             }
+           }
+        }
+      },
 
       triggerEndTurn: () => {
         try {

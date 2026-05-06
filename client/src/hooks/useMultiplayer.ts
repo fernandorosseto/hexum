@@ -66,11 +66,17 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
           boardUnits,
           combatLogs,
           winner,
+          lastActionVfx: lobby.gameState.lastActionVfx,
           // Limpa estados de seleção local após atualização externa
           selectedHex:  null,
           selectedCard: null,
           targetHex:    null,
         } as any);
+
+        // Dispara VFX se houver um novo timestamp
+        if (lobby.gameState.lastActionVfx && lobby.gameState.lastActionVfx.timestamp !== useGameStore.getState().lastActionVfx?.timestamp) {
+           useGameStore.getState().triggerRemoteVfx(lobby.gameState.lastActionVfx);
+        }
       }
     });
 
@@ -92,6 +98,7 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
         boardUnits:          fullState.boardUnits,
         combatLogs:          fullState.combatLogs || [],
         winner:              fullState.winner || null,
+        lastActionVfx:       fullState.lastActionVfx,
       };
 
       const stateJson = JSON.stringify(gameState);
@@ -129,7 +136,8 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
           state.currentTurnPlayerId !== prevState.currentTurnPlayerId ||
           state.currentPhase !== prevState.currentPhase ||
           state.winner !== prevState.winner ||
-          state.turnNumber !== prevState.turnNumber;
+          state.turnNumber !== prevState.turnNumber ||
+          state.lastActionVfx?.timestamp !== prevState.lastActionVfx?.timestamp;
 
         if (!hasChanged) return;
 

@@ -52,7 +52,12 @@ export const createCombatActions = (set: any, get: any) => {
 
       const finalUseSpecial = useSpecial || !!currentGameState.selectedAbility;
       const newState = moveTo(effectiveState, unitId, targetHex, finalUseSpecial);
-      set({ ...newState, selectedHex: null, selectedAbility: null });
+      set({ 
+        ...newState, 
+        selectedHex: null, 
+        selectedAbility: null,
+        lastActionVfx: { type: 'MOVE', sourceId: unitId, targetPos: targetHex, timestamp: Date.now() }
+      });
 
       const moveTemplates = [
         `O ${unit.unitClass} marchou pelo campo de batalha.`,
@@ -113,6 +118,14 @@ export const createCombatActions = (set: any, get: any) => {
       ];
       const attackMsg = attackTemplates[Math.floor(Math.random() * attackTemplates.length)] + details;
 
+      // Adiciona o gatilho de VFX para sincronização PvP
+      newState.lastActionVfx = { 
+        type: 'ATTACK', 
+        sourceId: attackerId, 
+        targetId: targetId, 
+        timestamp: Date.now() 
+      };
+
       if (attacker.unitClass === 'Arqueiro') {
         scheduleProjectileAnimation(set, get, attacker, target, newState, animations, attackMsg, targetDied);
       } else if (attacker.unitClass === 'Lanceiro') {
@@ -155,7 +168,12 @@ export const createCombatActions = (set: any, get: any) => {
       }
 
       const newState = heal(effectiveState, healerId, targetId);
-      set({ ...newState, selectedHex: null, animatingUnits: { [targetId]: 'healing' } });
+      set({ 
+        ...newState, 
+        selectedHex: null, 
+        animatingUnits: { [targetId]: 'healing' },
+        lastActionVfx: { type: 'HEAL', sourceId: healerId, targetId: targetId, timestamp: Date.now() }
+      });
       get().addLog(`O ${healer.unitClass} usou preces divinas para curar o ${target.unitClass}!`, healer.playerId);
       setTimeout(() => set({ animatingUnits: {} }), 600);
       checkAutoPass();
@@ -277,7 +295,18 @@ export const createCombatActions = (set: any, get: any) => {
         });
       }
 
-      set({ ...newState, selectedCard: null, selectedHex: null });
+      set({ 
+        ...newState, 
+        selectedCard: null, 
+        selectedHex: null,
+        lastActionVfx: { 
+          type: 'SPELL', 
+          sourceId: cardId === 'spl_transfusao' ? boardUnitsArr.find(u => u.unitClass === 'Rei' && u.playerId === currentGameState.currentTurnPlayerId)?.id : undefined,
+          targetPos: targetHex, 
+          abilityId: cardId, 
+          timestamp: Date.now() 
+        }
+      });
 
       if (deadUnitIds.length > 0 || hasCustomAnimation) {
         setTimeout(() => {

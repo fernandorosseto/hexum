@@ -19,14 +19,14 @@ export const MistEffect: React.FC<MistEffectProps> = ({ unit }) => {
   const { x, y } = hexToPixel(unit.position);
 
   return (
-    <motion.g
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      x={x}
-      y={y}
-      className="pointer-events-none"
-    >
+  return (
+    <g transform={`translate(${x}, ${y})`}>
+      <motion.g
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="pointer-events-none"
+      >
       {[0, 72, 144, 216, 288].map((angle, i) => (
         <motion.circle
           key={`mist-${unit.id}-${i}`}
@@ -42,6 +42,7 @@ export const MistEffect: React.FC<MistEffectProps> = ({ unit }) => {
           transition={{ duration: 6 + i, repeat: Infinity, ease: "easeInOut" }}
         />
       ))}
-    </motion.g>
+      </motion.g>
+    </g>
   );
 };

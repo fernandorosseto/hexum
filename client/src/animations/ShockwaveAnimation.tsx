@@ -11,7 +11,9 @@ export const ShockwaveAnimation: React.FC<Props> = ({ target }) => {
   const center = hexToPixel(target);
 
   return (
-    <motion.g x={center.x} y={center.y} className="pointer-events-none z-50">
+  return (
+    <g transform={`translate(${center.x}, ${center.y})`}>
+      <motion.g className="pointer-events-none z-50">
       
       {/* Ground Crack/Rupture */}
       <motion.circle
@@ -53,6 +55,7 @@ export const ShockwaveAnimation: React.FC<Props> = ({ target }) => {
         transition={{ duration: 0.4, ease: "easeOut" }}
       />
 
-    </motion.g>
+      </motion.g>
+    </g>
   );
 };

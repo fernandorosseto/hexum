@@ -80,4 +80,12 @@ export interface GameState {
   players: Record<string, PlayerState>;
   boardUnits: Record<string, Unit>; // O Id da Unidade aponta pro objeto dela
   combatLogs?: string[]; // Trilha de log detalhada gerada no último combate
+  lastActionVfx?: {
+    type: 'ATTACK' | 'SPELL' | 'MOVE' | 'HEAL' | 'SPECIAL';
+    sourceId?: string;
+    targetId?: string;
+    targetPos?: HexCoordinates;
+    abilityId?: string;
+    timestamp: number;
+  };
 }
