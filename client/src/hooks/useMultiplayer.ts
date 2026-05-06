@@ -48,16 +48,28 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
       // Ignora o snapshot que nós mesmos enviamos
       if (isSyncing.current) return;
 
-      // Aplica o GameState do Firestore no store local
+      // Aplica apenas os campos do GameState, sem sobrescrever o papel (myRole) ou IDs de sala
       if (lobby.gameState) {
-        useGameStore.setState(state => ({
-          ...state,
-          ...lobby.gameState,
-          // Mantém estados de UI local intactos
+        const { 
+          matchId, turnNumber, currentPhase, currentTurnPlayerId, 
+          aiDifficulty, players, boardUnits, combatLogs, winner 
+        } = lobby.gameState;
+
+        useGameStore.setState({
+          matchId,
+          turnNumber,
+          currentPhase,
+          currentTurnPlayerId,
+          aiDifficulty,
+          players,
+          boardUnits,
+          combatLogs,
+          winner,
+          // Limpa estados de seleção local após atualização externa
           selectedHex:  null,
           selectedCard: null,
           targetHex:    null,
-        }));
+        } as any);
       }
     });
 
@@ -66,11 +78,23 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
 
   // ── Envia o estado local para o Firestore após uma ação ──
   const syncAction = useCallback(
-    async (newGameState: GameState) => {
+    async (fullState: any) => {
       if (!lobbyId) return;
       isSyncing.current = true;
       try {
-        await pushGameState(lobbyId, newGameState);
+        // Extrai apenas o que pertence ao GameState compartilhado
+        const gameState: GameState = {
+          matchId:             fullState.matchId,
+          turnNumber:          fullState.turnNumber,
+          currentPhase:        fullState.currentPhase,
+          currentTurnPlayerId: fullState.currentTurnPlayerId,
+          aiDifficulty:        fullState.aiDifficulty,
+          players:             fullState.players,
+          boardUnits:          fullState.boardUnits,
+          combatLogs:          fullState.combatLogs,
+          winner:              fullState.winner,
+        };
+        await pushGameState(lobbyId, gameState);
       } finally {
         // Libera flag após um pequeno delay para evitar echo
         setTimeout(() => { isSyncing.current = false; }, 300);
