@@ -41,7 +41,8 @@ export const MeteorAnimation: React.FC<MeteorAnimationProps> = ({ epicenter }) =
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             transition={{ delay: m.delay + 0.2 }} 
-            transform={`translate(${m.target.x}, ${m.target.y})`}
+            x={m.target.x}
+            y={m.target.y}
           >
             <motion.circle 
               r={m.isEpicenter ? HEX_SIZE * 1.2 : HEX_SIZE * 0.8} 

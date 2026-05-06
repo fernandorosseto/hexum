@@ -134,14 +134,14 @@ function App() {
       {/* CAMADA 6: Sandbox Controls (sobreposto) - Apenas no modo SANDBOX */}
       {currentView === 'SANDBOX' && <SandboxUI />}
 
-      {/* CAMADA 2: BattleLog (Responsivo e Ocultável no Mobile) */}
+      {/* CAMADA 2: BattleLog (Apenas Desktop - No Mobile ele fica no BattleHUD) */}
       <AnimatePresence>
-        {(isLogVisible || typeof window !== 'undefined' && window.innerWidth >= 768) && (
+        {(typeof window !== 'undefined' && window.innerWidth >= 768) && (
           <motion.div
-            initial={{ opacity: 0, y: -20, x: 20 }}
-            animate={{ opacity: 1, y: 0, x: 0 }}
-            exit={{ opacity: 0, y: -20, x: 20 }}
-            className="absolute top-24 md:top-20 right-0 md:right-4 w-[65%] md:w-64 z-20 pointer-events-auto"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="absolute top-20 right-4 w-64 z-20 pointer-events-auto"
           >
             <BattleLog />
           </motion.div>

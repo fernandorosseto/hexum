@@ -29,7 +29,10 @@ export const CleaveSlash: React.FC<Props> = ({ source, target, color }) => {
 
   return (
     <motion.g 
-      transform={`translate(${slashCenter.x}, ${slashCenter.y}) rotate(${angle}) scale(${scale})`} 
+      x={slashCenter.x}
+      y={slashCenter.y}
+      rotate={angle}
+      scale={scale}
       className="pointer-events-none z-50 overflow-visible"
     >
       {/* O arco (cleave) */}

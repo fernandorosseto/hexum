@@ -1,6 +1,7 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../store/gameStore';
+import { BattleLog } from './BattleLog';
 
 export const BattleHUD: React.FC = () => {
   const currentTurnPlayerId = useGameStore(state => state.currentTurnPlayerId);
@@ -188,20 +189,35 @@ export const BattleHUD: React.FC = () => {
       </div>
 
       {/* Botão de Narração Mobile (Posicionado abaixo do menu, no canto direito) */}
-      <button 
-        onClick={toggleLog}
-        className={`
-          sm:hidden absolute top-full right-2 mt-2 p-3 rounded-full border-2 transition-all shadow-lg z-30
-          ${isLogVisible 
-            ? 'bg-blue-600 border-blue-400 text-white scale-110 shadow-blue-500/40' 
-            : 'bg-slate-900 border-slate-700 text-slate-400'
-          }
-        `}
-      >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-        </svg>
-      </button>
+      <div className="sm:hidden absolute top-full right-2 mt-2 z-30 flex flex-col items-end gap-2">
+        <button 
+          onClick={toggleLog}
+          className={`
+            p-3 rounded-full border-2 transition-all shadow-lg
+            ${isLogVisible 
+              ? 'bg-blue-600 border-blue-400 text-white scale-110 shadow-blue-500/40' 
+              : 'bg-slate-900 border-slate-700 text-slate-400'
+            }
+          `}
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+          </svg>
+        </button>
+
+        <AnimatePresence>
+          {isLogVisible && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              className="w-[85vw] max-w-xs pointer-events-auto"
+            >
+              <BattleLog />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Botão Passar Turno Mobile (Segunda linha se no mobile) */}
       {!sandboxMode && isMyTurn && (
@@ -235,18 +251,16 @@ export const BattleHUD: React.FC = () => {
               TURN: {currentTurnPlayerId}
             </span>
           </div>
+          {/* Botão de Contingência (Oculto pois a sincronização estabilizou)
           <button 
             onClick={() => {
-              const state = useGameStore.getState();
-              // Força a limpeza do cache de sincronia para garantir o envio
-              // A função syncAction será chamada pelo componente pai ou via ref se necessário
-              // Mas aqui podemos disparar um evento customizado ou usar uma técnica simples:
               window.dispatchEvent(new CustomEvent('force-pvp-sync'));
             }}
             className="bg-white/10 hover:bg-white/20 active:bg-white/30 px-2 py-0.5 rounded border border-white/20 transition-colors pointer-events-auto"
           >
             FORÇAR SYNC
           </button>
+          */}
         </div>
       )}
     </div>

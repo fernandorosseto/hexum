@@ -11,7 +11,7 @@ export const ArcaneExplosion: React.FC<Props> = ({ epicenter }) => {
   const center = hexToPixel(epicenter);
 
   return (
-    <motion.g transform={`translate(${center.x}, ${center.y})`} className="pointer-events-none z-50">
+    <motion.g x={center.x} y={center.y} className="pointer-events-none z-50">
       {/* Implosion Core */}
       <motion.circle
         r={HEX_SIZE * 0.8}

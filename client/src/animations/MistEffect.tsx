@@ -23,7 +23,8 @@ export const MistEffect: React.FC<MistEffectProps> = ({ unit }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transform={`translate(${x}, ${y})`}
+      x={x}
+      y={y}
       className="pointer-events-none"
     >
       {[0, 72, 144, 216, 288].map((angle, i) => (
