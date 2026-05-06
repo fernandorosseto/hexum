@@ -32,17 +32,19 @@ function App() {
   const phase = useGameStore(s => s.currentPhase);
   const currentView = useGameStore(s => s.currentView);
 
-  // Sincroni za o estado com o Firestore após cada ação do jogador local no PvP
+  const boardUnits = useGameStore(s => s.boardUnits);
+  const players = useGameStore(s => s.players);
+
+  // Sincroniza o estado com o Firestore após cada ação do jogador local no PvP
   useEffect(() => {
     if (!isPvP || !myRole) return;
-    // Só sincroniza quando é a vez do oponente (significa que acabamos de agir)
+    
+    // Sincroniza sempre que for o NOSSO turno e algo mudar (unidades ou mana)
     const state = useGameStore.getState();
-    const justActed = state.currentTurnPlayerId !== myRole;
-    if (justActed) {
-      syncAction(state);
+    if (state.currentTurnPlayerId === myRole) {
+      syncAction(state as any);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTurnPlayerId, isPvP, myRole]);
+  }, [boardUnits, players, currentTurnPlayerId, isPvP, myRole, syncAction]);
 
   const isLogVisible = useGameStore(s => s.isLogVisible);
   const selectedCard = useGameStore(s => s.selectedCard);

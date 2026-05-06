@@ -122,7 +122,7 @@ export const BattleHUD: React.FC = () => {
       <div className="flex-1 flex items-center justify-between gap-4">
         {/* Player 1 (Azul) */}
         {!sandboxMode ? (
-          <div className={`flex items-center gap-2 md:gap-3 px-2 md:px-4 py-1 md:py-2 rounded-xl transition-all duration-300 ${isMyTurn ? 'bg-[#0b622f]/20 ring-1 ring-[#0b622f]/60' : 'opacity-50'}`}>
+          <div className={`flex items-center gap-2 md:gap-3 px-2 md:px-4 py-1 md:py-2 rounded-xl transition-all duration-300 ${currentTurnPlayerId === 'p1' ? 'bg-[#0b622f]/20 ring-1 ring-[#0b622f]/60' : 'opacity-50'}`}>
             <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[#0b622f] to-[#084822] border-2 border-[#0b622f]/30 flex items-center justify-center text-white font-black text-[9px] md:text-xs shadow-md">P1</div>
             <div>
               <span className="text-[#a7f3d0] font-bold text-[10px] md:text-sm block leading-none">
@@ -166,7 +166,7 @@ export const BattleHUD: React.FC = () => {
 
         {/* Lado Direito */}
         {!sandboxMode ? (
-          <div className={`flex items-center gap-2 md:gap-3 px-2 md:px-4 py-1 md:py-2 rounded-xl transition-all duration-300 ${!isMyTurn ? 'bg-[#602471]/20 ring-1 ring-[#602471]/60' : 'opacity-50'}`}>
+          <div className={`flex items-center gap-2 md:gap-3 px-2 md:px-4 py-1 md:py-2 rounded-xl transition-all duration-300 ${currentTurnPlayerId === 'p2' ? 'bg-[#602471]/20 ring-1 ring-[#602471]/60' : 'opacity-50'}`}>
             <div className="text-right">
               <span className="text-[#f5d0f9] font-bold text-[10px] md:text-sm block leading-none">
                 {isPvP ? p2Name : 'P2'} {isPvP && myRole === 'p2' && <span className="text-[7px] md:text-[8px] opacity-60 font-medium ml-1">VOCÊ</span>}
