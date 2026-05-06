@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { useGameStore } from '../store/gameStore';
 
 export const BattleHUD: React.FC = () => {
