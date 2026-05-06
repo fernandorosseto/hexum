@@ -15,7 +15,7 @@ type LobbyTab = 'create' | 'join';
 
 export const LobbyPage: React.FC = () => {
   const { user } = useAuth();
-  const { setCurrentView, setLobbySession, clearLobbySession } = useGameStore();
+  const { setCurrentView, setLobbySession, setMatchStarted, clearLobbySession } = useGameStore();
 
   const [tab, setTab]           = useState<LobbyTab>('create');
   const [loading, setLoading]   = useState(false);
@@ -58,8 +58,8 @@ export const LobbyPage: React.FC = () => {
 
     const unsub = subscribeToLobby(waitingLobbyId, (lobby) => {
       if (lobby.status === 'in_progress' && lobby.guestId) {
-        // Adversário entrou → setLobbySession já foi chamado no handleCreate
-        // Só muda a view (isPvP já é true)
+        // Adversário entrou
+        setMatchStarted(true);
         unsub();
         setCurrentView('PVP');
       }
@@ -81,6 +81,7 @@ export const LobbyPage: React.FC = () => {
       }
       // setLobbySession ANTES de setCurrentView para isPvP=true ao renderizar
       setLobbySession(result.lobbyId, 'p2');
+      setMatchStarted(true);
       setCurrentView('PVP');
     } catch {
       setError('Erro ao entrar na sala. Verifique o código.');

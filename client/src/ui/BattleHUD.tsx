@@ -58,29 +58,41 @@ export const BattleHUD: React.FC = () => {
       
       {/* Modal de Confirmação */}
       {showConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-6 max-w-xs w-full shadow-2xl text-center">
-            <h3 className="text-white font-black text-lg mb-2 tracking-tight">Deseja Sair?</h3>
-            <p className="text-slate-400 text-xs mb-6 leading-relaxed">
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-[#0f172a]/95 border border-white/10 rounded-3xl p-8 max-w-xs w-full shadow-[0_32px_64px_rgba(0,0,0,0.8)] text-center relative overflow-hidden"
+          >
+            {/* Detalhe de brilho no topo */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-red-500/50 to-transparent" />
+            
+            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-5 border border-red-500/20">
+              <span className="text-3xl">⚠️</span>
+            </div>
+
+            <h3 className="text-white font-black text-xl mb-3 tracking-tight">Abandonar Campo?</h3>
+            <p className="text-slate-400 text-sm mb-8 leading-relaxed px-2">
               {isPvP 
-                ? "Sair agora contará como uma derrota automática no PvP." 
-                : "Seu progresso nesta partida será perdido."}
+                ? "Esta ação será registrada como uma derrota imediata no PvP." 
+                : "Sua jornada atual será perdida."}
             </p>
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setShowConfirm(false)}
-                className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition-all"
-              >
-                CANCELAR
-              </button>
+            
+            <div className="flex flex-col gap-3">
               <button 
                 onClick={handleQuit}
-                className="flex-1 py-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.4)] transition-all"
+                className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-black text-xs rounded-2xl shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all active:scale-95 uppercase tracking-widest"
               >
-                SAIR
+                Confirmar Saída
+              </button>
+              <button 
+                onClick={() => setShowConfirm(false)}
+                className="w-full py-3 text-slate-500 hover:text-slate-300 font-bold text-xs transition-colors uppercase tracking-widest"
+              >
+                Voltar ao Jogo
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
 

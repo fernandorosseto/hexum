@@ -24,7 +24,9 @@ interface GameStore extends GameState {
   lobbyId: string | null;
   myRole: 'p1' | 'p2' | null;
   isPvP: boolean;
+  isMatchStarted: boolean;
   setLobbySession: (lobbyId: string, myRole: 'p1' | 'p2') => void;
+  setMatchStarted: (started: boolean) => void;
   clearLobbySession: () => void;
   selectedHex: HexCoordinates | null;
   selectedCard: string | null;
@@ -99,7 +101,9 @@ export const useGameStore = create<GameStore>()(
       lobbyId: null,
       myRole: null,
       isPvP: false,
-      setLobbySession: (lobbyId, myRole) => set({ lobbyId, myRole, isPvP: true }),
+      isMatchStarted: false,
+      setLobbySession: (lobbyId, myRole) => set({ lobbyId, myRole, isPvP: true, isMatchStarted: false }),
+      setMatchStarted: (started) => set({ isMatchStarted: started }),
       clearLobbySession: () => {
         const initialState = createInitialState();
         set({ 
@@ -107,6 +111,7 @@ export const useGameStore = create<GameStore>()(
           lobbyId: null, 
           myRole: null, 
           isPvP: false,
+          isMatchStarted: false,
           logs: [],
           selectedHex: null,
           selectedCard: null

@@ -23,6 +23,7 @@ function App() {
   const { user, loading: authLoading } = useAuth();
   const currentTurnPlayerId = useGameStore(s => s.currentTurnPlayerId);
   const isPvP    = useGameStore(s => s.isPvP);
+  const isMatchStarted = useGameStore(s => s.isMatchStarted);
   const lobbyId  = useGameStore(s => s.lobbyId);
   const myRole   = useGameStore(s => s.myRole);
 
@@ -104,10 +105,8 @@ function App() {
     return <LoginPage onAuthenticated={() => {}} />;
   }
 
-  // Lobby PvP (sala de espera) — view PVP mas ainda sem adversário (p2)
-  // No caso do Host, isPvP fica true mas o guestId no store ainda seria nulo ou o status do lobby seria waiting.
-  // Uma forma simples: se estiver em PVP mas não tivermos um lobbyId ativo vindo do useMultiplayer ou se o estado local ainda indicar espera.
-  if (currentView === 'PVP' && (!isPvP || !lobbyId)) {
+  // Lobby PvP (sala de espera) — view PVP mas ainda sem adversário ou partida iniciada
+  if (currentView === 'PVP' && (!isPvP || !isMatchStarted)) {
     return <LobbyPage />;
   }
 
