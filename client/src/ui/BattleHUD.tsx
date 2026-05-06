@@ -28,21 +28,76 @@ export const BattleHUD: React.FC = () => {
 
   const isMyTurn = currentTurnPlayerId === 'p1';
   const sandboxMode = useGameStore(state => state.sandboxMode);
+  const isPvP = useGameStore(state => state.isPvP);
+  const surrender = useGameStore(state => state.surrender);
+  const clearLobbySession = useGameStore(state => state.clearLobbySession);
+  const phase = useGameStore(state => state.currentPhase);
+  const [showConfirm, setShowConfirm] = React.useState(false);
+
+  const handleQuit = () => {
+    if (phase === 'GAME_OVER') {
+      if (isPvP) clearLobbySession();
+      setCurrentView('MENU');
+      return;
+    }
+
+    if (isPvP) {
+      surrender();
+      setTimeout(() => {
+        clearLobbySession();
+        setCurrentView('MENU');
+      }, 500);
+    } else {
+      setCurrentView('MENU');
+    }
+    setShowConfirm(false);
+  };
 
   return (
     <div className="flex flex-col md:flex-row items-center gap-1 md:gap-4 w-full px-2 md:px-4 py-1 md:py-2 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 z-20 shrink-0 relative">
       
+      {/* Modal de Confirmação */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-6 max-w-xs w-full shadow-2xl text-center">
+            <h3 className="text-white font-black text-lg mb-2 tracking-tight">Deseja Sair?</h3>
+            <p className="text-slate-400 text-xs mb-6 leading-relaxed">
+              {isPvP 
+                ? "Sair agora contará como uma derrota automática no PvP." 
+                : "Seu progresso nesta partida será perdido."}
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition-all"
+              >
+                CANCELAR
+              </button>
+              <button 
+                onClick={handleQuit}
+                className="flex-1 py-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.4)] transition-all"
+              >
+                SAIR
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Topo no Mobile: Botão Voltar + Nomes/Mana */}
       <div className="w-full flex items-center justify-between md:w-auto gap-2">
         <button 
-          onClick={() => setCurrentView('MENU')}
-          className="p-1 px-2 md:p-1.5 bg-slate-900/80 hover:bg-slate-800 text-white/50 hover:text-white rounded-lg border border-white/5 transition-all group flex items-center gap-1"
-          title="Voltar ao Menu"
+          onClick={() => {
+            if (phase === 'GAME_OVER') handleQuit();
+            else setShowConfirm(true);
+          }}
+          className="p-1 px-2 md:p-1.5 bg-slate-900/80 hover:bg-red-950/40 text-white/50 hover:text-red-400 rounded-lg border border-white/5 transition-all group flex items-center gap-1"
+          title={isPvP ? "Desistir da Partida" : "Voltar ao Menu"}
         >
           <svg className="w-3 h-3 md:w-4 md:h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          <span className="text-[10px] md:hidden font-bold">MENU</span>
+          <span className="text-[10px] md:hidden font-bold">{isPvP ? 'DESISTIR' : 'SAIR'}</span>
         </button>
       </div>
 

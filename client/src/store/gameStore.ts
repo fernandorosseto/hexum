@@ -54,6 +54,8 @@ interface GameStore extends GameState {
   triggerEndTurn: () => void;
   runAiTurn: () => Promise<void>;
   addLog: (message: string, playerId: string) => void;
+  clearLogs: () => void;
+  surrender: () => void;
   setSandboxMode: (enabled: boolean) => void;
   spawnUnit: (unitName: string, hex: HexCoordinates, playerId: string) => void;
   addCardToHand: (cardId: string) => void;
@@ -98,7 +100,18 @@ export const useGameStore = create<GameStore>()(
       myRole: null,
       isPvP: false,
       setLobbySession: (lobbyId, myRole) => set({ lobbyId, myRole, isPvP: true }),
-      clearLobbySession: () => set({ lobbyId: null, myRole: null, isPvP: false }),
+      clearLobbySession: () => {
+        const initialState = createInitialState();
+        set({ 
+          ...initialState,
+          lobbyId: null, 
+          myRole: null, 
+          isPvP: false,
+          logs: [],
+          selectedHex: null,
+          selectedCard: null
+        });
+      },
       setCurrentView: (view) => {
         if (view === 'SANDBOX') {
           const initialState = createInitialState();
@@ -199,6 +212,24 @@ export const useGameStore = create<GameStore>()(
       addLog: (message, playerId) => {
         const newLog = { id: Math.random().toString(36).substr(2, 9), message, playerId };
         set(state => ({ logs: [...state.logs, newLog].slice(-50) }));
+      },
+
+      clearLogs: () => set({ logs: [] }),
+
+      surrender: () => {
+        const state = get();
+        if (state.currentPhase === 'GAME_OVER') return;
+
+        const opponentId = state.myRole === 'p1' ? 'p2' : 'p1';
+        const loserName = state.myRole === 'p1' ? 'Azul' : 'Roxo';
+
+        set({
+          currentPhase: 'GAME_OVER',
+          winnerId: opponentId,
+          isTimerRunning: false
+        });
+
+        get().addLog(`${loserName} desistiu da partida!`, state.myRole || 'p1');
       },
 
       ...createCombatActions(set, get),
