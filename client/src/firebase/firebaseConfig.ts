@@ -19,6 +19,12 @@ const firebaseConfig = {
   appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+console.log("Firebase Config Keys present:", {
+  apiKey: !!firebaseConfig.apiKey,
+  projectId: !!firebaseConfig.projectId,
+  appId: !!firebaseConfig.appId
+});
+
 // Inicializa o app Firebase (singleton)
 const app = initializeApp(firebaseConfig);
 
