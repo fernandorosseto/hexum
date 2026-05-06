@@ -102,6 +102,12 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
     [lobbyId]
   );
 
+  // Ref para a função de sincronização para evitar re-inscrições desnecessárias no store
+  const syncActionRef = useRef(syncAction);
+  useEffect(() => {
+    syncActionRef.current = syncAction;
+  }, [syncAction]);
+
   // ── Inscrição direta no store para sincronização de saída ──
   useEffect(() => {
     if (!lobbyId || !myRole) return;
@@ -126,13 +132,13 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
         const iJustPassedTurn = prevState.currentTurnPlayerId === myRole && !isMyTurn;
 
         if (isMyTurn || iJustPassedTurn) {
-          syncAction(state);
+          syncActionRef.current(state);
         }
       }
     );
 
     return () => unsubStore();
-  }, [lobbyId, myRole, syncAction]);
+  }, [lobbyId, myRole]); // syncAction removido das dependências
 
   // ── Encerra a sala quando o jogo termina ──
   useEffect(() => {
