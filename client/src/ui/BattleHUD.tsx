@@ -29,6 +29,7 @@ export const BattleHUD: React.FC = () => {
 
   const isMyTurn = currentTurnPlayerId === 'p1';
   const sandboxMode = useGameStore(state => state.sandboxMode);
+  const lobbyCode = useGameStore(state => state.lobbyCode);
   const isPvP = useGameStore(state => state.isPvP);
   const surrender = useGameStore(state => state.surrender);
   const clearLobbySession = useGameStore(state => state.clearLobbySession);
@@ -130,6 +131,11 @@ export const BattleHUD: React.FC = () => {
         <div className="hidden sm:flex flex-col items-center gap-1">
           <span className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] whitespace-nowrap">
             {sandboxMode ? 'SIMULADOR DE GUERRA' : `Turno ${turnNumber}`}
+            {isPvP && lobbyCode && (
+              <span className="ml-3 text-indigo-400/60 border border-indigo-400/20 px-1.5 py-0.5 rounded text-[8px] tracking-widest">
+                ID: {lobbyCode}
+              </span>
+            )}
             {!sandboxMode && isTimerRunning && (
               <span className={`ml-2 ${turnTimer <= 10 ? 'text-red-500 animate-pulse' : 'text-blue-400'}`}>
                 ⏳ {turnTimer}s
