@@ -12,7 +12,8 @@ export const ShadowSlash: React.FC<Props> = ({ target }) => {
   const size = HEX_SIZE * 1.5;
 
   return (
-    <motion.g transform={`translate(${center.x}, ${center.y})`} className="pointer-events-none z-50 overflow-visible">
+    <g transform={`translate(${center.x}, ${center.y})`}>
+      <motion.g className="pointer-events-none z-50 overflow-visible">
       
       {/* Primeiro Corte (Diagonal 1) */}
       <motion.path
@@ -50,6 +51,7 @@ export const ShadowSlash: React.FC<Props> = ({ target }) => {
         transition={{ delay: 0.2, duration: 0.4, ease: "easeOut" }}
       />
 
-    </motion.g>
+      </motion.g>
+    </g>
   );
 };

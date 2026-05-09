@@ -11,7 +11,8 @@ export const ArcaneExplosion: React.FC<Props> = ({ epicenter }) => {
   const center = hexToPixel(epicenter);
 
   return (
-    <motion.g transform={`translate(${center.x}, ${center.y})`} className="pointer-events-none z-50">
+    <g transform={`translate(${center.x}, ${center.y})`}>
+      <motion.g className="pointer-events-none z-50">
       {/* Implosion Core */}
       <motion.circle
         r={HEX_SIZE * 0.8}
@@ -52,6 +53,7 @@ export const ArcaneExplosion: React.FC<Props> = ({ epicenter }) => {
         animate={{ opacity: [0, 0.9, 0], scale: [0.5, 2.5, 3] }}
         transition={{ delay: 0.2, duration: 0.4, times: [0, 0.3, 1], ease: "easeOut" }}
       />
-    </motion.g>
+      </motion.g>
+    </g>
   );
 };

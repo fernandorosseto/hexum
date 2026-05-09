@@ -7,7 +7,7 @@ beforeEach(() => {
   useGameStore.setState({
     selectedHex: null,
     boardUnits: {
-      'u1': { id: 'u1', playerId: 'p1', cardId: 'c1', unitClass: 'Rei', hp: 5, maxHp: 5, attack: 3, buffs: [], position: { q: 0, r: 0, s: 0 }, canMove: true, canAttack: true, summoningSickness: false, roundsInField: 1 },
+      'u1': { id: 'u1', playerId: 'p1', cardId: 'c1', unitClass: 'Rei', hp: 5, maxHp: 5, attack: 3, buffs: [], position: { q: 0, r: 0, s: 0 }, canMove: true, canAttack: true, summoningSickness: false, roundsInField: 1, abilityCooldown: 0 },
     }
   });
 });

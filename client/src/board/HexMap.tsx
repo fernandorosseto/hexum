@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { 
   getValidMoveCoordinates, 
@@ -63,6 +63,28 @@ export const HexMap: React.FC = () => {
   const activeMistImpact = useGameStore(state => state.activeMistImpact);
   const activeWindTrail = useGameStore(state => state.activeWindTrail);
   const sandboxMode = useGameStore(state => state.sandboxMode);
+  const isInspectMode = useGameStore(state => state.isInspectMode);
+  const isPvP = useGameStore(state => state.isPvP);
+  const myRole = useGameStore(state => state.myRole);
+
+  const [dragConstraints, setDragConstraints] = useState({ left: -400, right: 400, top: -400, bottom: 400 });
+
+  useEffect(() => {
+    const updateConstraints = () => {
+      if (typeof window !== 'undefined') {
+        if (window.innerWidth < 768) {
+          // Limites extremamente justos para celular (tabuleiro bem fixo na tela)
+          setDragConstraints({ left: -50, right: 50, top: -100, bottom: 100 });
+        } else {
+          // Limites mais amplos para desktop
+          setDragConstraints({ left: -400, right: 400, top: -400, bottom: 400 });
+        }
+      }
+    };
+    updateConstraints();
+    window.addEventListener('resize', updateConstraints);
+    return () => window.removeEventListener('resize', updateConstraints);
+  }, []);
 
   const getUnitAt = (q: number, r: number) => {
     return Object.values(boardUnits).find(u => u.position.q === q && u.position.r === r);
@@ -109,6 +131,17 @@ export const HexMap: React.FC = () => {
   }, [selectedAbility, selectedHex, validAttacks]);
 
   const handleHexClick = (hex: HexCoordinates) => {
+    // Se o modo de inspeção estiver ativo, ignoramos a lógica de combate/movimento
+    // e apenas selecionamos o hexágono para ver suas informações.
+    if (isInspectMode) {
+      setSelectedHex(hex);
+      return;
+    }
+
+    // No PvP, você só pode interagir no seu turno (a menos que seja inspeção)
+    const isMyTurn = isPvP ? (currentTurnPlayerId === myRole) : (currentTurnPlayerId === 'p1');
+    if (isPvP && !isMyTurn) return;
+
     if (selectedCard) {
       attemptPlayCard(selectedCard, hex);
       return;
@@ -117,7 +150,15 @@ export const HexMap: React.FC = () => {
     const selectedUnit = selectedHex ? getUnitAt(selectedHex.q, selectedHex.r) : null;
 
     if (!selectedHex) {
-      if (clickedUnit || sandboxMode) setSelectedHex(hex);
+      if (clickedUnit || sandboxMode) {
+        // No PvP, você só pode selecionar suas próprias unidades para agir
+        if (isPvP && clickedUnit && clickedUnit.playerId !== myRole) {
+          // Permite apenas "ver" a unidade, mas não selecioná-la para movimento (limpamos a seleção se não for sua)
+          setSelectedHex(hex);
+          return;
+        }
+        setSelectedHex(hex);
+      }
       return;
     }
 
@@ -158,7 +199,7 @@ export const HexMap: React.FC = () => {
         style={{ scale: springScale }}
         drag
         dragElastic={0.2}
-        dragConstraints={{ left: -1000, right: 1000, top: -800, bottom: 800 }}
+        dragConstraints={dragConstraints}
         onClick={() => { setSelectedHex(null); setTargetHex(null); }}
       >
         <svg viewBox="-700 -650 1400 1300" className="w-full h-full overflow-visible pointer-events-none">

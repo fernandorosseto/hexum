@@ -86,7 +86,9 @@ export const ProjectileAnimation: React.FC<ProjectileAnimationProps> = ({ source
 
       {/* Cabeça da Flecha (Agrupada para rotação) */}
       <motion.g
-        style={{ x, y, rotate: rotation }}
+        x={x}
+        y={y}
+        rotate={rotation}
         initial={{ opacity: 0 }}
         animate={{ opacity: [0, 1, 1, 0] }}
         transition={{ duration: 0.6, times: [0, 0.1, 0.9, 1] }}

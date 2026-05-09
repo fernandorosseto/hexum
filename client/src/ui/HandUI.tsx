@@ -23,20 +23,27 @@ function getCardDetails(cardId: string) {
 export const HandUI: React.FC = () => {
   const currentTurnPlayerId = useGameStore(state => state.currentTurnPlayerId);
   const players = useGameStore(state => state.players);
+  const myRole = useGameStore(state => state.myRole);
+  const isPvP = useGameStore(state => state.isPvP);
+  
+  // Em PvP, mostramos sempre a mão do MEU papel. 
+  // Em Single Player, mostramos a mão do jogador da vez (p1).
+  const targetPlayerId = isPvP ? (myRole || 'p1') : 'p1';
+  const player = players[targetPlayerId];
+  const hand = player?.hand || [];
+  
   const selectedCard = useGameStore(state => state.selectedCard);
   const setSelectedCard = useGameStore(state => state.setSelectedCard);
   const setSelectedHex = useGameStore(state => state.setSelectedHex);
   const offerCard = useGameStore(state => state.offerCard);
   const isAiThinking = useGameStore(state => state.isAiThinking);
   
-  const humanPlayer = players['p1'];
-  const aiPlayer = players['p2'];
-  const isMyTurn = currentTurnPlayerId === 'p1';
+  const isMyTurn = currentTurnPlayerId === targetPlayerId;
 
   return (
-    <div className="relative flex flex-col items-center gap-4">
+    <div className="relative flex flex-col md:flex-col items-center gap-4">
 
-      {selectedCard && humanPlayer.canOfferCard && isMyTurn && (
+      {selectedCard && player?.canOfferCard && isMyTurn && (
         <button 
           onClick={() => {
             offerCard(selectedCard);
@@ -48,25 +55,26 @@ export const HandUI: React.FC = () => {
         </button>
       )}
 
-      <div className={`flex gap-2 transition-all duration-300 ${!isMyTurn ? 'opacity-40 pointer-events-none scale-95' : ''}`}>
-        {humanPlayer.hand.map((cardId, idx) => {
+      <div className={`flex flex-col md:flex-row gap-6 md:gap-2 transition-all duration-300 ${!isMyTurn ? 'opacity-40 pointer-events-none scale-95' : ''}`}>
+        {hand.map((cardId, idx) => {
           const card = getCardDetails(cardId);
           if (!card) return null;
-          const canAfford = isMyTurn && humanPlayer.mana >= card.cost;
+          const canAfford = isMyTurn && player.mana >= card.cost;
           const isSelected = selectedCard === card.id;
           
           return (
             <div 
               key={`${cardId}-${idx}`} 
               onClick={() => {
-                if (!canAfford || !isMyTurn) return;
+                if (!isMyTurn) return;
                 setSelectedCard(isSelected ? null : card.id);
                 setSelectedHex(null);
               }}
               className={`
-                relative w-20 h-20 md:w-24 md:h-24 rounded-full flex flex-col items-center justify-center text-center
+                relative w-16 h-16 md:w-24 md:h-24 rounded-full flex flex-col items-center justify-center text-center
                 transition-all duration-200 cursor-pointer 
-                ${isSelected ? '-translate-y-4 scale-110' : canAfford ? 'hover:-translate-y-3' : 'opacity-60 grayscale'}
+                ${isSelected ? 'max-md:-translate-x-4 md:-translate-y-4 scale-110' : 'hover:scale-105 max-md:hover:-translate-x-2 md:hover:-translate-y-3'}
+                ${!canAfford && !isSelected ? 'opacity-80' : ''}
               `}
             >
               {/* Camada de Fundo (igual ao token) */}

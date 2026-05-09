@@ -19,7 +19,8 @@ describe('Integração de Componente React: UnitSprite', () => {
     roundsInField: 0,
     summoningSickness: false,
     canMove: true,
-    canAttack: true
+    canAttack: true,
+    abilityCooldown: 0
   };
 
   it('Injeta e exprime Atributos do Tabuleiro no Componente UnitSprite (HP, ATK e Ícone visual)', () => {

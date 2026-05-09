@@ -5,6 +5,7 @@ import { ARTIFACTS, SPELLS, getUnitCard } from './cardLibrary';
 import { UNIT_BEHAVIORS, isPathBlocked, checkEffectTrigger } from './unitBehaviors';
 import { SPELL_REGISTRY } from './spellHandlers';
 import { ARTIFACT_REGISTRY } from './artifactHandlers';
+import { getValidAttackTargets } from './getValidAttackTargets';
 
 /**
  * Funções Puras (Reducers) para manipular o Estado
@@ -653,6 +654,102 @@ export function getFearStatus(unit: Unit, state: GameState): { inRange: boolean,
   
   // Fórmula: 5% base + 1% por turno que o rei sobreviveu (roundsInField), teto de 30%
   const chance = Math.min(0.05 + (enemyKing.roundsInField * 0.01), 0.30);
-
   return { inRange, chance };
 }
+
+// ══════════════════════════════════════════════
+//  Verificador de Ações Válidas (Auto-Pass)
+// ══════════════════════════════════════════════
+
+export function hasAnyValidAction(state: GameState, playerId: string): boolean {
+  if (state.sandboxMode || state.currentPhase !== 'MAIN_PHASE') return true;
+  const player = state.players[playerId];
+  if (!player) return false;
+
+  // 1. O jogador pode fazer uma oferenda (sacrifício)?
+  // Só consideramos ação válida se sacrificar habilitar ALGUMA carta ou habilidade que ele não podia antes.
+  const canSacrifice = player.canOfferCard && player.hand.length > 0;
+  let sacrificeIsUseful = false;
+
+  if (canSacrifice) {
+    const manaAfterSacrifice = player.mana + 1;
+    const myUnitsOnBoard = Object.values(state.boardUnits).filter(u => u.playerId === playerId);
+
+    // 1a. Sacrificar habilita alguma CARTA? (Precisa de outra carta na mão)
+    if (player.hand.length > 1) {
+      for (const cardId of player.hand) {
+        const card = getUnitCard(cardId) || ARTIFACTS.find(a => a.id === cardId) || SPELLS.find(s => s.id === cardId);
+        if (card && player.mana < card.manaCost && manaAfterSacrifice >= card.manaCost) {
+          if (getValidSpawnCoordinates(state, playerId, cardId).length > 0) {
+            sacrificeIsUseful = true;
+            break;
+          }
+        }
+      }
+    }
+
+    // 1b. Sacrificar habilita alguma HABILIDADE ESPECIAL no tabuleiro?
+    if (!sacrificeIsUseful) {
+      for (const unit of myUnitsOnBoard) {
+        if (unit.abilityCooldown <= 0 && (unit.unitClass === 'Cavaleiro' || unit.unitClass === 'Assassino')) {
+          const abilityCost = 3; // Custo padrão de especial nestas classes
+          if (player.mana < abilityCost && manaAfterSacrifice >= abilityCost) {
+            // Verifica se tem alvos/movimentos válidos para o especial
+            const hasSpecialMove = getValidMoveCoordinates(state, unit.id, true).length > 0;
+            const hasSpecialAttack = getValidAttackTargets(state, unit.id, true).length > 0;
+            if (hasSpecialMove || hasSpecialAttack) {
+              sacrificeIsUseful = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+  if (sacrificeIsUseful) return true;
+
+  // 2. O jogador pode jogar alguma carta da mão com a mana ATUAL?
+  for (const cardId of player.hand) {
+    let cardCost = 999;
+    if (cardId.startsWith('unit_') || cardId.startsWith('hero_')) {
+      const card = getUnitCard(cardId);
+      cardCost = card ? card.manaCost : 999;
+    } else {
+      const art = ARTIFACTS.find(a => a.id === cardId);
+      if (art) {
+        cardCost = art.manaCost;
+      } else {
+        const spl = SPELLS.find(s => s.id === cardId);
+        if (spl) cardCost = spl.manaCost;
+      }
+    }
+
+    if (player.mana >= cardCost) {
+      const validSpawns = getValidSpawnCoordinates(state, playerId, cardId);
+      if (validSpawns.length > 0) return true;
+    }
+  }
+
+  // 3. Alguma unidade pode mover ou atacar?
+  const myUnits = Object.values(state.boardUnits).filter(u => u.playerId === playerId);
+  for (const unit of myUnits) {
+    if (unit.canMove && !unit.summoningSickness) {
+      const validMoves = getValidMoveCoordinates(state, unit.id, false);
+      if (validMoves.length > 0) return true;
+    }
+    if (unit.canAttack && !unit.summoningSickness) {
+      const validAttacks = getValidAttackTargets(state, unit.id, false);
+      if (validAttacks.length > 0) return true;
+      
+      if (unit.unitClass === 'Clerigo') {
+         const friends = myUnits.filter(u => u.id !== unit.id && getHexDistance(unit.position, u.position) <= 2);
+         if (friends.some(f => f.hp < f.maxHp)) return true;
+         const enemies = Object.values(state.boardUnits).filter(u => u.playerId !== playerId && getHexDistance(unit.position, u.position) <= 2);
+         if (enemies.length > 0) return true;
+      }
+    }
+  }
+
+  return false;
+}
+
