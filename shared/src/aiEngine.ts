@@ -133,7 +133,7 @@ function calculateSideValue(state: GameState, playerId: string, opponentId: stri
 // ══════════════════════════════════════════════
 
 export function getBestAction(state: GameState, playerId: string): AIAction | null {
-  const startActions = getPossibleActions(state, playerId);
+  const startActions = getPossibleActions(state, playerId).filter(a => simulateAction(state, playerId, a) !== null);
   if (startActions.length === 0) return null;
 
   const sorted = [...startActions].sort((a, b) => scoreAction(state, b) - scoreAction(state, a));

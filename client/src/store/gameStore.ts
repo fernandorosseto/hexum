@@ -73,6 +73,10 @@ interface GameStore extends GameState {
   isAutoPlay: boolean;
   toggleAutoPlay: () => void;
   setAiDifficulty: (difficulty: import('shared').AIDifficulty) => void;
+  isHandVisible: boolean;
+  toggleHand: () => void;
+  isCardDetailsVisible: boolean;
+  toggleCardDetails: () => void;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -153,6 +157,12 @@ export const useGameStore = create<GameStore>()(
       isCardExpanded: false,
       toggleCardExpanded: () => set(state => ({ isCardExpanded: !state.isCardExpanded })),
 
+      isHandVisible: true,
+      toggleHand: () => set(state => ({ isHandVisible: !state.isHandVisible })),
+
+      isCardDetailsVisible: true,
+      toggleCardDetails: () => set(state => ({ isCardDetailsVisible: !state.isCardDetailsVisible })),
+
       setSandboxMode: (enabled) => set({ sandboxMode: enabled }),
 
       setSelectedHex: (hex) => set({ selectedHex: hex, targetHex: null, selectedAbility: null, isCardExpanded: false }),
@@ -195,43 +205,45 @@ export const useGameStore = create<GameStore>()(
 
         set({ isAiThinking: true });
 
-        let continueTurn = true;
-        const currentPlayer = state.currentTurnPlayerId;
-        while (continueTurn) {
-          const currentState = get();
-          if (currentState.currentPhase === 'GAME_OVER' || currentState.currentTurnPlayerId !== currentPlayer) break;
+        try {
+          let continueTurn = true;
+          const currentPlayer = state.currentTurnPlayerId;
+          while (continueTurn) {
+            const currentState = get();
+            if (currentState.currentPhase === 'GAME_OVER' || currentState.currentTurnPlayerId !== currentPlayer) break;
 
-          const action = getBestAction(currentState, currentPlayer);
+            const action = getBestAction(currentState, currentPlayer);
 
-          if (!action) {
-            continueTurn = false;
-            get().triggerEndTurn();
-            break;
-          }
-
-          const delay = state.isAutoPlay ? 150 : 800;
-          await new Promise(resolve => setTimeout(resolve, delay));
-
-          try {
-            if (action.type === 'MOVE') {
-              get().attemptMove(action.unitId, action.target);
-            } else if (action.type === 'ATTACK') {
-              get().attemptAttack(action.attackerId, action.targetId, action.special);
-            } else if (action.type === 'PLAY_CARD') {
-              get().attemptPlayCard(action.cardId, action.target);
-            } else if (action.type === 'OFFER') {
-              get().offerCard(action.cardId);
-            } else if (action.type === 'HEAL') {
-              get().attemptHeal(action.healerId, action.targetId);
+            if (!action) {
+              continueTurn = false;
+              get().triggerEndTurn();
+              break;
             }
-          } catch (e) {
-            console.error("AI Error:", e);
-            continueTurn = false;
-            get().triggerEndTurn();
-          }
-        }
 
-        set({ isAiThinking: false });
+            const delay = state.isAutoPlay ? 150 : 800;
+            await new Promise(resolve => setTimeout(resolve, delay));
+
+            try {
+              if (action.type === 'MOVE') {
+                get().attemptMove(action.unitId, action.target);
+              } else if (action.type === 'ATTACK') {
+                get().attemptAttack(action.attackerId, action.targetId, action.special);
+              } else if (action.type === 'PLAY_CARD') {
+                get().attemptPlayCard(action.cardId, action.target);
+              } else if (action.type === 'OFFER') {
+                get().offerCard(action.cardId);
+              } else if (action.type === 'HEAL') {
+                get().attemptHeal(action.healerId, action.targetId);
+              }
+            } catch (e) {
+              console.error("AI Error:", e);
+              continueTurn = false;
+              get().triggerEndTurn();
+            }
+          }
+        } finally {
+          set({ isAiThinking: false });
+        }
       },
       
       setAiDifficulty: (difficulty) => set({ aiDifficulty: difficulty }),
@@ -274,6 +286,8 @@ export const useGameStore = create<GameStore>()(
           activeMistImpact,
           activeWindTrail,
           isCardExpanded,
+          isHandVisible,
+          isCardDetailsVisible,
           ...rest
         } = state;
         return rest;

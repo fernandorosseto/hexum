@@ -18,6 +18,7 @@ export const CardDetailsUI: React.FC = () => {
   const setSelectedCard = useGameStore(state => state.setSelectedCard);
   const isCardExpanded = useGameStore(state => state.isCardExpanded);
   const toggleCardExpanded = useGameStore(state => state.toggleCardExpanded);
+  const isCardDetailsVisible = useGameStore(state => state.isCardDetailsVisible);
 
   // ── Data Resolution ──
   type CardData = {
@@ -103,17 +104,17 @@ export const CardDetailsUI: React.FC = () => {
 
   return (
     <motion.div 
-      initial={{ x: -300, opacity: 0 }}
+      initial={{ x: -400, opacity: 0 }}
       animate={{ 
         x: typeof window !== 'undefined' && window.innerWidth < 768 
-          ? (isCardExpanded ? 0 : -250) 
+          ? (!isCardDetailsVisible ? -400 : isCardExpanded ? 0 : -250) 
           : 0, 
-        opacity: 1 
+        opacity: typeof window !== 'undefined' && window.innerWidth < 768 && !isCardDetailsVisible ? 0 : 1 
       }}
       exit={{ x: -300, opacity: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className={`
-        bg-slate-900/95 backdrop-blur-xl border border-white/10 shadow-2xl overflow-hidden flex flex-col relative
+        bg-slate-900/95 md:backdrop-blur-xl border border-white/10 shadow-2xl overflow-hidden flex flex-col relative
         ${typeof window !== 'undefined' && window.innerWidth < 768 
           ? 'fixed left-0 top-[90px] bottom-[110px] w-[80%] max-w-[300px] rounded-r-3xl z-40' 
           : 'rounded-2xl md:h-[360px] md:max-h-none h-full w-full'

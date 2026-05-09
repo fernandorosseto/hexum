@@ -18,6 +18,10 @@ function App() {
   const phase = useGameStore(s => s.currentPhase);
   const currentView = useGameStore(s => s.currentView);
   const isLogVisible = useGameStore(s => s.isLogVisible);
+  const isHandVisible = useGameStore(s => s.isHandVisible);
+  const toggleHand = useGameStore(s => s.toggleHand);
+  const isCardDetailsVisible = useGameStore(s => s.isCardDetailsVisible);
+  const toggleCardDetails = useGameStore(s => s.toggleCardDetails);
   const selectedHex = useGameStore(s => s.selectedHex);
   const selectedCard = useGameStore(s => s.selectedCard);
 
@@ -42,7 +46,7 @@ function App() {
       <HexMap />
 
       {/* CAMADA 1: HUD Compacto (topo, sobreposto) */}
-      <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
+      <div className="absolute top-0 left-0 right-0 z-30 pointer-events-none">
         <div className="pointer-events-auto">
           <BattleHUD />
         </div>
@@ -51,30 +55,23 @@ function App() {
       {/* CAMADA 6: Sandbox Controls (sobreposto) - Apenas no modo SANDBOX */}
       {currentView === 'SANDBOX' && <SandboxUI />}
 
-      {/* CAMADA 2: BattleLog (Responsivo e Ocultável no Mobile) */}
-      <AnimatePresence>
-        {(isLogVisible || typeof window !== 'undefined' && window.innerWidth >= 768) && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, x: 20 }}
-            animate={{ opacity: 1, y: 0, x: 0 }}
-            exit={{ opacity: 0, y: -20, x: 20 }}
-            className="absolute top-24 md:top-20 right-0 md:right-4 w-[65%] md:w-64 z-20 pointer-events-auto"
-          >
-            <BattleLog />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* CAMADA 3: Detalhes da Carta (Independente) */}
-      <div className="absolute md:bottom-4 md:left-4 md:w-80 z-40 pointer-events-auto">
-        <CardDetailsUI />
+      {/* CAMADA 2: BattleLog (Apenas Desktop) */}
+      <div className="hidden md:block absolute top-20 right-4 w-64 z-20 pointer-events-auto">
+        <BattleLog />
       </div>
 
-      {/* CAMADA 4: Mão de Cartas (Oculta apenas no mobile durante seleção) */}
+      {/* CAMADA 3: Detalhes da Carta (Independente) */}
+      <div className="absolute md:bottom-4 md:left-4 md:w-80 z-40 pointer-events-none">
+        <div className="pointer-events-auto">
+          <CardDetailsUI />
+        </div>
+      </div>
+
+      {/* CAMADA 4: Mão de Cartas (Oculta apenas no mobile durante seleção ou quando minimizada) */}
       <div className="fixed bottom-12 md:bottom-4 left-0 right-0 z-20 flex justify-center md:justify-end p-2 md:p-4 pointer-events-none">
         <div className={`
           w-full md:w-auto flex justify-center md:justify-end pointer-events-auto transition-all duration-500
-          ${(selectedHex || selectedCard) ? 'max-md:opacity-0 max-md:translate-y-32 max-md:pointer-events-none' : 'opacity-100 translate-y-0'}
+          ${(selectedHex || selectedCard || !isHandVisible) ? 'max-md:opacity-0 max-md:translate-y-32 max-md:pointer-events-none' : 'opacity-100 translate-y-0'}
         `}>
           <HandUI />
         </div>
@@ -95,13 +92,42 @@ function App() {
 
       {phase === 'GAME_OVER' && <GameOverUI />}
 
+      {/* Botoes de Visibilidade Mobile (Toggles) */}
+      {currentView === 'PLAY' && (
+        <>
+          <div className="sm:hidden fixed bottom-4 right-4 z-50 pointer-events-auto">
+            <button 
+              onClick={toggleHand}
+              className={`p-3 rounded-full border-2 shadow-[0_4px_15px_rgba(0,0,0,0.8)] transition-all ${isHandVisible ? 'bg-blue-600 border-blue-400 text-white scale-110' : 'bg-slate-900 border-slate-700 text-slate-400 scale-90'}`}
+              title="Mostrar/Ocultar Cartas"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="sm:hidden fixed bottom-4 left-4 z-50 pointer-events-auto">
+            <button 
+              onClick={toggleCardDetails}
+              className={`p-3 rounded-full border-2 shadow-[0_4px_15px_rgba(0,0,0,0.8)] transition-all ${isCardDetailsVisible ? 'bg-purple-600 border-purple-400 text-white scale-110' : 'bg-slate-900 border-slate-700 text-slate-400 scale-90'}`}
+              title="Mostrar/Ocultar Inspeção"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
+          </div>
+        </>
+      )}
+
       {/* Botão de Feedback Flutuante (Beta) */}
       <motion.button
         initial={{ opacity: 0 }}
         animate={{ opacity: 0.5 }}
         whileHover={{ opacity: 1, scale: 1.05 }}
         onClick={() => window.open('https://forms.gle/c9ReRbd2SAc5dggr7', '_blank')}
-        className="fixed bottom-4 left-4 z-50 p-2 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg shadow-xl pointer-events-auto flex items-center gap-2 group transition-all"
+        className="fixed bottom-4 left-4 z-50 p-2 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg shadow-xl pointer-events-auto flex items-center gap-2 group transition-all hidden md:flex"
       >
         <span className="text-lg">📩</span>
         <span className="text-[10px] text-white/70 group-hover:text-white font-bold tracking-widest uppercase hidden md:block">Feedback Beta</span>
