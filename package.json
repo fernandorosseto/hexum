@@ -3,8 +3,7 @@
   "private": true,
   "workspaces": [
     "shared",
-    "client",
-    "server"
+    "client"
   ],
   "dependencies": {
     "firebase": "^12.12.1"

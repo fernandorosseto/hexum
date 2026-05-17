@@ -73,10 +73,9 @@ export const HexMap: React.FC = () => {
     const updateConstraints = () => {
       if (typeof window !== 'undefined') {
         if (window.innerWidth < 768) {
-          // Limites extremamente justos para celular (tabuleiro bem fixo na tela)
-          setDragConstraints({ left: -50, right: 50, top: -100, bottom: 100 });
+          // Mobile: constraints maiores para permitir exploração do board
+          setDragConstraints({ left: -180, right: 180, top: -250, bottom: 250 });
         } else {
-          // Limites mais amplos para desktop
           setDragConstraints({ left: -400, right: 400, top: -400, bottom: 400 });
         }
       }
@@ -194,7 +193,7 @@ export const HexMap: React.FC = () => {
       </div>
 
       <motion.div 
-        className="absolute inset-0 flex items-center justify-center p-20 cursor-grab active:cursor-grabbing touch-none select-none"
+        className="absolute inset-0 flex items-center justify-center p-4 md:p-20 pt-12 md:pt-20 pb-24 md:pb-20 cursor-grab active:cursor-grabbing touch-none select-none"
         {...handlers}
         style={{ scale: springScale }}
         drag
@@ -202,7 +201,7 @@ export const HexMap: React.FC = () => {
         dragConstraints={dragConstraints}
         onClick={() => { setSelectedHex(null); setTargetHex(null); }}
       >
-        <svg viewBox="-700 -650 1400 1300" className="w-full h-full overflow-visible pointer-events-none">
+        <svg viewBox={typeof window !== 'undefined' && window.innerWidth < 768 ? "-550 -500 1100 1000" : "-700 -650 1400 1300"} className="w-full h-full overflow-visible pointer-events-none">
           <SvgDefs />
 
           <HexGrid 

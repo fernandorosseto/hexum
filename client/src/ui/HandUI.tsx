@@ -55,7 +55,16 @@ export const HandUI: React.FC = () => {
         </button>
       )}
 
-      <div className={`flex flex-col md:flex-row gap-6 md:gap-2 transition-all duration-300 ${!isMyTurn ? 'opacity-40 pointer-events-none scale-95' : ''}`}>
+      <div className={`
+        flex flex-row md:flex-row gap-3 md:gap-2 
+        overflow-x-auto md:overflow-visible 
+        snap-x snap-mandatory md:snap-none
+        scrollbar-hide
+        px-2 md:px-0
+        transition-all duration-300 
+        ${!isMyTurn ? 'opacity-40 pointer-events-none scale-95' : ''}`}
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         {hand.map((cardId, idx) => {
           const card = getCardDetails(cardId);
           if (!card) return null;
@@ -71,9 +80,10 @@ export const HandUI: React.FC = () => {
                 setSelectedHex(null);
               }}
               className={`
-                relative w-16 h-16 md:w-24 md:h-24 rounded-full flex flex-col items-center justify-center text-center
+                relative w-[68px] h-[68px] md:w-24 md:h-24 rounded-full flex flex-col items-center justify-center text-center
+                flex-shrink-0 snap-center
                 transition-all duration-200 cursor-pointer 
-                ${isSelected ? 'max-md:-translate-x-4 md:-translate-y-4 scale-110' : 'hover:scale-105 max-md:hover:-translate-x-2 md:hover:-translate-y-3'}
+                ${isSelected ? '-translate-y-3 scale-110' : 'hover:scale-105 hover:-translate-y-2'}
                 ${!canAfford && !isSelected ? 'opacity-80' : ''}
               `}
             >

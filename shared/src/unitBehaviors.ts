@@ -418,7 +418,7 @@ const AlquimistaBehavior: UnitBehavior = {
     const splashRadius = (attacker.equippedArtifacts || []).includes('art_anel') ? 2 : 1;
     addCombatLog(state, `⚗️ Cataclismo Alquímico: Iniciando reação!`);
     
-    // Lista de unidades a serem afetadas ANTES de modificar o HP (para evitar problemas de iteração)
+    // Lista de TODAS as unidades afetadas pelo splash (inclui aliados — friendly fire intencional)
     const affectedUnits: Unit[] = [];
     for (const uId in state.boardUnits) {
       const u = state.boardUnits[uId];

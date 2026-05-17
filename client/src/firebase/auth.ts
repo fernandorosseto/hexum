@@ -69,5 +69,9 @@ export async function logout(): Promise<void> {
 
 // ── Observer de estado de autenticação ────────────────────
 export function subscribeAuthState(callback: (user: User | null) => void) {
+  if (!auth) {
+    callback(null);
+    return () => {};
+  }
   return onAuthStateChanged(auth, callback);
 }

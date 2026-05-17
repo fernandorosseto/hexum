@@ -69,3 +69,12 @@ body {
 }
 
 .animate-lightning { animation: lightning-strike 0.5s ease-out; }
+
+/* Utilitário: esconde scrollbar mantendo scroll funcional */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

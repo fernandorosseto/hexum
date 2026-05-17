@@ -1,7 +1,8 @@
 import { GameState, Unit } from './types';
 import { getHexDistance, getHexNeighbors, isInsideBoard, type HexCoordinates } from './hexMath';
-import { moveTo, attack, playCard, offerCard, heal, getValidSpawnCoordinates, getValidMoveCoordinates } from './gameEngine';
+import { moveTo, attack, playCard, offerCard, heal, getValidSpawnCoordinates, getValidMoveCoordinates, cloneGameState } from './gameEngine';
 import { getValidAttackTargets } from './getValidAttackTargets';
+import { getUnitCard, ARTIFACTS, SPELLS } from './cardLibrary';
 
 export type AIAction = 
   | { type: 'MOVE', unitId: string, target: HexCoordinates }
@@ -183,7 +184,8 @@ function negamax(state: GameState, depth: number, alpha: number, beta: number, p
     }
 
     if (depth >= 3) {
-        const next = { ...state, currentTurnPlayerId: pId === 'p1' ? 'p2' : 'p1' };
+        const next = cloneGameState(state);
+        next.currentTurnPlayerId = pId === 'p1' ? 'p2' : 'p1';
         const score = -negamax(next, depth - 3, -beta, -beta + 1, pId === 'p1' ? 'p2' : 'p1');
         if (score >= beta) return beta;
     }
@@ -286,7 +288,7 @@ export function getPossibleActions(state: GameState, playerId: string): AIAction
   }
 
   for (const cardId of player.hand) {
-    const cost = cardId.includes('spl_meteoro') ? 4 : (cardId.includes('unit_') ? 3 : 2);
+    const cost = getCardCost(cardId);
     if (player.mana < cost) continue;
 
     if (cardId.startsWith('unit_')) {
@@ -336,4 +338,17 @@ function scoreAction(state: GameState, action: AIAction): number {
         return 4000;
     }
     return 100;
+}
+
+function getCardCost(cardId: string): number {
+  try {
+    if (cardId.startsWith('unit_') || cardId.startsWith('hero_')) {
+      return getUnitCard(cardId).manaCost;
+    }
+    const art = ARTIFACTS.find(a => a.id === cardId);
+    if (art) return art.manaCost;
+    const spl = SPELLS.find(s => s.id === cardId);
+    if (spl) return spl.manaCost;
+  } catch { /* carta desconhecida */ }
+  return 99;
 }

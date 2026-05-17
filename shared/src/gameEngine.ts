@@ -201,7 +201,7 @@ function drawInitialHand(state: GameState, playerId: string) {
     const tempDeck = [...player.deck];
     tempDeck.sort(() => 0.5 - Math.random());
     const tempHand = tempDeck.splice(0, 3);
-    const unitCount = tempHand.filter(id => id.startsWith('unit_')).length;
+    const unitCount = tempHand.filter(id => id.startsWith('hero_') || id.startsWith('unit_')).length;
     if (unitCount >= 2) {
       player.hand = tempHand;
       player.deck = tempDeck;
@@ -243,7 +243,8 @@ export function cloneGameState(state: GameState): GameState {
     winner: state.winner,
     players: newPlayers,
     boardUnits: newBoard,
-    combatLogs: state.combatLogs ? [...state.combatLogs] : []
+    combatLogs: state.combatLogs ? [...state.combatLogs] : [],
+    lastActionVfx: state.lastActionVfx ? { ...state.lastActionVfx } : undefined,
   };
 }
 
@@ -264,6 +265,10 @@ export function endTurn(state: GameState): GameState {
         // Aplica Dano Contínuo no Final do Turno (dando 1 turno de chance pro jogador agir antes)
         if (buff.type === 'poison' || buff.type === 'burn' || buff.type === 'bleed') {
           unit.hp -= (buff.value || 1);
+        }
+        // Reverte bônus de Fúria ao expirar
+        if (buff.type === 'fury' && buff.duration <= 1) {
+          unit.attack -= (buff.value || 2);
         }
         buff.duration -= 1;
         return buff.duration > 0;
@@ -636,7 +641,7 @@ export function offerCard(state: GameState, playerId: string, cardId: string): G
   if (!player.hand.includes(cardId)) throw new Error("Carta não está na mão.");
 
   player.hand = player.hand.filter(id => id !== cardId);
-  player.maxMana += 1;
+  player.maxMana = Math.min(player.maxMana + 1, 6);
   player.canOfferCard = false;
 
   return newState;

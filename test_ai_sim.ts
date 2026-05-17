@@ -3,8 +3,6 @@ import { getBestAction } from './shared/src/aiEngine';
 import { playCard, attack, moveTo, offerCard, heal } from './shared/src/gameEngine';
 
 let state = createInitialState();
-state.isVsAI = true;
-state.isAutoPlay = true;
 
 let turn = 0;
 while (state.currentPhase !== 'GAME_OVER' && turn < 100) {

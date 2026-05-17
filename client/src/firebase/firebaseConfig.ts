@@ -19,10 +19,18 @@ const firebaseConfig = {
   appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Inicializa o app Firebase (singleton)
-const app = initializeApp(firebaseConfig);
+// Inicializa o app Firebase (singleton) — graceful quando sem credenciais
+let app: ReturnType<typeof initializeApp> | null = null;
+let auth: ReturnType<typeof getAuth> | null = null;
+let db: ReturnType<typeof getFirestore> | null = null;
 
-// Exporta os serviços usados no projeto
-export const auth = getAuth(app);
-export const db   = getFirestore(app);
+try {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+} catch (e) {
+  console.warn('⚠️ Firebase não inicializado (credenciais ausentes). Modo offline ativo.', e);
+}
+
+export { auth, db };
 export default app;

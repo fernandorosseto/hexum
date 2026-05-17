@@ -63,7 +63,7 @@ export const BattleHUD: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row items-center gap-1 md:gap-4 w-full px-2 md:px-4 py-1 md:py-2 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 z-20 shrink-0 relative">
+    <div className="flex items-center gap-1 md:gap-4 w-full px-2 md:px-4 py-1 md:py-2 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/60 z-20 shrink-0 relative">
       
       {/* Modal de Confirmação */}
       {showConfirm && (
@@ -220,17 +220,7 @@ export const BattleHUD: React.FC = () => {
         </AnimatePresence>
       </div>
 
-      {/* Botão Passar Turno Mobile (Segunda linha se no mobile) */}
-      {!sandboxMode && isMyTurn && (
-        <div className="sm:hidden w-full pt-1 flex justify-center">
-          <button 
-            onClick={triggerEndTurn}
-            className="w-[80%] py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-black text-xs rounded-lg shadow-lg active:scale-95 border border-blue-400/30 uppercase tracking-widest"
-          >
-            Passar Turno
-          </button>
-        </div>
-      )}
+
       {/* Barra de Tempo (Pavio) estilo Arena */}
       {!sandboxMode && isTimerRunning && (
         <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-slate-800 overflow-hidden">

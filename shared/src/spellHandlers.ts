@@ -37,7 +37,7 @@ const CadeiaDeRelampagos: SpellHandler = {
       if (dist > 5) throw new Error("Alvo fora de alcance (máximo 5 hexágonos do Rei).");
     }
 
-    targetUnit.hp -= 2;
+    applyFinalDamage(targetUnit, 2, state);
     const neighbors = getHexNeighbors(targetHex);
     const neighborUnits = Object.values(state.boardUnits).filter(u =>
       u.playerId !== playerId && 
@@ -54,7 +54,7 @@ const CadeiaDeRelampagos: SpellHandler = {
         const distB = getHexDistance(b.position, myKing.position);
         return distA - distB;
       });
-      neighborUnits[0].hp -= 1;
+      applyFinalDamage(neighborUnits[0], 1, state);
     }
   }
 };
@@ -155,7 +155,8 @@ const FuriaDeBatalha: SpellHandler = {
   execute(state, playerId, targetHex) {
     const targetUnit = findUnitAtHex(state, targetHex);
     if (!targetUnit || targetUnit.playerId !== playerId) throw new Error("Selecione um aliado para Fúria.");
-    targetUnit.buffs.push({ type: 'fury', duration: 1 });
+    targetUnit.attack += 2;
+    targetUnit.buffs.push({ type: 'fury', duration: 1, value: 2 });
   }
 };
 

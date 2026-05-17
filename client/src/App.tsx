@@ -8,7 +8,7 @@ import { MainMenu } from './ui/MainMenu';
 import { GameOverUI } from './ui/GameOverUI';
 import { useBot } from './hooks/useBot';
 import { useGameStore } from './store/gameStore';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import './index.css';
 import backgroundImg from './assets/background.jpg';
 
@@ -24,6 +24,13 @@ function App() {
   const toggleCardDetails = useGameStore(s => s.toggleCardDetails);
   const selectedHex = useGameStore(s => s.selectedHex);
   const selectedCard = useGameStore(s => s.selectedCard);
+  const triggerEndTurn = useGameStore(s => s.triggerEndTurn);
+  const sandboxMode = useGameStore(s => s.sandboxMode);
+  const isAiThinking = useGameStore(s => s.isAiThinking);
+  const isPvP = useGameStore(s => s.isPvP);
+  const myRole = useGameStore(s => s.myRole);
+
+  const isMyTurn = isPvP ? (currentTurnPlayerId === myRole) : (currentTurnPlayerId === 'p1');
 
   // Se estiver no MENU, renderiza apenas o MainMenu
   if (currentView === 'MENU') {
@@ -67,24 +74,26 @@ function App() {
         </div>
       </div>
 
-      {/* CAMADA 4: Mão de Cartas (Oculta apenas no mobile durante seleção ou quando minimizada) */}
-      <div className="fixed bottom-12 md:bottom-4 left-0 right-0 z-20 flex justify-center md:justify-end p-2 md:p-4 pointer-events-none">
+      {/* CAMADA 4: Mão de Cartas — Bottom Tray */}
+      <div className="fixed bottom-0 left-0 right-0 z-20 pointer-events-none" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+        {/* Gradiente de fundo para integração visual */}
+        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none md:hidden" />
         <div className={`
-          w-full md:w-auto flex justify-center md:justify-end pointer-events-auto transition-all duration-500
-          ${(selectedHex || selectedCard || !isHandVisible) ? 'max-md:opacity-0 max-md:translate-y-32 max-md:pointer-events-none' : 'opacity-100 translate-y-0'}
+          relative flex justify-center md:justify-end p-2 md:p-4 pointer-events-auto transition-all duration-400
+          ${(selectedHex || selectedCard || !isHandVisible) ? 'max-md:opacity-0 max-md:translate-y-20 max-md:pointer-events-none' : 'opacity-100 translate-y-0'}
         `}>
           <HandUI />
         </div>
       </div>
 
-      {/* CAMADA 5: Overlay de turno do oponente (Apenas no modo PLAY) */}
+      {/* CAMADA 5: Overlay de turno do oponente */}
       {currentView === 'PLAY' && currentTurnPlayerId === 'p2' && phase !== 'GAME_OVER' && (
-        <div className="absolute top-4 inset-x-0 z-30 flex justify-center pointer-events-none">
-          <div className="bg-black/80 backdrop-blur-md px-6 py-2 rounded-full border border-red-900/60 shadow-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              <span className="text-red-400 font-bold text-sm tracking-widest uppercase">Oponente pensando...</span>
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
+        <div className="absolute top-12 md:top-4 inset-x-0 z-30 flex justify-center pointer-events-none">
+          <div className="bg-black/80 backdrop-blur-md px-5 py-1.5 rounded-full border border-red-900/60 shadow-lg">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+              <span className="text-red-400 font-bold text-xs tracking-widest uppercase">Oponente pensando...</span>
+              <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
             </div>
           </div>
         </div>
@@ -92,36 +101,45 @@ function App() {
 
       {phase === 'GAME_OVER' && <GameOverUI />}
 
-      {/* Botoes de Visibilidade Mobile (Toggles) */}
+      {/* CAMADA 6: FABs Mobile — Stack vertical no canto direito */}
       {currentView === 'PLAY' && (
-        <>
-          <div className="sm:hidden fixed bottom-4 right-4 z-50 pointer-events-auto">
+        <div className="sm:hidden fixed right-3 z-50 pointer-events-auto flex flex-col gap-3" style={{ bottom: 'calc(100px + env(safe-area-inset-bottom, 0px))' }}>
+          {/* Botão Passar Turno (principal) */}
+          {!sandboxMode && isMyTurn && !isAiThinking && phase !== 'GAME_OVER' && (
             <button 
-              onClick={toggleHand}
-              className={`p-3 rounded-full border-2 shadow-[0_4px_15px_rgba(0,0,0,0.8)] transition-all ${isHandVisible ? 'bg-blue-600 border-blue-400 text-white scale-110' : 'bg-slate-900 border-slate-700 text-slate-400 scale-90'}`}
-              title="Mostrar/Ocultar Cartas"
+              onClick={triggerEndTurn}
+              className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 border-2 border-blue-400/60 text-white shadow-[0_4px_20px_rgba(59,130,246,0.5)] active:scale-90 transition-all flex items-center justify-center"
+              title="Passar Turno"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
               </svg>
             </button>
-          </div>
-
-          <div className="sm:hidden fixed bottom-4 left-4 z-50 pointer-events-auto">
-            <button 
-              onClick={toggleCardDetails}
-              className={`p-3 rounded-full border-2 shadow-[0_4px_15px_rgba(0,0,0,0.8)] transition-all ${isCardDetailsVisible ? 'bg-purple-600 border-purple-400 text-white scale-110' : 'bg-slate-900 border-slate-700 text-slate-400 scale-90'}`}
-              title="Mostrar/Ocultar Inspeção"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
-          </div>
-        </>
+          )}
+          {/* Toggle Cartas */}
+          <button 
+            onClick={toggleHand}
+            className={`w-11 h-11 rounded-full border-2 shadow-[0_4px_15px_rgba(0,0,0,0.8)] transition-all flex items-center justify-center ${isHandVisible ? 'bg-blue-600 border-blue-400 text-white' : 'bg-slate-900/90 border-slate-700 text-slate-400'}`}
+            title="Mostrar/Ocultar Cartas"
+          >
+            <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </button>
+          {/* Toggle Inspeção */}
+          <button 
+            onClick={toggleCardDetails}
+            className={`w-11 h-11 rounded-full border-2 shadow-[0_4px_15px_rgba(0,0,0,0.8)] transition-all flex items-center justify-center ${isCardDetailsVisible ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-900/90 border-slate-700 text-slate-400'}`}
+            title="Mostrar/Ocultar Inspeção"
+          >
+            <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
+        </div>
       )}
 
-      {/* Botão de Feedback Flutuante (Beta) */}
+      {/* Botão de Feedback Flutuante (Beta - Desktop only) */}
       <motion.button
         initial={{ opacity: 0 }}
         animate={{ opacity: 0.5 }}
