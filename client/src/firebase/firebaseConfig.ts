@@ -20,9 +20,9 @@ const firebaseConfig = {
 };
 
 // Inicializa o app Firebase (singleton) — graceful quando sem credenciais
-let app: ReturnType<typeof initializeApp> | null = null;
-let auth: ReturnType<typeof getAuth> | null = null;
-let db: ReturnType<typeof getFirestore> | null = null;
+let app: ReturnType<typeof initializeApp> = null as any;
+let auth: ReturnType<typeof getAuth> = null as any;
+let db: ReturnType<typeof getFirestore> = null as any;
 
 try {
   app = initializeApp(firebaseConfig);
