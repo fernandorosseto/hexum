@@ -13,10 +13,10 @@ function getCardDetails(cardId: string) {
   }
   const art = ARTIFACTS.find(a => a.id === cardId);
   if (art) {
-    return { id: cardId, class: art.name, icon: '', cost: art.manaCost, atk: '-', hp: '-', type: 'Artefato' };
+    return { id: cardId, class: art.name, icon: '' as any, cost: art.manaCost, atk: '-', hp: '-', type: 'Artefato' };
   }
   const spl = SPELLS.find(s => s.id === cardId);
-  if (spl) return { id: cardId, class: spl.name, icon: '', cost: spl.manaCost, atk: '-', hp: '-', type: 'Mágica' };
+  if (spl) return { id: cardId, class: spl.name, icon: '' as any, cost: spl.manaCost, atk: '-', hp: '-', type: 'Mágica' };
   return null;
 }
 
@@ -115,7 +115,19 @@ export const HandUI: React.FC = () => {
               <div className="relative z-10 flex flex-col items-center justify-center h-full mt-1">
                 <div className="flex items-center justify-center mb-0.5">
                   {card.type === 'Unidade' ? (
-                    <img src={card.icon} alt={card.class} className="w-8 h-8 md:w-10 md:h-10 object-contain drop-shadow-xl brightness-110" />
+                    typeof card.icon === 'string' ? (
+                      <img 
+                        src={card.icon} 
+                        alt={card.class} 
+                        className={`object-contain drop-shadow-xl brightness-110 transition-all ${
+                          ['Cavaleiro', 'Arqueiro'].includes(card.class) 
+                            ? 'w-10 h-10 md:w-12 md:h-12 scale-125' 
+                            : 'w-8 h-8 md:w-10 md:h-10'
+                        }`} 
+                      />
+                    ) : (
+                      React.createElement(card.icon as React.FC<any>, { className: "w-8 h-8 md:w-10 md:h-10 drop-shadow-xl brightness-110" })
+                    )
                   ) : card.type === 'Mágica' ? (
                     <SpellIcon id={card.id} size={32} className="text-blue-300 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
                   ) : (

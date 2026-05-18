@@ -86,18 +86,7 @@ function App() {
         </div>
       </div>
 
-      {/* CAMADA 5: Overlay de turno do oponente */}
-      {currentView === 'PLAY' && currentTurnPlayerId === 'p2' && phase !== 'GAME_OVER' && (
-        <div className="absolute top-12 md:top-4 inset-x-0 z-30 flex justify-center pointer-events-none">
-          <div className="bg-black/80 backdrop-blur-md px-5 py-1.5 rounded-full border border-red-900/60 shadow-lg">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-              <span className="text-red-400 font-bold text-xs tracking-widest uppercase">Oponente pensando...</span>
-              <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {phase === 'GAME_OVER' && <GameOverUI />}
 
@@ -141,11 +130,14 @@ function App() {
 
       {/* Botão de Feedback Flutuante (Beta - Desktop only) */}
       <motion.button
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.5 }}
+        initial={{ opacity: 0, left: 16 }}
+        animate={{ 
+          opacity: 0.5, 
+          left: (selectedHex || selectedCard) ? 352 : 16 
+        }}
         whileHover={{ opacity: 1, scale: 1.05 }}
         onClick={() => window.open('https://forms.gle/c9ReRbd2SAc5dggr7', '_blank')}
-        className="fixed bottom-4 left-4 z-50 p-2 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg shadow-xl pointer-events-auto flex items-center gap-2 group transition-all hidden md:flex"
+        className="fixed bottom-4 z-50 p-2 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg shadow-xl pointer-events-auto flex items-center gap-2 group transition-all hidden md:flex"
       >
         <span className="text-lg">📩</span>
         <span className="text-[10px] text-white/70 group-hover:text-white font-bold tracking-widest uppercase hidden md:block">Feedback Beta</span>

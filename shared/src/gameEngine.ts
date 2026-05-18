@@ -133,15 +133,13 @@ export function createInitialState(): GameState {
     boardUnits: {}
   };
 
-  addInitialUnit(state, p1Id, 'hero_balduino', { q: -2, r: 4, s: -2 });
-  addInitialUnit(state, p1Id, 'hero_elcid', { q: -2, r: 3, s: -1 });
-  addInitialUnit(state, p1Id, 'hero_elcid', { q: -1, r: 3, s: -2 });
-  // [Balanço Experimental] Arqueiro bônus para P1 combater Vantagem do Segundo Jogador
-  addInitialUnit(state, p1Id, 'hero_robin', { q: -3, r: 4, s: -1 });
+  addInitialUnit(state, p1Id, 'hero_balduino', { q: -2, r: 3, s: -1 });
+  addInitialUnit(state, p1Id, 'hero_elcid', { q: -2, r: 2, s: 0 });
+  addInitialUnit(state, p1Id, 'hero_elcid', { q: -1, r: 2, s: -1 });
 
-  addInitialUnit(state, p2Id, 'hero_leonidas', { q: 2, r: -4, s: 2 });
-  addInitialUnit(state, p2Id, 'hero_landsknecht', { q: 2, r: -3, s: 1 });
-  addInitialUnit(state, p2Id, 'hero_landsknecht', { q: 1, r: -3, s: 2 });
+  addInitialUnit(state, p2Id, 'hero_leonidas', { q: 2, r: -3, s: 1 });
+  addInitialUnit(state, p2Id, 'hero_landsknecht', { q: 2, r: -2, s: 0 });
+  addInitialUnit(state, p2Id, 'hero_landsknecht', { q: 1, r: -2, s: 1 });
 
   drawInitialHand(state, p1Id);
   drawInitialHand(state, p2Id);

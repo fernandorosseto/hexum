@@ -8,7 +8,7 @@ export { LightningAnimation } from './LightningAnimation';
 export { ArcaneExplosion } from './ArcaneExplosion';
 export { ShadowSlash } from './ShadowSlash';
 export { CleaveSlash } from './CleaveSlash';
-export { ShockwaveAnimation } from './ShockwaveAnimation';
+export { OverheadSlash } from './OverheadSlash';
 export { AuraRunicaAnimation } from './AuraRunicaAnimation';
 export { DivineBlessingAnimation } from './DivineBlessingAnimation';
 export { EarthRootsAnimation } from './EarthRootsAnimation';

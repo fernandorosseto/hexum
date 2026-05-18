@@ -51,14 +51,13 @@ export const ProjectileAnimation: React.FC<ProjectileAnimationProps> = ({ source
   const rotation = useMotionValue(0);
 
   useMotionValueEvent(progress, "change", (t) => {
-    // Posição: B(t) = (1-t)^2 * P0 + 2(1-t)t * P1 + t^2 * P2
+    // Posição da flecha
     const currentX = Math.pow(1 - t, 2) * start.x + 2 * (1 - t) * t * cpX + Math.pow(t, 2) * end.x;
     const currentY = Math.pow(1 - t, 2) * start.y + 2 * (1 - t) * t * cpY + Math.pow(t, 2) * end.y;
 
-    // Tangente: B'(t) = 2(1-t)(P1 - P0) + 2t(P2 - P1)
+    // Tangente
     const tx = 2 * (1 - t) * (cpX - start.x) + 2 * t * (end.x - cpX);
     const ty = 2 * (1 - t) * (cpY - start.y) + 2 * t * (end.y - cpY);
-
     const angle = Math.atan2(ty, tx) * (180 / Math.PI);
 
     x.set(currentX);
@@ -68,44 +67,32 @@ export const ProjectileAnimation: React.FC<ProjectileAnimationProps> = ({ source
 
   return (
     <motion.g className="pointer-events-none">
-      {/* Rastro Neon */}
-      <motion.path
-        d={`M ${start.x} ${start.y} Q ${cpX} ${cpY} ${end.x} ${end.y}`}
-        fill="none"
-        stroke={color}
-        strokeWidth="3"
-        strokeLinecap="round"
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={{
-          pathLength: [0, 1, 1],
-          opacity: [0, 1, 0]
-        }}
-        transition={{ duration: 0.6, times: [0, 0.2, 1], ease: "linear" }}
-        style={{ filter }}
-      />
-
-      {/* Cabeça da Flecha (Agrupada para rotação) */}
+      {/* Cabeça da Flecha */}
       <motion.g
-        x={x}
-        y={y}
-        rotate={rotation}
+        style={{ x, y, rotate: rotation, transformOrigin: "0px 0px" }}
         initial={{ opacity: 0 }}
         animate={{ opacity: [0, 1, 1, 0] }}
         transition={{ duration: 0.6, times: [0, 0.1, 0.9, 1] }}
       >
         {/* Glow de impacto na frente */}
-        <circle r="5" fill="white" style={{ filter: 'blur(2px)' }} />
+        <circle cx="0" cy="0" r="12" fill="none" stroke={color} strokeWidth="3" style={{ filter: 'blur(3px)' }} />
 
-        {/* Mini Flecha (Triângulo) */}
+        {/* Haste da flecha */}
+        <line x1="-45" y1="0" x2="-6" y2="0" stroke="white" strokeWidth="3.5" opacity="0.8" />
+        
+        {/* Penas (Fletching) */}
+        <path d="M-40,0 L-48,-6 L-34,-6 Z M-40,0 L-48,6 L-34,6 Z" fill={color} opacity="0.9" />
+
+        {/* Ponta da Flecha (Metálica) */}
         <polygon
-          points="8,0 -6,-5 -4,0 -6,5"
+          points="0,0 -12,-6 -12,6"
           fill="white"
           stroke={color}
-          strokeWidth="1"
+          strokeWidth="1.5"
         />
 
-        {/* Brilho da flecha */}
-        <circle r="3" fill={color} style={{ filter }} />
+        {/* Brilho interno da ponta */}
+        <circle cx="-3" cy="0" r="4.5" fill={color} style={{ filter }} />
       </motion.g>
     </motion.g>
   );

@@ -13,13 +13,14 @@ import {
  * Mapa centralizado de ícones por classe de unidade.
  * Eliminado a duplicação que existia em UnitSprite.tsx e CardDetailsUI.tsx.
  */
-export const CLASS_ICONS: Record<string, string> = {
+export const CLASS_ICONS: Record<string, string | React.FC<any>> = {
   'Rei': reiIcon,
   'Cavaleiro': cavaleiroIcon,
   'Lanceiro': lanceiroIcon,
   'Arqueiro': arqueiroIcon,
   'Assassino': assassinoIcon,
   'Mago': magoIcon,
+  'Alquimista': magoIcon,
   'Clerigo': clerigoIcon,
 };
 
@@ -33,6 +34,7 @@ export const UNIT_ART_COLORS: Record<string, { bg: string, glow: string, border:
   Arqueiro:  { bg: 'from-green-900/60 to-lime-950/80',   glow: 'shadow-[0_0_40px_rgba(132,204,22,0.15)]', border: 'border-green-600/60' },
   Assassino: { bg: 'from-violet-900/60 to-purple-950/80',glow: 'shadow-[0_0_40px_rgba(139,92,246,0.15)]', border: 'border-violet-500/60' },
   Mago:      { bg: 'from-blue-900/60 to-indigo-950/80',  glow: 'shadow-[0_0_40px_rgba(99,102,241,0.15)]', border: 'border-blue-500/60' },
+  Alquimista:{ bg: 'from-blue-900/60 to-indigo-950/80',  glow: 'shadow-[0_0_40px_rgba(99,102,241,0.15)]', border: 'border-blue-500/60' },
   Clerigo:   { bg: 'from-amber-900/60 to-orange-950/80', glow: 'shadow-[0_0_40px_rgba(217,119,6,0.15)]', border: 'border-amber-500/60' },
 };
 

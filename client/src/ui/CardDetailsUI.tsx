@@ -24,7 +24,7 @@ export const CardDetailsUI: React.FC = () => {
   type CardData = {
     kind: 'unit' | 'spell' | 'artifact';
     title: string;
-    icon: string;
+    icon: string | React.FC<any>;
     manaCost: number;
     atk?: number;
     hp?: string;
@@ -168,7 +168,19 @@ export const CardDetailsUI: React.FC = () => {
         </div>
         <div className="flex items-center justify-center z-10 w-full h-full">
           {data.kind === 'unit' ? (
-            <img src={data.icon} alt={data.title} className="w-16 h-16 md:w-24 md:h-24 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
+            typeof data.icon === 'string' ? (
+              <img 
+                src={data.icon} 
+                alt={data.title} 
+                className={`object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] transition-all ${
+                  ['Cavaleiro', 'Arqueiro'].includes(data.unitClass || '') 
+                    ? 'w-18 h-18 md:w-26 md:h-26 scale-110' 
+                    : 'w-16 h-16 md:w-24 md:h-24'
+                }`} 
+              />
+            ) : (
+              React.createElement(data.icon as React.FC<any>, { className: "w-16 h-16 md:w-24 md:h-24 drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]" })
+            )
           ) : data.kind === 'spell' ? (
             <SpellIcon id={selectedCardId || ''} size={64} className="text-purple-300 drop-shadow-[0_0_15px_rgba(167,139,250,0.8)]" />
           ) : (

@@ -68,6 +68,26 @@ export const UnitSprite: React.FC<Props> = ({
   else if (animation === 'healing') animClass = 'animate-heal-glow';
   else if (animation === 'lightning') animClass = 'animate-lightning';
 
+  // Tamanhos e escalas proporcionais baseados no HEX_SIZE do mapa
+  const rBase = HEX_SIZE * (70 / 90);
+  const rAura = HEX_SIZE * (74 / 90);
+  const rSelected = HEX_SIZE * (76 / 90);
+  const rPing = HEX_SIZE * (78 / 90);
+
+  const kingWidth = HEX_SIZE * (154 / 90);
+  const kingOffset = -kingWidth / 2;
+
+  const sicknessInnerR = HEX_SIZE * (24 / 90);
+
+  const iconSizeBase = HEX_SIZE * (60 / 90);
+  const iconSizeBig = HEX_SIZE * (126 / 90);
+
+  const iconXBase = -iconSizeBase / 2;
+  const iconYBase = -iconSizeBase * 35 / 60;
+
+  const iconXBig = -iconSizeBig / 2;
+  const iconYBig = -iconSizeBig * 55 / 126;
+
   return (
     <motion.g 
       initial={{ scale: 0, opacity: 0 }}
@@ -79,7 +99,7 @@ export const UnitSprite: React.FC<Props> = ({
       {/* Aura de Identificação (Time) */}
       {!isReiAliado && (
         <circle 
-          cx="0" cy="0" r="74"
+          cx="0" cy="0" r={rAura}
           fill={auraColor}
           opacity={isMovementSpent ? 0.2 : 0.4}
           filter="blur(8px)"
@@ -90,29 +110,29 @@ export const UnitSprite: React.FC<Props> = ({
       {/* Anel pulsante de alvo atacável */}
       {isTargetable && (
         <circle 
-          cx="0" cy="0" r="78"
+          cx="0" cy="0" r={rPing}
           fill="none"
           stroke={targetColor === 'green' ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)'}
-          strokeWidth="4"
+          strokeWidth={HEX_SIZE * 4 / 90}
           className="animate-ping"
         />
       )}
 
       {/* Anel de Seleção */}
       {isSelected && (
-        <circle cx="0" cy="0" r="76" fill="none" stroke="#facc15" strokeWidth="6" />
+        <circle cx="0" cy="0" r={rSelected} fill="none" stroke="#facc15" strokeWidth={HEX_SIZE * 6 / 90} />
       )}
       {isTargetable && !isSelected && (
-        <circle cx="0" cy="0" r="76" fill="none" stroke={targetColor === 'green' ? '#22c55e' : '#ef4444'} strokeWidth="6" />
+        <circle cx="0" cy="0" r={rSelected} fill="none" stroke={targetColor === 'green' ? '#22c55e' : '#ef4444'} strokeWidth={HEX_SIZE * 6 / 90} />
       )}
 
       {/* Fundo Exausto */}
       {!isReiAliado && (
         <circle 
-          cx="0" cy="0" r="70"
+          cx="0" cy="0" r={rBase}
           fill={exhaustedGradient}
           stroke={exhaustedStroke}
-          strokeWidth="6"
+          strokeWidth={HEX_SIZE * 6 / 90}
           opacity={isMovementSpent ? 1 : 0}
           style={{ transition: 'opacity 1s ease-in-out' }}
         />
@@ -121,10 +141,10 @@ export const UnitSprite: React.FC<Props> = ({
       {/* Fundo Ativo */}
       {!isReiAliado && (
         <circle 
-          cx="0" cy="0" r="70"
+          cx="0" cy="0" r={rBase}
           fill={activeGradient}
           stroke={activeStroke}
-          strokeWidth="6"
+          strokeWidth={HEX_SIZE * 6 / 90}
           opacity={isMovementSpent ? 0 : 1}
           style={{ 
             transition: 'opacity 1s ease-in-out',
@@ -137,11 +157,11 @@ export const UnitSprite: React.FC<Props> = ({
       {isReiAliado && (
         <g>
           {/* Círculo base para clip ou fundo se a imagem falhar */}
-          <circle cx="0" cy="0" r="70" fill="#1e293b" />
+          <circle cx="0" cy="0" r={rBase} fill="#1e293b" />
           <image 
             href={kingImg} 
-            x="-77" y="-77" 
-            width="154" height="154"
+            x={kingOffset} y={kingOffset} 
+            width={kingWidth} height={kingWidth}
             style={{
               filter: isMovementSpent ? 'grayscale(0.8) brightness(0.5)' : 'none',
               transition: 'filter 1s ease-in-out'
@@ -153,11 +173,9 @@ export const UnitSprite: React.FC<Props> = ({
 
       <defs>
         <clipPath id="unit-clip">
-          <circle cx="0" cy="0" r="70" />
+          <circle cx="0" cy="0" r={rBase} />
         </clipPath>
       </defs>
-
-
 
       {/* Escudo Protetor (Aura Branca) */}
       <AnimatePresence>
@@ -167,9 +185,9 @@ export const UnitSprite: React.FC<Props> = ({
       {/* Indicador de Summoning Sickness (Enjoo de Invocação) */}
       {hasSickness && (
         <g>
-          <circle cx="0" cy="0" r="70" fill="rgba(49, 46, 129, 0.5)" />
-          <circle cx="0" cy="0" r="24" fill="rgba(15, 23, 42, 0.8)" stroke="rgba(129, 140, 248, 0.3)" strokeWidth="2" className="animate-pulse" />
-          <text x="0" y="6" fontSize="18" textAnchor="middle">⏳</text>
+          <circle cx="0" cy="0" r={rBase} fill="rgba(49, 46, 129, 0.5)" />
+          <circle cx="0" cy="0" r={sicknessInnerR} fill="rgba(15, 23, 42, 0.8)" stroke="rgba(129, 140, 248, 0.3)" strokeWidth={HEX_SIZE * 2 / 90} className="animate-pulse" />
+          <text x="0" y={HEX_SIZE * 6 / 90} fontSize={HEX_SIZE * 18 / 90} textAnchor="middle">⏳</text>
         </g>
       )}
 
@@ -194,14 +212,22 @@ export const UnitSprite: React.FC<Props> = ({
         }}
       >
         {!isReiAliado && CLASS_ICONS[unit.unitClass] ? (
-          <image 
-            href={CLASS_ICONS[unit.unitClass]} 
-            x="-30" y="-35" 
-            width="60" height="60" 
-            filter="drop-shadow(0px 10px 15px rgba(0,0,0,0.5))"
-          />
+          typeof CLASS_ICONS[unit.unitClass] === 'string' ? (
+            <image 
+              href={CLASS_ICONS[unit.unitClass] as string} 
+              x={iconXBig} 
+              y={iconYBig} 
+              width={iconSizeBig} 
+              height={iconSizeBig} 
+              filter="drop-shadow(0px 10px 15px rgba(0,0,0,0.5))"
+            />
+          ) : (
+            <g transform={`translate(${iconXBig}, ${iconYBig})`}>
+              {React.createElement(CLASS_ICONS[unit.unitClass] as React.FC<any>, { width: iconSizeBig, height: iconSizeBig, style: { filter: 'drop-shadow(0px 10px 15px rgba(0,0,0,0.5))' } })}
+            </g>
+          )
         ) : !isReiAliado ? (
-          <text x="0" y="8" fontSize="40" textAnchor="middle" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.5))">❓</text>
+          <text x="0" y={HEX_SIZE * 8 / 90} fontSize={HEX_SIZE * 40 / 90} textAnchor="middle" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.5))">❓</text>
         ) : null}
       </motion.g>
 

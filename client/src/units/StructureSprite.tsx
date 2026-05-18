@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import type { Unit } from 'shared';
+import { HEX_SIZE } from '../board/HexUtils';
+import muralhaGeloImg from '../assets/icons/muralha_gelo.png';
 
 interface Props {
   unit: Unit;
@@ -12,11 +14,23 @@ interface Props {
 
 export const StructureSprite: React.FC<Props> = ({ unit, isSelected, isTargetable, targetColor, animClass }) => {
   const isP1 = unit.playerId === 'p1';
-  const scale = 0.82; // Ajuste para não transbordar
+  
+  // Tamanho proporcional baseado no HEX_SIZE do mapa
+  const size = HEX_SIZE * 2.2;
+  const x = -size / 2;
+  // Shift ligeiramente para cima para dar o efeito 3D de elevação a partir da base do hexágono
+  const y = -size * 0.58; 
 
-  let dropShadow = '';
-  if (isSelected) dropShadow = 'drop-shadow(0px 0px 15px rgba(250,204,21,0.5))';
-  else if (isTargetable) dropShadow = targetColor === 'green' ? 'drop-shadow(0px 0px 15px rgba(34,197,94,0.6))' : 'drop-shadow(0px 0px 15px rgba(239,68,68,0.6))';
+  const neonColor = isP1 ? '#22d3ee' : '#fb7185'; // ciano / rosa
+
+  let filterGlow = 'drop-shadow(0px 8px 12px rgba(0,0,0,0.5))';
+  if (isSelected) {
+    filterGlow = `drop-shadow(0px 0px 20px ${neonColor})`;
+  } else if (isTargetable) {
+    filterGlow = targetColor === 'green' 
+      ? 'drop-shadow(0px 0px 20px rgba(34,197,94,0.85))' 
+      : 'drop-shadow(0px 0px 20px rgba(239,68,68,0.85))';
+  }
 
   return (
     <motion.g 
@@ -24,65 +38,36 @@ export const StructureSprite: React.FC<Props> = ({ unit, isSelected, isTargetabl
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0, opacity: 0, transition: { duration: 0.3 } }}
       className={`pointer-events-none ${animClass || ''}`}
-      style={{ filter: dropShadow }}
+      style={{ filter: filterGlow }}
     >
-      <g transform="translate(-50, -50)">
-        {/* Sombra projetada no chão */}
-        <polygon 
-          points="50,4 90,27 90,73 50,96 10,73 10,27" 
-          transform={`scale(${scale}) translate(${(1-scale)*50/scale}, ${(1-scale)*50/scale + 5})`}
-          fill="rgba(0,0,0,0.3)" 
-          filter="blur(4px)"
-        />
-        
-        {/* Corpo Principal (Vidro/Gelo) */}
-        <g transform={`scale(${scale}) translate(${(1-scale)*50/scale}, ${(1-scale)*50/scale})`}>
-          {/* Base com Glassmorphism (SVG filters instead of backdrop-filter) */}
-          <polygon 
-            points="50,0 93.3,25 93.3,75 50,100 6.7,75 6.7,25" 
-            fill="rgba(186, 230, 253, 0.2)"
-            stroke="rgba(255, 255, 255, 0.4)"
-            strokeWidth="1.5"
-          />
-          
-          {/* Gradiente de profundidade */}
-          <polygon 
-            points="50,0 93.3,25 93.3,75 50,100 6.7,75 6.7,25" 
-            fill="url(#ice-wall-gradient)"
-            opacity="0.4"
-          />
+      {/* Sombra de projeção suave no chão do tabuleiro */}
+      <ellipse 
+        cx="0" 
+        cy={HEX_SIZE * 0.25} 
+        rx={HEX_SIZE * 0.7} 
+        ry={HEX_SIZE * 0.35} 
+        fill="rgba(0, 0, 0, 0.45)" 
+        filter="blur(8px)" 
+      />
 
-          {/* Facetas de Vidro (Reflexos) */}
-          <path d="M 50,0 L 50,45 L 93.3,25" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="0.8" />
-          <path d="M 6.7,25 L 50,45 L 6.7,75" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="0.8" />
-          <path d="M 50,100 L 50,55 L 93.3,75" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="0.8" />
-          
-          {/* Brilhos Especulares */}
-          <polygon points="50,5 88,27 88,35 50,13" fill="white" opacity="0.3" />
-          <polygon points="12,30 25,37 25,63 12,70" fill="white" opacity="0.15" />
+      {/* Imagem PNG da Muralha de Gelo com a animação mantida */}
+      <image
+        href={muralhaGeloImg}
+        x={x}
+        y={y}
+        width={size}
+        height={size}
+      />
 
-          {/* Geada / Glitter (Estático) */}
-          {[...Array(6)].map((_, i) => (
-            <circle 
-              key={i}
-              cx={20 + Math.random() * 60}
-              cy={20 + Math.random() * 60}
-              r={0.8 + Math.random()}
-              fill="white"
-              opacity={0.3 + Math.random() * 0.3}
-            />
-          ))}
-        </g>
-      </g>
-
-      {/* HP da Muralha (Dentro do bloco e maior) */}
+      {/* HP da Muralha (Grande, posicionado de forma legível no rodapé da estrutura) */}
       <text 
-        x="0" y="8" 
-        fontSize="24" 
+        x="0" 
+        y={HEX_SIZE * 0.45} 
+        fontSize={HEX_SIZE * 0.23} 
         fontWeight="900" 
         textAnchor="middle" 
         fill={isP1 ? '#ffffff' : '#cffafe'}
-        filter="drop-shadow(0px 2px 4px rgba(0,0,0,1))"
+        filter="drop-shadow(0px 3px 6px rgba(0,0,0,0.95))"
       >
         ♥ {unit.hp}
       </text>

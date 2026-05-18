@@ -19,7 +19,7 @@ import {
   TransfusionAnimation,
   MistEffect,
   CleaveSlash,
-  ShockwaveAnimation,
+  OverheadSlash,
   ArcaneExplosion,
   ShadowSlash,
   AuraRunicaAnimation,
@@ -52,7 +52,7 @@ export const HexMap: React.FC = () => {
   const activeThrust = useGameStore(state => state.activeThrust);
   const activeMeteor = useGameStore(state => state.activeMeteor);
   const activeCleave = useGameStore(state => state.activeCleave);
-  const activeShockwave = useGameStore(state => state.activeShockwave);
+  const activeOverheadSlash = useGameStore(state => state.activeOverheadSlash);
   const activeShadowSlash = useGameStore(state => state.activeShadowSlash);
   const activeArcaneExplosion = useGameStore(state => state.activeArcaneExplosion);
   const activeAuraRunica = useGameStore(state => state.activeAuraRunica);
@@ -248,8 +248,8 @@ export const HexMap: React.FC = () => {
             {activeCleave && (
               <CleaveSlash key="cleave" source={activeCleave.source} target={activeCleave.target} color={activeCleave.color} />
             )}
-            {activeShockwave && (
-              <ShockwaveAnimation key="shockwave" target={activeShockwave.target} />
+            {activeOverheadSlash && (
+              <OverheadSlash key="overhead-slash" source={activeOverheadSlash.source} target={activeOverheadSlash.target} />
             )}
             {activeAuraRunica && (
               <AuraRunicaAnimation key="aura-runica" target={activeAuraRunica} />

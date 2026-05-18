@@ -132,7 +132,7 @@ export const createCombatActions = (set: any, get: any) => {
         scheduleProjectileAnimation(set, get, attacker, target, newState, animations, attackMsg, targetDied);
       } else if (attacker.unitClass === 'Lanceiro') {
         scheduleThrustAnimation(set, get, attacker, target, newState, animations, attackMsg, targetDied);
-      } else if (attacker.unitClass === 'Mago') {
+      } else if (attacker.unitClass === 'Mago' || attacker.unitClass === 'Alquimista') {
         scheduleMageAttack(set, get, attacker, target, newState, animations, attackMsg, targetDied);
       } else if (attacker.unitClass === 'Assassino') {
         scheduleAssassinAttack(set, get, attacker, target, newState, animations, attackMsg, targetDied);
@@ -203,9 +203,10 @@ export const createCombatActions = (set: any, get: any) => {
         newState.players['p1'].mana = 99;
         newState.players['p1'].maxMana = 99;
       }
-
       const deadUnitIds = Object.keys(currentGameState.boardUnits).filter(id => !newState.boardUnits[id]);
       let hasCustomAnimation = false;
+      let animationDuration = 0;
+      let setupAnimations = () => {};
       const boardUnitsArr = Object.values(currentGameState.boardUnits) as Unit[];
 
       if (cardId === 'spl_raio') {
@@ -216,119 +217,144 @@ export const createCombatActions = (set: any, get: any) => {
 
         if (targetUnitId) {
           hasCustomAnimation = true;
-          const animations: Record<string, AnimationType> = { [targetUnitId]: 'lightning' };
-          const myKing = boardUnitsArr.find(u => u.unitClass === 'Rei' && u.playerId === currentGameState.currentTurnPlayerId);
-          const neighbors = getHexNeighbors(targetHex);
-          const neighborUnits = boardUnitsArr.filter(u =>
-            u.playerId !== currentGameState.currentTurnPlayerId &&
-            u.id !== targetUnitId &&
-            neighbors.some(n => n.q === u.position.q && n.r === u.position.r)
-          );
+          animationDuration = 800;
+          setupAnimations = () => {
+            const animations: Record<string, AnimationType> = { [targetUnitId]: 'lightning' };
+            const myKing = boardUnitsArr.find(u => u.unitClass === 'Rei' && u.playerId === currentGameState.currentTurnPlayerId);
+            const neighbors = getHexNeighbors(targetHex);
+            const neighborUnits = boardUnitsArr.filter(u =>
+              u.playerId !== currentGameState.currentTurnPlayerId &&
+              u.id !== targetUnitId &&
+              neighbors.some(n => n.q === u.position.q && n.r === u.position.r)
+            );
 
-          if (neighborUnits.length > 0) {
-            neighborUnits.sort((a, b) => {
-              if (a.hp !== b.hp) return a.hp - b.hp;
-              if (!myKing) return 0;
-              const distA = getHexDistance(a.position, myKing.position);
-              const distB = getHexDistance(b.position, myKing.position);
-              return distA - distB;
-            });
-            animations[neighborUnits[0].id] = 'lightning';
-          }
-          set({ animatingUnits: animations });
+            if (neighborUnits.length > 0) {
+              neighborUnits.sort((a, b) => {
+                if (a.hp !== b.hp) return a.hp - b.hp;
+                if (!myKing) return 0;
+                const distA = getHexDistance(a.position, myKing.position);
+                const distB = getHexDistance(b.position, myKing.position);
+                return distA - distB;
+              });
+              animations[neighborUnits[0].id] = 'lightning';
+            }
+            set({ animatingUnits: animations });
+          };
         }
-      }
-
-      if (cardId === 'spl_transfusao') {
+      } else if (cardId === 'spl_transfusao') {
         const myKing = boardUnitsArr.find(u => u.unitClass === 'Rei' && u.playerId === currentGameState.currentTurnPlayerId);
         if (myKing) {
-          set({ activeTransfusion: { source: targetHex, target: myKing.position } });
-          setTimeout(() => set({ activeTransfusion: null }), 1000);
+          hasCustomAnimation = true;
+          animationDuration = 1000;
+          setupAnimations = () => {
+            set({ activeTransfusion: { source: targetHex, target: myKing.position } });
+          };
         }
-      }
-
-      if (cardId === 'spl_meteoro') {
-        set({ activeMeteor: targetHex });
-        const neighbors = getHexNeighbors(targetHex);
-        const affectedUnitIds = Object.keys(currentGameState.boardUnits).filter(id => {
-          const u = currentGameState.boardUnits[id];
-          return (u.position.q === targetHex.q && u.position.r === targetHex.r) ||
-            neighbors.some(n => n.q === u.position.q && n.r === u.position.r);
-        });
-
-        if (affectedUnitIds.length > 0) {
-          const animations: Record<string, AnimationType> = {};
-          affectedUnitIds.forEach(id => { animations[id] = 'damaged'; });
-          set({ animatingUnits: animations });
-        }
-        setTimeout(() => set({ activeMeteor: null, animatingUnits: {} }), 1000);
+      } else if (cardId === 'spl_meteoro') {
         hasCustomAnimation = true;
-      }
-
-      if (cardId === 'spl_aurarunica') {
-        scheduleSpellCardAnimation(set, 'activeAuraRunica', targetHex, newState);
-      }
-      if (cardId === 'spl_nevoa') {
-        scheduleSpellCardAnimation(set, 'activeMistImpact', targetHex, newState);
-      }
-      if (cardId === 'spl_muralha') {
-        const wallTargets = [targetHex, ...getHexNeighbors(targetHex)];
-        scheduleSpellCardAnimation(set, 'activeWallFormation', wallTargets, newState);
-      }
-      if (cardId === 'spl_passos') {
-        scheduleSpellCardAnimation(set, 'activeWindTrail', targetHex, newState);
-      }
-      if (cardId === 'spl_bencao') {
-        scheduleSpellCardAnimation(set, 'activeDivineBlessing', targetHex, newState);
-      }
-      if (cardId === 'spl_raizes') {
-        scheduleSpellCardAnimation(set, 'activeEarthRoots', targetHex, newState);
-      }
-      if (cardId === 'spl_furia') {
-        scheduleSpellCardAnimation(set, 'activeFuryPulse', targetHex, newState);
-      }
-
-      if (deadUnitIds.length > 0) {
-        deadUnitIds.forEach(id => {
-          newState.boardUnits[id] = { ...currentGameState.boardUnits[id], hp: 0 };
-          if (!get().animatingUnits[id]) {
-            set((state: any) => ({ animatingUnits: { ...state.animatingUnits, [id]: 'damaged' } }));
-          }
-        });
-      }
-
-      set({ 
-        ...newState, 
-        selectedCard: null, 
-        selectedHex: null,
-        lastActionVfx: { 
-          type: 'SPELL', 
-          sourceId: cardId === 'spl_transfusao' ? boardUnitsArr.find(u => u.unitClass === 'Rei' && u.playerId === currentGameState.currentTurnPlayerId)?.id : undefined,
-          sourcePos: cardId === 'spl_transfusao' ? boardUnitsArr.find(u => u.unitClass === 'Rei' && u.playerId === currentGameState.currentTurnPlayerId)?.position : undefined,
-          targetPos: targetHex, 
-          abilityId: cardId, 
-          timestamp: Date.now() 
-        }
-      });
-
-      if (deadUnitIds.length > 0 || hasCustomAnimation) {
-        setTimeout(() => {
-          set((state: any) => {
-            const cleanBoard = { ...state.boardUnits };
-            deadUnitIds.forEach(id => delete cleanBoard[id]);
-            return { boardUnits: cleanBoard, animatingUnits: {} };
+        animationDuration = 1000;
+        setupAnimations = () => {
+          set({ activeMeteor: targetHex });
+          const neighbors = getHexNeighbors(targetHex);
+          const affectedUnitIds = Object.keys(currentGameState.boardUnits).filter(id => {
+            const u = currentGameState.boardUnits[id];
+            return (u.position.q === targetHex.q && u.position.r === targetHex.r) ||
+              neighbors.some(n => n.q === u.position.q && n.r === u.position.r);
           });
-        }, 800);
+
+          if (affectedUnitIds.length > 0) {
+            const animations: Record<string, AnimationType> = {};
+            affectedUnitIds.forEach(id => { animations[id] = 'damaged'; });
+            set({ animatingUnits: animations });
+          }
+        };
+      } else if (cardId === 'spl_aurarunica') {
+        hasCustomAnimation = true;
+        animationDuration = 800;
+        setupAnimations = () => { set({ activeAuraRunica: targetHex }); };
+      } else if (cardId === 'spl_nevoa') {
+        hasCustomAnimation = true;
+        animationDuration = 800;
+        setupAnimations = () => { set({ activeMistImpact: targetHex }); };
+      } else if (cardId === 'spl_muralha') {
+        hasCustomAnimation = true;
+        animationDuration = 800;
+        setupAnimations = () => {
+          const wallTargets = [targetHex, ...getHexNeighbors(targetHex)];
+          set({ activeWallFormation: wallTargets });
+        };
+      } else if (cardId === 'spl_passos') {
+        hasCustomAnimation = true;
+        animationDuration = 800;
+        setupAnimations = () => { set({ activeWindTrail: targetHex }); };
+      } else if (cardId === 'spl_bencao') {
+        hasCustomAnimation = true;
+        animationDuration = 800;
+        setupAnimations = () => { set({ activeDivineBlessing: targetHex }); };
+      } else if (cardId === 'spl_raizes') {
+        hasCustomAnimation = true;
+        animationDuration = 800;
+        setupAnimations = () => { set({ activeEarthRoots: targetHex }); };
+      } else if (cardId === 'spl_furia') {
+        hasCustomAnimation = true;
+        animationDuration = 800;
+        setupAnimations = () => { set({ activeFuryPulse: targetHex }); };
       }
 
+      // Prepara a mensagem de log
       const cardName = cardId.replace('unit_', '').replace('spl_', '').replace('art_', '').toUpperCase();
       let playMsg = `Jogou ${cardName}`;
       if (cardId.startsWith('unit_')) playMsg = `O ${currentGameState.currentTurnPlayerId === 'p1' ? 'Azul' : 'Roxo'} convocou o ${cardName} para o campo de batalha!`;
       else if (cardId.startsWith('spl_')) playMsg = `Uma poderosa magia foi conjurada: ${cardName}!`;
       else if (cardId.startsWith('art_')) playMsg = `O artefato sagrado ${cardName} foi revelado.`;
 
-      get().addLog(playMsg, currentGameState.currentTurnPlayerId);
-      checkAutoPass();
+      const applyFinalState = () => {
+        set({
+          ...newState,
+          selectedCard: null,
+          selectedHex: null,
+          activeTransfusion: null,
+          activeMeteor: null,
+          activeAuraRunica: null,
+          activeMistImpact: null,
+          activeWallFormation: null,
+          activeWindTrail: null,
+          activeDivineBlessing: null,
+          activeEarthRoots: null,
+          activeFuryPulse: null,
+          animatingUnits: {},
+          lastActionVfx: { 
+            type: 'SPELL', 
+            sourceId: cardId === 'spl_transfusao' ? boardUnitsArr.find(u => u.unitClass === 'Rei' && u.playerId === currentGameState.currentTurnPlayerId)?.id : undefined,
+            sourcePos: cardId === 'spl_transfusao' ? boardUnitsArr.find(u => u.unitClass === 'Rei' && u.playerId === currentGameState.currentTurnPlayerId)?.position : undefined,
+            targetPos: targetHex, 
+            abilityId: cardId, 
+            timestamp: Date.now() 
+          }
+        });
+        get().addLog(playMsg, currentGameState.currentTurnPlayerId);
+        checkAutoPass();
+      };
+
+      if (hasCustomAnimation) {
+        // Atualiza imediatamente mão e mana do jogador para responsividade na UI
+        set({
+          ...newState,
+          boardUnits: currentGameState.boardUnits, // Mantém o tabuleiro original para a animação
+          selectedCard: null,
+          selectedHex: null
+        });
+
+        // Dispara os estados de animação específicos
+        setupAnimations();
+
+        // Executa a transição para o estado final após a duração
+        setTimeout(() => {
+          applyFinalState();
+        }, animationDuration);
+      } else {
+        applyFinalState();
+      }
     } catch (err: any) {
       console.warn("Erro ao jogar carta:", err.message);
       set({ selectedCard: null, selectedHex: null });

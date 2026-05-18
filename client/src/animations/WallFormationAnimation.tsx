@@ -1,42 +1,86 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { hexToPixel } from '../board/HexUtils';
+import { hexToPixel, HEX_SIZE } from '../board/HexUtils';
 import { HexCoordinates } from 'shared';
 
 interface Props {
   targets: HexCoordinates[];
 }
 
+/**
+ * Animação de Muralha de Gelo Premium.
+ * 
+ * Cria estalagmites tridimensionais de cristais glaciais translúcidos
+ * que surgem de forma abrupta do solo, acompanhados por uma onda de geada ártica
+ * e partículas de geada.
+ */
 export const WallFormationAnimation: React.FC<Props> = ({ targets }) => {
   return (
-    <g className="pointer-events-none">
+    <g className="pointer-events-none z-50 overflow-visible">
       {targets.map((target, idx) => {
         const { x, y } = hexToPixel(target);
         return (
-          <motion.g key={idx} transform={`translate(${x}, ${y})`}>
-            {/* Cristais de gelo subindo */}
-            {[ -15, 0, 15 ].map((offsetX, i) => (
-              <motion.path
-                key={i}
-                d={`M ${offsetX} 20 L ${offsetX - 10} 0 L ${offsetX} -30 L ${offsetX + 10} 0 Z`}
-                fill="#bae6fd"
-                stroke="#7dd3fc"
-                strokeWidth="1"
-                initial={{ scaleY: 0, opacity: 0, y: 30 }}
-                animate={{ scaleY: [0, 1.2, 1], opacity: [0, 1, 0], y: 0 }}
-                transition={{ duration: 0.6, delay: i * 0.1 }}
-                style={{ originY: "20px" }}
-              />
-            ))}
-            {/* Brilho de geada */}
+          <g key={idx} transform={`translate(${x}, ${y})`}>
+            {/* ── 1. EXPANSÃO DE GEADA ÁRTICA (Domo de Neve) ── */}
             <motion.circle
-              r={30}
-              fill="rgba(186, 230, 253, 0.3)"
-              initial={{ scale: 0 }}
-              animate={{ scale: [0, 1.5, 1], opacity: [0, 0.8, 0] }}
-              transition={{ duration: 0.5 }}
+              r={HEX_SIZE * 0.75}
+              fill="rgba(186, 230, 253, 0.25)"
+              stroke="#e0f2fe"
+              strokeWidth="2"
+              style={{ filter: 'url(#neon-glow-p1)' }}
+              initial={{ scale: 0.1, opacity: 0 }}
+              animate={{ scale: [0.1, 1.45], opacity: [0.95, 0] }}
+              transition={{ duration: 0.45, ease: "easeOut" }}
             />
-          </motion.g>
+            
+            {/* ── 2. CRISTAIS TRIDIMENSIONAIS DE GELO (Estalagmites Angulares) ── */}
+            {/* Espiral Esquerda (Menor) */}
+            <motion.polygon
+              points="-18,20 -28,5 -20,-25 -8,-15"
+              fill="url(#ice-wall-gradient)"
+              stroke="#e0f2fe"
+              strokeWidth="1.2"
+              style={{ filter: 'url(#neon-glow-p1)', originY: "20px" }}
+              initial={{ scaleY: 0, opacity: 0, y: 25 }}
+              animate={{ scaleY: [0, 1.15, 1], opacity: [0, 0.9, 0], y: 0 }}
+              transition={{ duration: 0.52, delay: 0.05, ease: "easeOut" }}
+            />
+
+            {/* Espiral Central (Colossal) */}
+            <motion.g
+              initial={{ scaleY: 0, opacity: 0, y: 30 }}
+              animate={{ scaleY: [0, 1.25, 1], opacity: [0, 0.98, 0], y: 0 }}
+              transition={{ duration: 0.58, ease: "easeOut" }}
+              style={{ originY: "20px" }}
+            >
+              {/* Lâmina de Gelo Glacial Externa */}
+              <polygon
+                points="0,20 -15,-5 -6,-62 0,-76 6,-62 15,-5"
+                fill="url(#ice-wall-gradient)"
+                stroke="#bae6fd"
+                strokeWidth="1.8"
+                style={{ filter: 'url(#neon-glow-p1)' }}
+              />
+              {/* Núcleo de Gelo Branco Sólido */}
+              <polygon
+                points="0,20 -8,-2 -3,-54 0,-68 3,-54 8,-2"
+                fill="white"
+                opacity="0.8"
+              />
+            </motion.g>
+
+            {/* Espiral Direita (Menor) */}
+            <motion.polygon
+              points="18,20 8,-15 20,-25 28,5"
+              fill="url(#ice-wall-gradient)"
+              stroke="#e0f2fe"
+              strokeWidth="1.2"
+              style={{ filter: 'url(#neon-glow-p1)', originY: "20px" }}
+              initial={{ scaleY: 0, opacity: 0, y: 25 }}
+              animate={{ scaleY: [0, 1.15, 1], opacity: [0, 0.9, 0], y: 0 }}
+              transition={{ duration: 0.52, delay: 0.1, ease: "easeOut" }}
+            />
+          </g>
         );
       })}
     </g>

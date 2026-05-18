@@ -8,7 +8,7 @@ export interface ThrustAnimation { attackerId: string; target: HexCoordinates; }
 
 // Novas Animações Especiais
 export interface CleaveAnimation { source: HexCoordinates; target: HexCoordinates; color: 'gold' | 'cyan'; }
-export interface ShockwaveAnimationData { target: HexCoordinates; }
+export interface OverheadSlashAnimationData { source: HexCoordinates; target: HexCoordinates; }
 export interface ShadowSlashAnimation { target: HexCoordinates; }
 export interface ArcaneExplosionAnimation { epicenter: HexCoordinates; }
 
@@ -62,7 +62,7 @@ export const scheduleMageAttack = (set: any, get: any, attacker: any, target: an
           return { animatingUnits: {}, boardUnits: cleanBoard };
         });
       }, 500);
-    }, 300); // tempo que a magia explode visualmente
+    }, 550); // tempo que a magia explode visualmente (aumentado de 300ms para 550ms para completar a animação)
   }, 200); // 200ms animando a pulse magic
 };
 
@@ -85,21 +85,62 @@ export const scheduleAssassinAttack = (set: any, get: any, attacker: any, target
 };
 
 export const scheduleHeavyMelee = (set: any, get: any, attacker: any, target: any, newState: any, animations: Record<string, AnimationType>, attackMsg: string, targetDied: boolean) => {
-  set({ animatingUnits: { [attacker.id]: 'attacking' } });
-  setTimeout(() => {
-    set({ activeShockwave: { target: target.position } });
+  const currentAttackerPos = attacker.position;
+  const finalAttackerPos = newState.boardUnits[attacker.id]?.position;
+  const didMove = finalAttackerPos && (finalAttackerPos.q !== currentAttackerPos.q || finalAttackerPos.r !== currentAttackerPos.r);
+
+  if (didMove) {
+    // 1. Mover o Cavaleiro primeiro (slide de movimento suave)
+    set((state: any) => {
+      const updatedUnits = { ...state.boardUnits };
+      if (updatedUnits[attacker.id]) {
+        updatedUnits[attacker.id] = {
+          ...updatedUnits[attacker.id],
+          position: finalAttackerPos
+        };
+      }
+      return {
+        boardUnits: updatedUnits,
+        animatingUnits: { [attacker.id]: 'attacking' }
+      };
+    });
+
+    // 2. Esperar o slide terminar (400ms) para desferir o corte da espada no alvo
     setTimeout(() => {
-      set({ ...newState, activeShockwave: null, selectedHex: null, targetHex: null, selectedAbility: null, animatingUnits: animations, combatLogs: [] });
-      get().addLog(attackMsg, attacker.playerId);
+      set({ activeOverheadSlash: { source: currentAttackerPos, target: target.position } });
+      
+      // 3. Aplicar o estado final (dano, sumiço do alvo se morto, logs) após o golpe acabar (700ms)
       setTimeout(() => {
-        set((state: any) => {
-          const cleanBoard = { ...state.boardUnits };
-          if (targetDied) delete cleanBoard[target.id];
-          return { animatingUnits: {}, boardUnits: cleanBoard };
-        });
-      }, 500);
+        set({ ...newState, activeOverheadSlash: null, selectedHex: null, targetHex: null, selectedAbility: null, animatingUnits: animations, combatLogs: [] });
+        get().addLog(attackMsg, attacker.playerId);
+        setTimeout(() => {
+          set((state: any) => {
+            const cleanBoard = { ...state.boardUnits };
+            if (targetDied) delete cleanBoard[target.id];
+            return { animatingUnits: {}, boardUnits: cleanBoard };
+          });
+        }, 500);
+      }, 700);
+    }, 400);
+
+  } else {
+    // Caso padrão: Golpe direto (sem movimento especial ativo)
+    set({ animatingUnits: { [attacker.id]: 'attacking' } });
+    setTimeout(() => {
+      set({ activeOverheadSlash: { source: currentAttackerPos, target: target.position } });
+      setTimeout(() => {
+        set({ ...newState, activeOverheadSlash: null, selectedHex: null, targetHex: null, selectedAbility: null, animatingUnits: animations, combatLogs: [] });
+        get().addLog(attackMsg, attacker.playerId);
+        setTimeout(() => {
+          set((state: any) => {
+            const cleanBoard = { ...state.boardUnits };
+            if (targetDied) delete cleanBoard[target.id];
+            return { animatingUnits: {}, boardUnits: cleanBoard };
+          });
+        }, 500);
+      }, 700);
     }, 200);
-  }, 200);
+  }
 };
 
 export const scheduleCleaveAttack = (set: any, get: any, attacker: any, target: any, newState: any, animations: Record<string, AnimationType>, attackMsg: string, targetDied: boolean, color: 'gold' | 'cyan') => {

@@ -7,7 +7,7 @@ import { createCombatActions } from './combatActions';
 import { createSandboxActions } from './sandboxActions';
 import type { 
   AnimationType, TransfusionAnimation, ProjectileAnimation, ThrustAnimation,
-  CleaveAnimation, ShockwaveAnimationData, ShadowSlashAnimation, ArcaneExplosionAnimation,
+  CleaveAnimation, OverheadSlashAnimationData, ShadowSlashAnimation, ArcaneExplosionAnimation,
   SimpleSpellAnimation, WallSpellAnimation
 } from './animationActions';
 import { 
@@ -75,7 +75,7 @@ interface GameStore extends GameState {
   activeThrust: ThrustAnimation | null;
   activeMeteor: HexCoordinates | null;
   activeCleave: CleaveAnimation | null;
-  activeShockwave: ShockwaveAnimationData | null;
+  activeOverheadSlash: OverheadSlashAnimationData | null;
   activeShadowSlash: ShadowSlashAnimation | null;
   activeArcaneExplosion: ArcaneExplosionAnimation | null;
   activeAuraRunica: SimpleSpellAnimation | null;
@@ -144,6 +144,7 @@ export const useGameStore = create<GameStore>()(
             ...initialState,
             sandboxMode: true,
             isVsAI: false,
+            isAutoPlay: false,
             boardUnits: {},
             players: {
               ...initialState.players,
@@ -162,14 +163,15 @@ export const useGameStore = create<GameStore>()(
             currentView: 'PLAY',
             sandboxMode: false,
             isVsAI: true,
+            isAutoPlay: false,
             selectedHex: null,
             selectedCard: null
           });
         } else if (view === 'PVP') {
           // Modo PvP: não reseta o estado — o lobby já inicializou via createInitialState
-          set({ currentView: 'PVP', sandboxMode: false, isVsAI: false });
+          set({ currentView: 'PVP', sandboxMode: false, isVsAI: false, isAutoPlay: false });
         } else {
-          set({ currentView: view });
+          set({ currentView: view, isAutoPlay: false });
         }
       },
       selectedHex: null,
@@ -187,7 +189,7 @@ export const useGameStore = create<GameStore>()(
       activeThrust: null,
       activeMeteor: null,
       activeCleave: null,
-      activeShockwave: null,
+      activeOverheadSlash: null,
       activeShadowSlash: null,
       activeArcaneExplosion: null,
       activeAuraRunica: null,
@@ -286,7 +288,7 @@ export const useGameStore = create<GameStore>()(
 
             if (uClass === 'Arqueiro') scheduleProjectileAnimation(set, get, attacker, target, dummyState, animations, dummyMsg, targetDied);
             else if (uClass === 'Lanceiro') scheduleThrustAnimation(set, get, attacker, target, dummyState, animations, dummyMsg, targetDied);
-            else if (uClass === 'Mago') scheduleMageAttack(set, get, attacker, target, dummyState, animations, dummyMsg, targetDied);
+            else if (uClass === 'Mago' || uClass === 'Alquimista') scheduleMageAttack(set, get, attacker, target, dummyState, animations, dummyMsg, targetDied);
             else if (uClass === 'Assassino') scheduleAssassinAttack(set, get, attacker, target, dummyState, animations, dummyMsg, targetDied);
             else if (uClass === 'Cavaleiro') scheduleHeavyMelee(set, get, attacker, target, dummyState, animations, dummyMsg, targetDied);
             else if (uClass === 'Rei') scheduleCleaveAttack(set, get, attacker, target, dummyState, animations, dummyMsg, targetDied, 'gold');
@@ -409,12 +411,14 @@ export const useGameStore = create<GameStore>()(
           selectedCard: null,
           targetHex: null,
           logs: [],
-          animatingUnits: {}
+          animatingUnits: {},
+          isAutoPlay: false,
+          isAiThinking: false
         });
       }
     }),
     {
-      name: 'hexum-game-state-v1',
+      name: 'hexum-game-state-v2',
       partialize: (state) => {
         const {
           animatingUnits,
@@ -428,7 +432,7 @@ export const useGameStore = create<GameStore>()(
           activeThrust,
           activeMeteor,
           activeCleave,
-          activeShockwave,
+          activeOverheadSlash,
           activeShadowSlash,
           activeArcaneExplosion,
           activeAuraRunica,
@@ -442,6 +446,7 @@ export const useGameStore = create<GameStore>()(
           isCardDetailsVisible,
           isInspectMode,
           isHandExpanded,
+          isAutoPlay,
           ...rest
         } = state;
         return rest;
