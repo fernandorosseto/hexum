@@ -58,21 +58,21 @@ export const HexGrid: React.FC<HexGridProps> = ({
           >
             <polygon
               points={hexPolygonPoints()}
-              className={`transition-all duration-150 stroke-[2px] ${
-                isSelected ? 'stroke-yellow-400 fill-yellow-500/15 stroke-[4px]' :
-                isAttackTarget ? 'stroke-[#602471]/60 fill-[#602471]/15 stroke-[3px]' :
-                isMoveTarget && !unit ? 'stroke-[#0b622f]/50 fill-[#0b622f]/10 stroke-[2.5px]' :
-                isSpawnTarget ? 'stroke-cyan-400/50 fill-cyan-900/10 stroke-[2.5px]' :
-                isHovered ? 'fill-slate-700/50 stroke-slate-500/80' : 'fill-slate-800/30 stroke-slate-700/40'
+              className={`transition-all duration-150 stroke-[2.5px] ${
+                isSelected ? 'stroke-yellow-400 fill-yellow-200/30 stroke-[4.5px]' :
+                isAttackTarget ? 'stroke-red-500 fill-red-500/20 stroke-[3.5px]' :
+                isMoveTarget && !unit ? 'stroke-emerald-500 fill-emerald-500/20 stroke-[3px]' :
+                isSpawnTarget ? 'stroke-cyan-500 fill-cyan-500/20 stroke-[3px]' :
+                isHovered ? 'fill-white/40 stroke-white/80' : 'fill-slate-100/20 stroke-white/35'
               }`}
             />
             {isMoveTarget && !unit && (
-              <circle r="7" className="fill-[#0b622f]/40 pointer-events-none">
+              <circle r="7" className="fill-emerald-400/60 pointer-events-none">
                 <animate attributeName="r" values="5;8;5" dur="3s" repeatCount="indefinite" />
               </circle>
             )}
             {isSpawnTarget && !unit && (
-              <circle r="8" className="fill-cyan-400/30 stroke-cyan-300/40 stroke-1 pointer-events-none">
+              <circle r="8" className="fill-cyan-400/40 stroke-cyan-300/60 stroke-1 pointer-events-none">
                 <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.5s" repeatCount="indefinite" />
               </circle>
             )}
