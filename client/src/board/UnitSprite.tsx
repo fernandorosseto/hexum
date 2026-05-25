@@ -51,6 +51,7 @@ export const UnitSprite: React.FC<Props> = ({
   const hasSickness = unit.summoningSickness;
   const hasShield = unit.buffs.some(b => b.type === 'shield');
   const isRei = unit.unitClass.toLowerCase() === 'rei';
+  const unitImage = CLASS_ICONS[unit.unitClass];
 
   // Cores SVG
   const activeGradient = isP1 ? 'url(#unit-p1-bg)' : 'url(#unit-p2-bg)';
@@ -98,15 +99,13 @@ export const UnitSprite: React.FC<Props> = ({
       style={{ filter: groupFilter }}
     >
       {/* Aura de Identificação (Time) */}
-      {!isRei && (
-        <circle 
-          cx="0" cy="0" r={rAura}
-          fill={auraColor}
-          opacity={isMovementSpent ? 0.2 : 0.4}
-          filter="blur(8px)"
-          className={!isMovementSpent ? 'animate-pulse' : ''}
-        />
-      )}
+      <circle 
+        cx="0" cy="0" r={rAura}
+        fill={auraColor}
+        opacity={isMovementSpent ? 0.2 : 0.4}
+        filter="blur(8px)"
+        className={!isMovementSpent ? 'animate-pulse' : ''}
+      />
 
       {/* Anel pulsante de alvo atacável */}
       {isTargetable && (
@@ -128,39 +127,35 @@ export const UnitSprite: React.FC<Props> = ({
       )}
 
       {/* Fundo Exausto */}
-      {!isRei && (
-        <circle 
-          cx="0" cy="0" r={rBase}
-          fill={exhaustedGradient}
-          stroke={exhaustedStroke}
-          strokeWidth={HEX_SIZE * 6 / 90}
-          opacity={isMovementSpent ? 1 : 0}
-          style={{ transition: 'opacity 1s ease-in-out' }}
-        />
-      )}
+      <circle 
+        cx="0" cy="0" r={rBase}
+        fill={exhaustedGradient}
+        stroke={exhaustedStroke}
+        strokeWidth={HEX_SIZE * 6 / 90}
+        opacity={isMovementSpent ? 1 : 0}
+        style={{ transition: 'opacity 1s ease-in-out' }}
+      />
 
       {/* Fundo Ativo */}
-      {!isRei && (
-        <circle 
-          cx="0" cy="0" r={rBase}
-          fill={activeGradient}
-          stroke={activeStroke}
-          strokeWidth={HEX_SIZE * 6 / 90}
-          opacity={isMovementSpent ? 0 : 1}
-          style={{ 
-            transition: 'opacity 1s ease-in-out',
-            filter: 'saturate(1.2) brightness(1.1)' 
-          }}
-        />
-      )}
+      <circle 
+        cx="0" cy="0" r={rBase}
+        fill={activeGradient}
+        stroke={activeStroke}
+        strokeWidth={HEX_SIZE * 6 / 90}
+        opacity={isMovementSpent ? 0 : 1}
+        style={{ 
+          transition: 'opacity 1s ease-in-out',
+          filter: 'saturate(1.2) brightness(1.1)' 
+        }}
+      />
 
-      {/* Fundo do Rei (Imagem) */}
-      {isRei && (
+      {/* Imagem da Unidade (Rei, Lanceiro, Arqueiro, etc.) */}
+      {unitImage && (
         <g>
           {/* Círculo base para clip ou fundo se a imagem falhar */}
           <circle cx="0" cy="0" r={rBase} fill="#1e293b" />
           <image 
-            href={reiImg} 
+            href={unitImage as string} 
             x={reiOffset} y={reiOffset} 
             width={reiWidth} height={reiWidth}
             style={{

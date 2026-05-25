@@ -89,14 +89,30 @@ export const HandUI: React.FC = () => {
             >
               {/* Camada de Fundo (igual ao token) */}
               <div className={`
-                absolute inset-0 rounded-full border-[3px] transition-all duration-300
+                absolute inset-0 rounded-full border-[3px] transition-all duration-300 overflow-hidden
                 ${isSelected 
                   ? 'bg-gradient-to-br from-[#0b622f] to-[#063b1c] border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.6)]' 
                   : canAfford
                     ? 'bg-gradient-to-br from-slate-800 to-slate-900 border-[#0b622f] shadow-lg hover:border-yellow-200 hover:shadow-yellow-400/30'
                     : 'bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700 shadow-inner'
                 }
-              `} />
+              `}>
+                {/* Imagem da Unidade em background (para cartas de Unidade) */}
+                {card.type === 'Unidade' && card.icon && (
+                  <>
+                    <img 
+                      src={card.icon} 
+                      alt={card.class} 
+                      className="absolute inset-0 w-full h-full object-cover rounded-full select-none pointer-events-none opacity-85" 
+                      style={{
+                        filter: canAfford ? 'none' : 'grayscale(0.8) brightness(0.6)'
+                      }}
+                    />
+                    {/* Overlay escuro para garantir legibilidade do texto do título */}
+                    <div className="absolute inset-0 bg-black/45 rounded-full z-0 pointer-events-none" />
+                  </>
+                )}
+              </div>
 
               {/* Aura de Identificação */}
               <div className={`

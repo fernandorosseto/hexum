@@ -28,6 +28,11 @@ export const LobbyPage: React.FC = () => {
 
   const displayName = user?.displayName ?? user?.email ?? 'Jogador';
 
+  // Limpa qualquer sessão PvP anterior no início para evitar estados residuais
+  useEffect(() => {
+    clearLobbySession();
+  }, [clearLobbySession]);
+
   // ── Criar sala (host = p1) ─────────────────────────────────
   const handleCreate = async () => {
     if (!user) return;

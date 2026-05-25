@@ -19,9 +19,14 @@ export const UnitLayer: React.FC<UnitLayerProps> = ({ validAttacks, validSpawns 
 
   const sortedUnits = useMemo(() => {
     const units = Object.values(boardUnits);
-    // Ordenação estrita por ID para congelar a árvore DOM.
-    // Isso evita o repensamento (repaint flash) pesado do Chromium ao reordenar
-    return [...units].sort((a, b) => a.id.localeCompare(b.id));
+    // Ordenação por Y decrescente (do rodapé para o topo do tabuleiro)
+    // Isso garante que os elementos de cima sejam renderizados por último (por cima)
+    // resolvendo o problema de sobreposição onde o badge inferior de uma unidade era encoberto pelo tile de baixo.
+    return [...units].sort((a, b) => {
+      const pyA = hexToPixel(a.position).y;
+      const pyB = hexToPixel(b.position).y;
+      return pyB - pyA;
+    });
   }, [boardUnits]);
 
   return (

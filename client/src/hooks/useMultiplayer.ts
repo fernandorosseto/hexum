@@ -39,8 +39,9 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
     if (!lobbyId || !myRole) return;
 
     const unsub = subscribeToLobby(lobbyId, (lobby: LobbyDoc) => {
-      // Se a sala foi finalizada por outra aba/cliente, volta ao menu
+      // Se a sala foi finalizada por outra aba/cliente, limpa a sessão e volta ao menu
       if (lobby.status === 'finished') {
+        useGameStore.getState().clearLobbySession();
         setCurrentView('MENU');
         return;
       }
