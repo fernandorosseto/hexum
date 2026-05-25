@@ -5,7 +5,8 @@ import { getFearStatus } from 'shared';
 import { useGameStore } from '../store/gameStore';
 import { CLASS_ICONS } from '../constants/unitIcons';
 import { HEX_SIZE } from './HexUtils';
-import kingImg from '../assets/icons/king.png';
+import reiImg from '../assets/icons/rei.png';
+import { BuffIcon } from '../assets/icons/VectorIcons';
 import { LightningAnimation } from '../animations';
 import { StructureSprite, UnitBadges, UnitBuffs, ShieldAura, UnitEquipment } from '../units';
 
@@ -49,7 +50,7 @@ export const UnitSprite: React.FC<Props> = ({
   const isAttackSpent = isCurrentTurn && !unit.canAttack && !unit.summoningSickness;
   const hasSickness = unit.summoningSickness;
   const hasShield = unit.buffs.some(b => b.type === 'shield');
-  const isReiAliado = isP1 && unit.unitClass.toLowerCase() === 'rei';
+  const isRei = unit.unitClass.toLowerCase() === 'rei';
 
   // Cores SVG
   const activeGradient = isP1 ? 'url(#unit-p1-bg)' : 'url(#unit-p2-bg)';
@@ -74,8 +75,8 @@ export const UnitSprite: React.FC<Props> = ({
   const rSelected = HEX_SIZE * (76 / 90);
   const rPing = HEX_SIZE * (78 / 90);
 
-  const kingWidth = HEX_SIZE * (154 / 90);
-  const kingOffset = -kingWidth / 2;
+  const reiWidth = HEX_SIZE * (154 / 90);
+  const reiOffset = -reiWidth / 2;
 
   const sicknessInnerR = HEX_SIZE * (24 / 90);
 
@@ -97,7 +98,7 @@ export const UnitSprite: React.FC<Props> = ({
       style={{ filter: groupFilter }}
     >
       {/* Aura de Identificação (Time) */}
-      {!isReiAliado && (
+      {!isRei && (
         <circle 
           cx="0" cy="0" r={rAura}
           fill={auraColor}
@@ -127,7 +128,7 @@ export const UnitSprite: React.FC<Props> = ({
       )}
 
       {/* Fundo Exausto */}
-      {!isReiAliado && (
+      {!isRei && (
         <circle 
           cx="0" cy="0" r={rBase}
           fill={exhaustedGradient}
@@ -139,7 +140,7 @@ export const UnitSprite: React.FC<Props> = ({
       )}
 
       {/* Fundo Ativo */}
-      {!isReiAliado && (
+      {!isRei && (
         <circle 
           cx="0" cy="0" r={rBase}
           fill={activeGradient}
@@ -154,14 +155,14 @@ export const UnitSprite: React.FC<Props> = ({
       )}
 
       {/* Fundo do Rei (Imagem) */}
-      {isReiAliado && (
+      {isRei && (
         <g>
           {/* Círculo base para clip ou fundo se a imagem falhar */}
           <circle cx="0" cy="0" r={rBase} fill="#1e293b" />
           <image 
-            href={kingImg} 
-            x={kingOffset} y={kingOffset} 
-            width={kingWidth} height={kingWidth}
+            href={reiImg} 
+            x={reiOffset} y={reiOffset} 
+            width={reiWidth} height={reiWidth}
             style={{
               filter: isMovementSpent ? 'grayscale(0.8) brightness(0.5)' : 'none',
               transition: 'filter 1s ease-in-out'
@@ -185,51 +186,36 @@ export const UnitSprite: React.FC<Props> = ({
       {/* Indicador de Summoning Sickness (Enjoo de Invocação) */}
       {hasSickness && (
         <g>
-          <circle cx="0" cy="0" r={rBase} fill="rgba(49, 46, 129, 0.5)" />
-          <circle cx="0" cy="0" r={sicknessInnerR} fill="rgba(15, 23, 42, 0.8)" stroke="rgba(129, 140, 248, 0.3)" strokeWidth={HEX_SIZE * 2 / 90} className="animate-pulse" />
-          <text x="0" y={HEX_SIZE * 6 / 90} fontSize={HEX_SIZE * 18 / 90} textAnchor="middle">⏳</text>
+          <circle cx="0" cy="0" r={rBase} fill="rgba(49, 46, 129, 0.4)" />
+          <circle cx="0" cy="0" r={sicknessInnerR} fill="rgba(15, 23, 42, 0.85)" stroke="rgba(56, 189, 248, 0.4)" strokeWidth={HEX_SIZE * 2 / 90} className="animate-pulse" />
+          <svg 
+            x={-sicknessInnerR * 0.65} 
+            y={-sicknessInnerR * 0.65} 
+            width={sicknessInnerR * 1.3} 
+            height={sicknessInnerR * 1.3} 
+            overflow="visible"
+            className="animate-spin"
+            style={{ animationDuration: '6s' }}
+          >
+            <BuffIcon id="summoningSickness" size={sicknessInnerR * 1.3} />
+          </svg>
         </g>
       )}
 
-      {/* Indicadores de Status (Buffs) */}
-      <UnitBuffs buffs={displayBuffs} />
+      {/* Indicadores de Status (Buffs e Artefatos) margeando a borda - Exibindo no máximo 1 de cada categoria */}
+      <UnitBuffs 
+        buffs={displayBuffs.slice(0, 1)} 
+        totalCount={(displayBuffs.length > 0 ? 1 : 0) + ((unit.equippedArtifacts && unit.equippedArtifacts.length > 0) ? 1 : 0)} 
+        startIndex={0} 
+      />
 
-      {/* Artefatos Equipados */}
-      <UnitEquipment artifacts={unit.equippedArtifacts || []} />
+      <UnitEquipment 
+        artifacts={(unit.equippedArtifacts || []).slice(0, 1)} 
+        totalCount={(displayBuffs.length > 0 ? 1 : 0) + ((unit.equippedArtifacts && unit.equippedArtifacts.length > 0) ? 1 : 0)} 
+        startIndex={displayBuffs.length > 0 ? 1 : 0} 
+      />
 
-      {/* Ícone da Classe */}
-      <motion.g 
-        animate={{ 
-          y: [0, -4, 0]
-        }}
-        transition={{ 
-          y: { duration: 3, repeat: Infinity, ease: "easeInOut" }
-        }}
-        style={{
-          opacity: isMovementSpent ? 0.6 : 1.0,
-          filter: isMovementSpent ? 'grayscale(1) brightness(0.5)' : 'grayscale(0) brightness(1.2)',
-          transition: 'opacity 1s, filter 1s'
-        }}
-      >
-        {!isReiAliado && CLASS_ICONS[unit.unitClass] ? (
-          typeof CLASS_ICONS[unit.unitClass] === 'string' ? (
-            <image 
-              href={CLASS_ICONS[unit.unitClass] as string} 
-              x={iconXBig} 
-              y={iconYBig} 
-              width={iconSizeBig} 
-              height={iconSizeBig} 
-              filter="drop-shadow(0px 10px 15px rgba(0,0,0,0.5))"
-            />
-          ) : (
-            <g transform={`translate(${iconXBig}, ${iconYBig})`}>
-              {React.createElement(CLASS_ICONS[unit.unitClass] as React.FC<any>, { width: iconSizeBig, height: iconSizeBig, style: { filter: 'drop-shadow(0px 10px 15px rgba(0,0,0,0.5))' } })}
-            </g>
-          )
-        ) : !isReiAliado ? (
-          <text x="0" y={HEX_SIZE * 8 / 90} fontSize={HEX_SIZE * 40 / 90} textAnchor="middle" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.5))">❓</text>
-        ) : null}
-      </motion.g>
+
 
       {/* Badges de Atributo (ATK / HP) */}
       <UnitBadges unit={unit} isAttackSpent={isAttackSpent} />

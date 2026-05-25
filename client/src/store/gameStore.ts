@@ -131,6 +131,7 @@ export const useGameStore = create<GameStore>()(
           p1Name: 'Jogador 1',
           p2Name: 'Jogador 2',
           myRole: null, 
+          isPvP: false,
           isMatchStarted: false,
           logs: [],
           selectedHex: null,
@@ -171,7 +172,14 @@ export const useGameStore = create<GameStore>()(
           // Modo PvP: não reseta o estado — o lobby já inicializou via createInitialState
           set({ currentView: 'PVP', sandboxMode: false, isVsAI: false, isAutoPlay: false });
         } else {
-          set({ currentView: view, isAutoPlay: false });
+          set({ 
+            currentView: view, 
+            isAutoPlay: false,
+            sandboxMode: false,
+            isPvP: false,
+            selectedHex: null,
+            selectedCard: null
+          });
         }
       },
       selectedHex: null,

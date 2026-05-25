@@ -111,30 +111,11 @@ export const HandUI: React.FC = () => {
                 {card.cost}
               </div>
               
-              {/* Conteúdo Central */}
-              <div className="relative z-10 flex flex-col items-center justify-center h-full mt-1">
-                <div className="flex items-center justify-center mb-0.5">
-                  {card.type === 'Unidade' ? (
-                    typeof card.icon === 'string' ? (
-                      <img 
-                        src={card.icon} 
-                        alt={card.class} 
-                        className={`object-contain drop-shadow-xl brightness-110 transition-all ${
-                          ['Cavaleiro', 'Arqueiro'].includes(card.class) 
-                            ? 'w-10 h-10 md:w-12 md:h-12 scale-125' 
-                            : 'w-8 h-8 md:w-10 md:h-10'
-                        }`} 
-                      />
-                    ) : (
-                      React.createElement(card.icon as React.FC<any>, { className: "w-8 h-8 md:w-10 md:h-10 drop-shadow-xl brightness-110" })
-                    )
-                  ) : card.type === 'Mágica' ? (
-                    <SpellIcon id={card.id} size={32} className="text-blue-300 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
-                  ) : (
-                    <ArtifactIcon id={card.id} size={32} className="text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
-                  )}
-                </div>
-                <h4 className="text-white font-bold text-[8px] md:text-[9px] line-clamp-1 leading-tight drop-shadow-md">{card.class}</h4>
+              {/* Conteúdo Central (Apenas Nome - Sem desenhos) */}
+              <div className="relative z-10 flex flex-col items-center justify-center h-full px-2 mt-0">
+                <h4 className="text-white font-black text-[10px] md:text-[12px] leading-snug drop-shadow-md text-center max-w-full break-words">
+                  {card.class}
+                </h4>
               </div>
               
               {/* Badge de tipo para feitiços e artefatos */}

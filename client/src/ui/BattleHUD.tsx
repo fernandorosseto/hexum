@@ -1,7 +1,9 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../store/gameStore';
 import { BattleLog } from './BattleLog';
+import { closeLobby } from '../firebase/firestore';
 
 
 export const BattleHUD: React.FC = () => {
@@ -45,13 +47,17 @@ export const BattleHUD: React.FC = () => {
 
   const handleQuit = () => {
     if (phase === 'GAME_OVER') {
-      if (isPvP) clearLobbySession();
+      if (isPvP) {
+        if (lobbyId) closeLobby(lobbyId);
+        clearLobbySession();
+      }
       setCurrentView('MENU');
       return;
     }
 
     if (isPvP) {
       surrender();
+      if (lobbyId) closeLobby(lobbyId);
       setTimeout(() => {
         clearLobbySession();
         setCurrentView('MENU');
@@ -66,7 +72,7 @@ export const BattleHUD: React.FC = () => {
     <div className="flex items-center gap-1 md:gap-4 w-full px-2 md:px-4 py-1 md:py-2 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/60 z-20 shrink-0 relative">
       
       {/* Modal de Confirmação */}
-      {showConfirm && (
+      {showConfirm && createPortal(
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 10 }}
@@ -75,10 +81,6 @@ export const BattleHUD: React.FC = () => {
           >
             {/* Detalhe de brilho no topo */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-red-500/50 to-transparent" />
-            
-            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-5 border border-red-500/20">
-              <span className="text-3xl">⚠️</span>
-            </div>
 
             <h3 className="text-white font-black text-xl mb-3 tracking-tight">Abandonar Campo?</h3>
             <p className="text-slate-400 text-sm mb-8 leading-relaxed px-2">
@@ -102,7 +104,8 @@ export const BattleHUD: React.FC = () => {
               </button>
             </div>
           </motion.div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Topo no Mobile: Botão Voltar + Nomes/Mana */}

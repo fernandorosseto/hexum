@@ -7,6 +7,7 @@ import { SandboxUI } from './ui/SandboxUI';
 import { MainMenu } from './ui/MainMenu';
 import { GameOverUI } from './ui/GameOverUI';
 import { useBot } from './hooks/useBot';
+import { useMultiplayer } from './hooks/useMultiplayer';
 import { useGameStore } from './store/gameStore';
 import { motion } from 'framer-motion';
 import './index.css';
@@ -14,6 +15,10 @@ import backgroundImg from './assets/background.jpg';
 
 function App() {
   useBot();
+  const lobbyId = useGameStore(s => s.lobbyId);
+  const myRole = useGameStore(s => s.myRole);
+  useMultiplayer({ lobbyId, myRole });
+
   const currentTurnPlayerId = useGameStore(s => s.currentTurnPlayerId);
   const phase = useGameStore(s => s.currentPhase);
   const currentView = useGameStore(s => s.currentView);
@@ -28,7 +33,6 @@ function App() {
   const sandboxMode = useGameStore(s => s.sandboxMode);
   const isAiThinking = useGameStore(s => s.isAiThinking);
   const isPvP = useGameStore(s => s.isPvP);
-  const myRole = useGameStore(s => s.myRole);
 
   const isMyTurn = isPvP ? (currentTurnPlayerId === myRole) : (currentTurnPlayerId === 'p1');
 

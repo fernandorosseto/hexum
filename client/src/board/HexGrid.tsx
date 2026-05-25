@@ -47,6 +47,12 @@ export const HexGrid: React.FC<HexGridProps> = ({
         const isSpawnTarget = validSpawns.some(mv => mv.q === hex.q && mv.r === hex.r);
         const isHovered = hoveredHex?.q === hex.q && hoveredHex?.r === hex.r;
 
+        const hasPoison = unit?.buffs.some(b => b.type === 'poison');
+        const hasBurn = unit?.buffs.some(b => b.type === 'burn');
+        const hasStun = unit?.buffs.some(b => b.type === 'stun');
+        const hasInvulnerable = unit?.buffs.some(b => b.type === 'invulnerable');
+        const hasSickness = unit?.summoningSickness;
+
         return (
           <g 
             key={`hex-${hex.q}-${hex.r}`}
@@ -56,6 +62,7 @@ export const HexGrid: React.FC<HexGridProps> = ({
             onClick={(e) => { e.stopPropagation(); handleHexClick(hex); }}
             className="cursor-pointer"
           >
+            {/* Hexágono Base */}
             <polygon
               points={hexPolygonPoints()}
               className={`transition-all duration-150 stroke-[2.5px] ${
@@ -66,6 +73,42 @@ export const HexGrid: React.FC<HexGridProps> = ({
                 isHovered ? 'fill-white/40 stroke-white/80' : 'fill-slate-100/20 stroke-white/35'
               }`}
             />
+
+            {/* Efeitos Visuais Premium sobre o Tile (Auras Temáticas) */}
+            {hasPoison && (
+              <polygon
+                points={hexPolygonPoints()}
+                className="fill-green-500/5 stroke-green-400/30 stroke-[2.5px] animate-pulse pointer-events-none"
+                style={{ filter: 'drop-shadow(0 0 6px rgba(74,222,128,0.45))' }}
+              />
+            )}
+            {hasBurn && (
+              <polygon
+                points={hexPolygonPoints()}
+                className="fill-red-500/5 stroke-orange-500/35 stroke-[2.5px] animate-pulse pointer-events-none"
+                style={{ filter: 'drop-shadow(0 0 6px rgba(249,115,22,0.45))' }}
+              />
+            )}
+            {hasStun && (
+              <polygon
+                points={hexPolygonPoints()}
+                className="fill-cyan-500/5 stroke-cyan-400/25 stroke-[2.5px] pointer-events-none"
+                style={{ filter: 'drop-shadow(0 0 6px rgba(6,182,212,0.35))' }}
+              />
+            )}
+            {hasInvulnerable && (
+              <polygon
+                points={hexPolygonPoints()}
+                className="fill-yellow-500/5 stroke-yellow-400/40 stroke-[3px] animate-pulse pointer-events-none"
+                style={{ filter: 'drop-shadow(0 0 8px rgba(253,224,71,0.5))' }}
+              />
+            )}
+            {hasSickness && (
+              <polygon
+                points={hexPolygonPoints()}
+                className="fill-blue-950/10 stroke-blue-500/15 stroke-[1.5px] pointer-events-none"
+              />
+            )}
             {isMoveTarget && !unit && (
               <circle r="7" className="fill-emerald-400/60 pointer-events-none">
                 <animate attributeName="r" values="5;8;5" dur="3s" repeatCount="indefinite" />
