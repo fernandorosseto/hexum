@@ -2,7 +2,7 @@ import type { GameState, Unit, Card, UnitCard } from './types';
 import { getHexDistance, getHexNeighbors, isInsideBoard, BOARD_RADIUS } from './hexMath';
 import type { HexCoordinates } from './hexMath';
 import { ARTIFACTS, SPELLS, getUnitCard } from './cardLibrary';
-import { UNIT_BEHAVIORS, isPathBlocked, checkEffectTrigger } from './unitBehaviors';
+import { UNIT_BEHAVIORS, isPathBlocked, checkEffectTrigger, handleUnitDeath } from './unitBehaviors';
 import { SPELL_REGISTRY } from './spellHandlers';
 import { ARTIFACT_REGISTRY } from './artifactHandlers';
 import { getValidAttackTargets } from './getValidAttackTargets';
@@ -59,18 +59,13 @@ export function getValidSpawnCoordinates(state: GameState, playerId: string, car
     
     // Feitiços de ATAQUE (Inimigos)
     if (['spl_raio', 'spl_raizes'].includes(cardId)) {
-      const myKing = boardUnits.find(u => u.unitClass === 'Rei' && u.playerId === playerId);
       let potentialTargets = boardUnits.filter(u => u.playerId !== playerId);
-      
-      if (cardId === 'spl_raio' && myKing && !state.sandboxMode) {
-        potentialTargets = potentialTargets.filter(u => getHexDistance(u.position, myKing.position) <= 5);
-      }
-      
       return potentialTargets.map(u => u.position);
     }
 
     // Transfusão Sombria (Adjacente ao Rei, qualquer lado)
     if (cardId === 'spl_transfusao') {
+      if (state.sandboxMode) return boardUnits.map(u => u.position);
       const myKing = boardUnits.find(u => u.unitClass === 'Rei' && u.playerId === playerId);
       if (!myKing) return [];
       const neighbors = getHexNeighbors(myKing.position);
@@ -80,6 +75,7 @@ export function getValidSpawnCoordinates(state: GameState, playerId: string, car
     }
 
     if (cardId === 'spl_meteoro') {
+      if (state.sandboxMode) return getAllHexes(Math.max(range, 4));
       const myKing = boardUnits.find(u => u.unitClass === 'Rei' && u.playerId === playerId);
       if (!myKing) return [];
       return getAllHexes(range).filter(hex => getHexDistance(myKing.position, hex) <= 4);
@@ -323,7 +319,7 @@ export function endTurn(state: GameState): GameState {
     }
   }
 
-  return newState;
+  return cleanupDeaths(newState);
 }
 
 // ══════════════════════════════════════════════
@@ -481,8 +477,10 @@ export function attack(state: GameState, attackerId: string, targetId: string, u
   // Delega dano e efeitos à behavior da classe
   behavior.applyDamage(attacker, target, newState, dist, useSpecial, rangeBonus);
 
-  attacker.canAttack = false;
-  return newState;
+  if (newState.boardUnits[attackerId]) {
+    newState.boardUnits[attackerId].canAttack = false;
+  }
+  return cleanupDeaths(newState);
 }
 
 // ══════════════════════════════════════════════
@@ -572,7 +570,7 @@ export function playCard(state: GameState, playerId: string, cardId: string, tar
   const cardIndex = player.hand.indexOf(cardId);
   if (cardIndex !== -1) player.hand.splice(cardIndex, 1);
 
-  return newState;
+  return cleanupDeaths(newState);
 }
 
 // ══════════════════════════════════════════════
@@ -754,5 +752,15 @@ export function hasAnyValidAction(state: GameState, playerId: string): boolean {
   }
 
   return false;
+}
+
+export function cleanupDeaths(state: GameState): GameState {
+  for (const unitId in state.boardUnits) {
+    const unit = state.boardUnits[unitId];
+    if (unit.hp <= 0) {
+      handleUnitDeath(state, unit, unit.playerId === 'p1' ? 'p2' : 'p1');
+    }
+  }
+  return state;
 }
 

@@ -103,6 +103,7 @@ function applyFuryEffect(attacker: Unit, state: GameState): void {
   if (attacker.buffs.some(b => b.type === 'fury')) {
     attacker.hp -= 1;
     addCombatLog(state, `🩸 Fúria de Batalha: ${attacker.unitClass} perdeu 1 HP.`);
+    handleUnitDeath(state, attacker, attacker.playerId === 'p1' ? 'p2' : 'p1');
   }
 }
 
@@ -118,11 +119,11 @@ export function addCombatLog(state: GameState, log: string): void {
   state.combatLogs.push(log);
 }
 
-function handleUnitDeath(state: GameState, unit: Unit, killerPlayerId: string): void {
+export function handleUnitDeath(state: GameState, unit: Unit, killerPlayerId: string): void {
   if (unit.hp <= 0) {
     if (unit.unitClass === 'Rei' && !state.sandboxMode) {
       state.currentPhase = 'GAME_OVER';
-      state.winner = killerPlayerId;
+      state.winner = unit.playerId === 'p1' ? 'p2' : 'p1';
     }
     delete state.boardUnits[unit.id];
     addCombatLog(state, `💀 O ${unit.unitClass} sucumbiu e foi removido do campo.`);

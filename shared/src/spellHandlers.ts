@@ -32,7 +32,7 @@ const CadeiaDeRelampagos: SpellHandler = {
     if (!targetUnit) throw new Error("Alvo inválido para Cadeia de Relâmpagos.");
 
     const myKing = Object.values(state.boardUnits).find(u => u.unitClass === 'Rei' && u.playerId === playerId);
-    if (myKing) {
+    if (myKing && !state.sandboxMode) {
       const dist = getHexDistance(myKing.position, targetHex);
       if (dist > 5) throw new Error("Alvo fora de alcance (máximo 5 hexágonos do Rei).");
     }
@@ -67,8 +67,10 @@ const TransfusaoSombria: SpellHandler = {
     const myKing = Object.values(state.boardUnits).find(u => u.unitClass === 'Rei' && u.playerId === playerId);
     if (!myKing) throw new Error("O Rei deve estar no tabuleiro para usar Transfusão.");
 
-    const dist = getHexDistance(myKing.position, targetHex);
-    if (dist > 1) throw new Error("O Rei deve estar adjacente ao alvo para realizar a transfusão.");
+    if (!state.sandboxMode) {
+      const dist = getHexDistance(myKing.position, targetHex);
+      if (dist > 1) throw new Error("O Rei deve estar adjacente ao alvo para realizar a transfusão.");
+    }
 
     applyFinalDamage(targetUnit, 2, state);
     myKing.hp = Math.min(myKing.maxHp, myKing.hp + 2);

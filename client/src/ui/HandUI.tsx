@@ -89,7 +89,7 @@ export const HandUI: React.FC = () => {
             >
               {/* Camada de Fundo (igual ao token) */}
               <div className={`
-                absolute inset-0 rounded-full border-[3px] transition-all duration-300 overflow-hidden
+                absolute inset-0 rounded-full border-[4px] md:border-[6px] transition-all duration-300 overflow-hidden
                 ${isSelected 
                   ? 'bg-gradient-to-br from-[#0b622f] to-[#063b1c] border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.6)]' 
                   : canAfford
@@ -103,9 +103,10 @@ export const HandUI: React.FC = () => {
                     <img 
                       src={card.icon} 
                       alt={card.class} 
-                      className="absolute inset-0 w-full h-full object-cover rounded-full select-none pointer-events-none opacity-85" 
+                      className="absolute inset-0 w-full h-full object-cover rounded-full select-none pointer-events-none scale-110 transition-transform duration-200" 
                       style={{
-                        filter: canAfford ? 'none' : 'grayscale(0.8) brightness(0.6)'
+                        filter: canAfford ? 'none' : 'grayscale(0.8) brightness(0.5)',
+                        opacity: canAfford ? 1 : 0.6
                       }}
                     />
                     {/* Overlay escuro para garantir legibilidade do texto do título */}
