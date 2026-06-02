@@ -76,7 +76,13 @@ const UserAvatar: React.FC<{ user: ReturnType<typeof useAuth>['user'] }> = ({ us
             {/* Actions */}
             <div className="p-2">
               <button
-                onClick={() => { logout(); setOpen(false); }}
+                onClick={async () => {
+                  useGameStore.getState().resetGame();
+                  useGameStore.getState().setCurrentView('MENU');
+                  localStorage.removeItem('hexum-game-state-v2');
+                  await logout();
+                  setOpen(false);
+                }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/8 transition-all text-sm font-medium text-left"
               >
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

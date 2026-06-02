@@ -17,6 +17,7 @@ export const BattleHUD: React.FC = () => {
   const toggleLog = useGameStore(state => state.toggleLog);
   const turnTimer = useGameStore(state => state.turnTimer);
   const isTimerRunning = useGameStore(state => state.isTimerRunning);
+  const resetGame = useGameStore(state => state.resetGame);
   
   const renderMana = (current: number, max: number) => {
     return Array.from({ length: 6 }).map((_, i) => (
@@ -63,6 +64,7 @@ export const BattleHUD: React.FC = () => {
         setCurrentView('MENU');
       }, 500);
     } else {
+      resetGame();
       setCurrentView('MENU');
     }
     setShowConfirm(false);

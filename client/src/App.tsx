@@ -9,15 +9,35 @@ import { GameOverUI } from './ui/GameOverUI';
 import { useBot } from './hooks/useBot';
 import { useMultiplayer } from './hooks/useMultiplayer';
 import { useGameStore } from './store/gameStore';
+import { useAuth } from './hooks/useAuth';
+import { LoginPage } from './ui/LoginPage';
 import { motion } from 'framer-motion';
 import './index.css';
 import backgroundImg from './assets/background.jpg';
 
 function App() {
+  const { user, loading } = useAuth();
   useBot();
+
   const lobbyId = useGameStore(s => s.lobbyId);
   const myRole = useGameStore(s => s.myRole);
   useMultiplayer({ lobbyId, myRole });
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-[300] flex flex-col items-center justify-center bg-[#0a0d12]">
+        <div className="relative w-16 h-16 mb-4">
+          <div className="absolute inset-0 border-4 border-amber-500/20 rounded-full" />
+          <div className="absolute inset-0 border-4 border-t-amber-500 rounded-full animate-spin" />
+        </div>
+        <p className="text-amber-500/80 font-black text-xs uppercase tracking-widest animate-pulse">Carregando...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage onAuthenticated={() => {}} />;
+  }
 
   const currentTurnPlayerId = useGameStore(s => s.currentTurnPlayerId);
   const phase = useGameStore(s => s.currentPhase);
