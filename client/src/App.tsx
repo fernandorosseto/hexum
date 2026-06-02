@@ -6,6 +6,7 @@ import { CardDetailsUI } from './ui/CardDetailsUI';
 import { SandboxUI } from './ui/SandboxUI';
 import { MainMenu } from './ui/MainMenu';
 import { GameOverUI } from './ui/GameOverUI';
+import { LobbyPage } from './ui/LobbyPage';
 import { useBot } from './hooks/useBot';
 import { useMultiplayer } from './hooks/useMultiplayer';
 import { useGameStore } from './store/gameStore';
@@ -53,12 +54,18 @@ function App() {
   const sandboxMode = useGameStore(s => s.sandboxMode);
   const isAiThinking = useGameStore(s => s.isAiThinking);
   const isPvP = useGameStore(s => s.isPvP);
+  const isMatchStarted = useGameStore(s => s.isMatchStarted);
 
   const isMyTurn = isPvP ? (currentTurnPlayerId === myRole) : (currentTurnPlayerId === 'p1');
 
   // Se estiver no MENU, renderiza apenas o MainMenu
   if (currentView === 'MENU') {
     return <MainMenu />;
+  }
+
+  // Se estiver no modo PVP mas a partida ainda não começou, mostra o Lobby
+  if (currentView === 'PVP' && !isMatchStarted) {
+    return <LobbyPage />;
   }
 
   return (
