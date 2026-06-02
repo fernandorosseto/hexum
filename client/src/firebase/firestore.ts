@@ -54,6 +54,7 @@ export async function createUserProfile(
   uid: string,
   data: { displayName: string; email: string }
 ): Promise<void> {
+  if (!db) return;
   const ref = doc(db, 'users', uid);
   const snap = await getDoc(ref);
 
@@ -74,6 +75,7 @@ export async function createUserProfile(
  * Busca o perfil de um usuário pelo UID.
  */
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+  if (!db) return null;
   const snap = await getDoc(doc(db, 'users', uid));
   return snap.exists() ? (snap.data() as UserProfile) : null;
 }
@@ -85,6 +87,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
  * dos jogadores envolvidos.
  */
 export async function saveMatchResult(match: MatchRecord): Promise<string> {
+  if (!db) return 'offline_match';
   // Registra a partida
   const matchRef = await addDoc(collection(db, 'matches'), {
     ...match,
@@ -115,6 +118,7 @@ export async function saveMatchResult(match: MatchRecord): Promise<string> {
  * Retorna os top N jogadores ordenados por vitórias.
  */
 export async function getTopPlayers(n = 10): Promise<(UserProfile & { uid: string })[]> {
+  if (!db) return [];
   const q = query(
     collection(db, 'users'),
     orderBy('stats.wins', 'desc'),
@@ -148,6 +152,7 @@ export async function createLobby(
   hostName: string,
   initialGameState: GameState
 ): Promise<string> {
+  if (!db) throw new Error("Firebase não inicializado. Verifique a configuração.");
   const code = Math.random().toString(36).substring(2, 8).toUpperCase();
 
   const ref = doc(collection(db, 'lobbies'));
@@ -174,6 +179,7 @@ export async function joinLobbyByCode(
   guestId: string,
   guestName: string
 ): Promise<{ lobbyId: string; lobby: LobbyDoc } | null> {
+  if (!db) return null;
   const q = query(collection(db, 'lobbies'), orderBy('createdAt', 'desc'), limit(20));
   const snap = await getDocs(q);
 
@@ -201,6 +207,7 @@ export function subscribeToLobby(
   lobbyId: string,
   callback: (lobby: LobbyDoc) => void
 ): Unsubscribe {
+  if (!db) return () => {};
   return onSnapshot(doc(db, 'lobbies', lobbyId), snap => {
     if (snap.exists()) callback(snap.data() as LobbyDoc);
   });
@@ -214,6 +221,7 @@ export async function pushGameState(
   lobbyId: string,
   gameState: GameState
 ): Promise<void> {
+  if (!db) return;
   await updateDoc(doc(db, 'lobbies', lobbyId), { gameState });
 }
 
@@ -221,5 +229,6 @@ export async function pushGameState(
  * Marca a sala como finalizada.
  */
 export async function closeLobby(lobbyId: string): Promise<void> {
+  if (!db) return;
   await updateDoc(doc(db, 'lobbies', lobbyId), { status: 'finished' as LobbyStatus });
 }

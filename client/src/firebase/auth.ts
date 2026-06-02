@@ -24,6 +24,7 @@ export async function registerWithEmail(
   password: string,
   displayName: string
 ): Promise<User> {
+  if (!auth) throw new Error("Firebase não configurado. Por favor, adicione as credenciais no painel de controle da produção.");
   const credential = await createUserWithEmailAndPassword(auth, email, password);
   const user = credential.user;
 
@@ -44,12 +45,14 @@ export async function loginWithEmail(
   email: string,
   password: string
 ): Promise<User> {
+  if (!auth) throw new Error("Firebase não configurado. Por favor, adicione as credenciais no painel de controle da produção.");
   const credential = await signInWithEmailAndPassword(auth, email, password);
   return credential.user;
 }
 
 // ── Login com Google ───────────────────────────────────────
 export async function loginWithGoogle(): Promise<User> {
+  if (!auth) throw new Error("Firebase não configurado. Por favor, adicione as credenciais no painel de controle da produção.");
   const credential = await signInWithPopup(auth, googleProvider);
   const user = credential.user;
 
@@ -64,6 +67,7 @@ export async function loginWithGoogle(): Promise<User> {
 
 // ── Logout ─────────────────────────────────────────────────
 export async function logout(): Promise<void> {
+  if (!auth) return;
   await signOut(auth);
 }
 
