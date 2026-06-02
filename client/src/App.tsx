@@ -24,22 +24,6 @@ function App() {
   const myRole = useGameStore(s => s.myRole);
   useMultiplayer({ lobbyId, myRole });
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 z-[300] flex flex-col items-center justify-center bg-[#0a0d12]">
-        <div className="relative w-16 h-16 mb-4">
-          <div className="absolute inset-0 border-4 border-amber-500/20 rounded-full" />
-          <div className="absolute inset-0 border-4 border-t-amber-500 rounded-full animate-spin" />
-        </div>
-        <p className="text-amber-500/80 font-black text-xs uppercase tracking-widest animate-pulse">Carregando...</p>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <LoginPage onAuthenticated={() => {}} />;
-  }
-
   const currentTurnPlayerId = useGameStore(s => s.currentTurnPlayerId);
   const phase = useGameStore(s => s.currentPhase);
   const currentView = useGameStore(s => s.currentView);
@@ -55,6 +39,22 @@ function App() {
   const isAiThinking = useGameStore(s => s.isAiThinking);
   const isPvP = useGameStore(s => s.isPvP);
   const isMatchStarted = useGameStore(s => s.isMatchStarted);
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-[300] flex flex-col items-center justify-center bg-[#0a0d12]">
+        <div className="relative w-16 h-16 mb-4">
+          <div className="absolute inset-0 border-4 border-amber-500/20 rounded-full" />
+          <div className="absolute inset-0 border-4 border-t-amber-500 rounded-full animate-spin" />
+        </div>
+        <p className="text-amber-500/80 font-black text-xs uppercase tracking-widest animate-pulse">Carregando...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage onAuthenticated={() => {}} />;
+  }
 
   const isMyTurn = isPvP ? (currentTurnPlayerId === myRole) : (currentTurnPlayerId === 'p1');
 
