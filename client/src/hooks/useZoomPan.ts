@@ -5,12 +5,12 @@ export const useZoomPan = () => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   // Configurações de Zoom
-  // - Mobile: Fixo em 2.5 com variação de apenas 10%
+  // - Mobile: Inicial em 1.0 (para visualização completa do tabuleiro) com variação de 0.6x a 2.5x
   // - Desktop: Zoom livre original (0.4x a 3.5x com base 1.0x)
-  const BASE_SCALE = isMobile ? 2.5 : 1.0;
+  const BASE_SCALE = 1.0;
 
-  const MIN_SCALE = isMobile ? BASE_SCALE * 0.7 : 0.4;
-  const MAX_SCALE = isMobile ? BASE_SCALE * 1.3 : 3.5;
+  const MIN_SCALE = isMobile ? 0.6 : 0.4;
+  const MAX_SCALE = isMobile ? 2.5 : 3.5;
 
   const scale = useMotionValue(BASE_SCALE);
   const springScale = useSpring(scale, { stiffness: 300, damping: 30 });
