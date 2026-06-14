@@ -291,7 +291,7 @@ export function getPossibleActions(state: GameState, playerId: string): AIAction
     const cost = getCardCost(cardId);
     if (player.mana < cost) continue;
 
-    if (cardId.startsWith('unit_')) {
+    if (cardId.startsWith('unit_') || cardId.startsWith('hero_')) {
       let spawnPoints = getValidSpawnCoordinates(state, playerId, cardId);
       if (oppKing) {
          // Sort spawn points closer to enemy king
@@ -339,7 +339,7 @@ function scoreAction(state: GameState, action: AIAction): number {
     if (action.type === 'PLAY_CARD') {
         const cost = getCardCost(action.cardId);
         // Priorizar muito o uso de cartas!
-        if (action.cardId.startsWith('unit_')) return 10000 + cost * 500;
+        if (action.cardId.startsWith('unit_') || action.cardId.startsWith('hero_')) return 10000 + cost * 500;
         if (action.cardId.startsWith('spl_meteoro')) return 12000;
         if (action.cardId.startsWith('spl_raio')) return 11000;
         if (action.cardId.startsWith('art_')) return 9000;
