@@ -60,9 +60,9 @@ export const createCombatActions = (set: any, get: any) => {
       });
 
       const moveTemplates = [
-        `O ${unit.unitClass} marchou pelo campo de batalha.`,
-        `${unit.unitClass} se posicionou estrategicamente.`,
-        `O ${unit.unitClass} avançou em direção ao objetivo.`
+        `The ${unit.unitClass} marched across the battlefield.`,
+        `${unit.unitClass} positioned strategically.`,
+        `The ${unit.unitClass} advanced toward the objective.`
       ];
       const moveMsg = moveTemplates[Math.floor(Math.random() * moveTemplates.length)];
       get().addLog(moveMsg, unit.playerId);
@@ -112,9 +112,9 @@ export const createCombatActions = (set: any, get: any) => {
 
       const details = (newState.combatLogs && newState.combatLogs.length > 0) ? `. ${newState.combatLogs.join('. ')}` : '';
       const attackTemplates = [
-        `O ${attacker.unitClass} desferiu um golpe certeiro em ${target.unitClass} causando ${damageDealt} de dano!`,
-        `${attacker.unitClass} atacou ${target.unitClass} infligindo ${damageDealt} de dano.`,
-        `O impacto de ${attacker.unitClass} atingiu ${target.unitClass} com força: ${damageDealt} de dano.`
+        `The ${attacker.unitClass} struck ${target.unitClass} with a precise blow dealing ${damageDealt} damage!`,
+        `${attacker.unitClass} attacked ${target.unitClass} inflicting ${damageDealt} damage.`,
+        `The impact from ${attacker.unitClass} hit ${target.unitClass} hard: ${damageDealt} damage.`
       ];
       const attackMsg = attackTemplates[Math.floor(Math.random() * attackTemplates.length)] + details;
 
@@ -176,7 +176,7 @@ export const createCombatActions = (set: any, get: any) => {
         animatingUnits: { [targetId]: 'healing' },
         lastActionVfx: { type: 'HEAL', sourceId: healerId, sourcePos: healer.position, targetId: targetId, targetPos: target.position, timestamp: Date.now() }
       });
-      get().addLog(`O ${healer.unitClass} usou preces divinas para curar o ${target.unitClass}!`, healer.playerId);
+      get().addLog(`The ${healer.unitClass} used divine prayers to heal ${target.unitClass}!`, healer.playerId);
       setTimeout(() => set({ animatingUnits: {} }), 600);
       checkAutoPass();
     } catch (err: any) {
@@ -303,10 +303,10 @@ export const createCombatActions = (set: any, get: any) => {
 
       // Prepara a mensagem de log
       const cardName = cardId.replace('unit_', '').replace('spl_', '').replace('art_', '').toUpperCase();
-      let playMsg = `Jogou ${cardName}`;
-      if (cardId.startsWith('unit_')) playMsg = `O ${currentGameState.currentTurnPlayerId === 'p1' ? 'Azul' : 'Roxo'} convocou o ${cardName} para o campo de batalha!`;
-      else if (cardId.startsWith('spl_')) playMsg = `Uma poderosa magia foi conjurada: ${cardName}!`;
-      else if (cardId.startsWith('art_')) playMsg = `O artefato sagrado ${cardName} foi revelado.`;
+      let playMsg = `Played ${cardName}`;
+      if (cardId.startsWith('unit_')) playMsg = `${currentGameState.currentTurnPlayerId === 'p1' ? 'Blue' : 'Purple'} summoned ${cardName} to the battlefield!`;
+      else if (cardId.startsWith('spl_')) playMsg = `A powerful spell was cast: ${cardName}!`;
+      else if (cardId.startsWith('art_')) playMsg = `The sacred artifact ${cardName} was revealed.`;
 
       const applyFinalState = () => {
         set({
@@ -382,7 +382,7 @@ export const createCombatActions = (set: any, get: any) => {
       }
 
       set({ ...newState });
-      get().addLog(`Uma oferenda de mana foi feita por ${currentGameState.currentTurnPlayerId === 'p1' ? 'Azul' : 'Roxo'}.`, currentGameState.currentTurnPlayerId);
+      get().addLog(`A mana offering was made by ${currentGameState.currentTurnPlayerId === 'p1' ? 'Blue' : 'Purple'}.`, currentGameState.currentTurnPlayerId);
       checkAutoPass();
     } catch (err: any) {
       console.warn("Erro ao oferecer carta:", err.message);
@@ -396,7 +396,7 @@ export const createCombatActions = (set: any, get: any) => {
       const target = currentGameState.boardUnits[targetId];
       const newState = heal(currentGameState, healerId, targetId);
       set({ ...newState, animatingUnits: { [targetId]: 'healing' } });
-      get().addLog(`${healer.unitClass} curou ${target.unitClass}`, healer.playerId);
+      get().addLog(`${healer.unitClass} healed ${target.unitClass}`, healer.playerId);
       setTimeout(() => set({ animatingUnits: {} }), 600);
       checkAutoPass();
     } catch (err: any) {

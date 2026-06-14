@@ -269,7 +269,7 @@ export const useGameStore = create<GameStore>()(
           isTimerRunning: false
         });
 
-        get().addLog(`${loserName} desistiu da partida!`, state.myRole || 'p1');
+        get().addLog(`${loserName} surrendered!`, state.myRole || 'p1');
       },
 
       ...createCombatActions(set, get),
@@ -340,7 +340,7 @@ export const useGameStore = create<GameStore>()(
           const pId = currentGameState.currentTurnPlayerId;
           const newState = endTurn(currentGameState);
           set({ ...newState, selectedHex: null, turnTimer: 60, isTimerRunning: true });
-          get().addLog(`O turno de ${pId === 'p1' ? 'Azul' : 'Roxo'} chegou ao fim.`, pId);
+          get().addLog(`${pId === 'p1' ? 'Blue' : 'Purple'}'s turn ended.`, pId);
 
           const updatedState = get();
           const autoBattleTarget = updatedState.isAutoPlay ? 200 : 1000;

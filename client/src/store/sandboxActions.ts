@@ -28,7 +28,7 @@ export const createSandboxActions = (set: any, get: any) => ({
     set((state: any) => ({
       boardUnits: { ...state.boardUnits, [unitId]: newUnit }
     }));
-    get().addLog(`[Sandbox] Spawnou ${unitName} em (${hex.q}, ${hex.r}) para ${playerId}`, 'system');
+    get().addLog(`[Sandbox] Spawned ${unitName} at (${hex.q}, ${hex.r}) for ${playerId}`, 'system');
   },
 
   addCardToHand: (cardId: string) => {
@@ -42,7 +42,7 @@ export const createSandboxActions = (set: any, get: any) => ({
         }
       };
     });
-    get().addLog(`[Sandbox] Adicionou carta ${cardId} à mão`, 'system');
+    get().addLog(`[Sandbox] Added card ${cardId} to hand`, 'system');
   },
 
   sandboxPlayCard: (cardId: string, hex: HexCoordinates, playerId: string) => {
@@ -82,7 +82,7 @@ export const createSandboxActions = (set: any, get: any) => ({
 
   purifyArena: () => {
     set({ boardUnits: {} });
-    get().addLog("[Sandbox] Arena Purificada!", 'system');
+    get().addLog("[Sandbox] Arena Purified!", 'system');
   },
 
   removeUnit: (unitId: string) => {
@@ -94,6 +94,6 @@ export const createSandboxActions = (set: any, get: any) => ({
         inspectedItem: null
       };
     });
-    get().addLog(`[Sandbox] Unidade removida`, 'system');
+    get().addLog(`[Sandbox] Unit removed`, 'system');
   }
 });
