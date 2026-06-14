@@ -8,15 +8,15 @@ function getCardDetails(cardId: string) {
   if (cardId.startsWith('unit_') || cardId.startsWith('hero_')) {
     try {
       const card = getUnitCard(cardId);
-      return { id: cardId, class: card.name, icon: CLASS_ICONS[card.unitClass] || '👤', cost: card.manaCost, atk: card.baseAttack, hp: card.baseHp, type: 'Unidade' };
+      return { id: cardId, class: card.name, icon: CLASS_ICONS[card.unitClass] || '👤', cost: card.manaCost, atk: card.baseAttack, hp: card.baseHp, type: 'Unit' };
     } catch(e) { return null; }
   }
   const art = ARTIFACTS.find(a => a.id === cardId);
   if (art) {
-    return { id: cardId, class: art.name, icon: '' as any, cost: art.manaCost, atk: '-', hp: '-', type: 'Artefato' };
+    return { id: cardId, class: art.name, icon: '' as any, cost: art.manaCost, atk: '-', hp: '-', type: 'Artifact' };
   }
   const spl = SPELLS.find(s => s.id === cardId);
-  if (spl) return { id: cardId, class: spl.name, icon: '' as any, cost: spl.manaCost, atk: '-', hp: '-', type: 'Mágica' };
+  if (spl) return { id: cardId, class: spl.name, icon: '' as any, cost: spl.manaCost, atk: '-', hp: '-', type: 'Spell' };
   return null;
 }
 
@@ -51,7 +51,7 @@ export const HandUI: React.FC = () => {
           }}
           className="mb-2 bg-yellow-600 hover:bg-yellow-500 text-white font-black text-xs px-4 py-1.5 rounded-full border-2 border-yellow-300 shadow-[0_0_12px_rgba(202,138,4,0.5)] transition-all animate-bounce"
         >
-          🔥 SACRIFICAR POR MANA (+1)
+          🔥 SACRIFICE FOR MANA (+1)
         </button>
       )}
 
@@ -98,7 +98,7 @@ export const HandUI: React.FC = () => {
                 }
               `}>
                 {/* Imagem da Unidade em background (para cartas de Unidade) */}
-                {card.type === 'Unidade' && card.icon && (
+                {card.type === 'Unit' && card.icon && (
                   <>
                     <img 
                       src={card.icon} 
@@ -136,9 +136,9 @@ export const HandUI: React.FC = () => {
               </div>
               
               {/* Badge de tipo para feitiços e artefatos */}
-              {card.type !== 'Unidade' && (
+              {card.type !== 'Unit' && (
                 <div className={`absolute -bottom-2 px-2 py-0.5 rounded-full text-[7px] md:text-[8px] font-black uppercase tracking-tighter z-20 border shadow-md ${
-                  card.type === 'Artefato' ? 'bg-amber-600/90 text-amber-100 border-amber-400' :
+                  card.type === 'Artifact' ? 'bg-amber-600/90 text-amber-100 border-amber-400' :
                   'bg-[#602471]/90 text-[#f5d0f9] border-[#d8b4e2]'
                 }`}>
                   {card.type}
@@ -146,7 +146,7 @@ export const HandUI: React.FC = () => {
               )}
 
               {/* Stats Badge Padronizada para Unidades */}
-              {card.type === 'Unidade' && (
+              {card.type === 'Unit' && (
                 <div className={`absolute -bottom-3 flex items-center gap-1.5 font-black text-[10px] md:text-[11px] bg-slate-950 rounded-lg px-2 py-0.5 border-2 shadow-[0_2px_8px_rgba(0,0,0,0.8)] z-20 transition-all ${
                   canAfford ? 'border-[#0b622f]' : 'border-slate-600 opacity-80'
                 }`}>
@@ -163,7 +163,7 @@ export const HandUI: React.FC = () => {
 
       {!isMyTurn && (
         <div className="mt-1 text-[10px] text-slate-500 font-bold uppercase tracking-wider animate-pulse">
-          {isAiThinking ? 'Oponente está pensando...' : 'Aguardando seu turno...'}
+          {isAiThinking ? 'Opponent is thinking...' : 'Waiting for your turn...'}
         </div>
       )}
     </div>

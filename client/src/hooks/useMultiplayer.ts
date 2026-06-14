@@ -54,7 +54,7 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
       if (lobby.gameState) {
         const { 
           matchId, turnNumber, currentPhase, currentTurnPlayerId, 
-          aiDifficulty, players, boardUnits, combatLogs, winner 
+          players, boardUnits, combatLogs, winner 
         } = lobby.gameState;
 
         useGameStore.setState({
@@ -62,7 +62,6 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
           turnNumber,
           currentPhase,
           currentTurnPlayerId,
-          aiDifficulty,
           players,
           boardUnits,
           combatLogs,
@@ -94,7 +93,6 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
         turnNumber:          fullState.turnNumber,
         currentPhase:        fullState.currentPhase,
         currentTurnPlayerId: fullState.currentTurnPlayerId,
-        aiDifficulty:        fullState.aiDifficulty,
         players:             fullState.players,
         boardUnits:          fullState.boardUnits,
         combatLogs:          fullState.combatLogs || [],

@@ -30,7 +30,7 @@ function checkTrajectory(state: GameState, attacker: Unit, target: Unit, startIn
     const obstacle = Object.values(state.boardUnits).find(u =>
       u.position.q === step.q && u.position.r === step.r
     );
-    if (obstacle) throw new Error("Trajetória bloqueada!");
+    if (obstacle) throw new Error("Trajectory blocked!");
   }
 }
 
@@ -50,7 +50,7 @@ function applyArtifactDamageEffects(attacker: Unit, target: Unit): number {
  */
 export function applyFinalDamage(target: Unit, damage: number, state: GameState): void {
   if (target.buffs.some(b => b.type === 'invulnerable')) {
-    addCombatLog(state, `🛡️ Alvo Invulnerável! (Dano Anulado)`);
+    addCombatLog(state, `🛡️ Invulnerable Target! (Damage Negated)`);
     return;
   }
 
@@ -64,14 +64,14 @@ export function applyFinalDamage(target: Unit, damage: number, state: GameState)
       const absorbed = Math.min(damage, shield.value);
       const remainingDamage = damage - absorbed;
       
-      addCombatLog(state, `🛡️ Escudo absorveu ${absorbed} de dano!`);
+      addCombatLog(state, `🛡️ Shield absorbed ${absorbed} damage!`);
       
       // Decai a proteção: 3 -> 2 -> 1 -> remove
       if (shield.value > 1) {
         shield.value -= 1;
       } else {
         target.buffs.splice(shieldIndex, 1);
-        addCombatLog(state, `🛡️ O escudo não resistiu e se quebrou!`);
+        addCombatLog(state, `🛡️ The shield couldn't withstand the hit and broke!`);
       }
       
       if (remainingDamage > 0) {
@@ -82,7 +82,7 @@ export function applyFinalDamage(target: Unit, damage: number, state: GameState)
 
     // Escudo padrão (Aura Rúnica / Escudo Sagrado) - Absorve 1 hit total
     target.buffs.splice(shieldIndex, 1);
-    addCombatLog(state, `🛡️ Proteção Divina! O escudo absorveu todo o impacto.`);
+    addCombatLog(state, `🛡️ Divine Protection! The shield absorbed the full impact.`);
     return;
   }
 
@@ -102,7 +102,7 @@ export function applyDoT(target: Unit, type: 'poison' | 'burn' | 'bleed', durati
 function applyFuryEffect(attacker: Unit, state: GameState): void {
   if (attacker.buffs.some(b => b.type === 'fury')) {
     attacker.hp -= 1;
-    addCombatLog(state, `🩸 Fúria de Batalha: ${attacker.unitClass} perdeu 1 HP.`);
+    addCombatLog(state, `🩸 Battle Fury: ${attacker.unitClass} lost 1 HP.`);
     handleUnitDeath(state, attacker, attacker.playerId === 'p1' ? 'p2' : 'p1');
   }
 }
@@ -110,7 +110,7 @@ function applyFuryEffect(attacker: Unit, state: GameState): void {
 function checkAndConsumeInvulnerability(attacker: Unit, state: GameState): void {
   if (attacker.buffs.some(b => b.type === 'invulnerable')) {
     attacker.buffs = attacker.buffs.filter(b => b.type !== 'invulnerable');
-    addCombatLog(state, `⚖️ Sacrifício! Invulnerabilidade consumida pelo ataque.`);
+    addCombatLog(state, `⚖️ Sacrifice! Invulnerability consumed by the attack.`);
   }
 }
 
@@ -126,7 +126,7 @@ export function handleUnitDeath(state: GameState, unit: Unit, killerPlayerId: st
       state.winner = unit.playerId === 'p1' ? 'p2' : 'p1';
     }
     delete state.boardUnits[unit.id];
-    addCombatLog(state, `💀 O ${unit.unitClass} sucumbiu e foi removido do campo.`);
+    addCombatLog(state, `💀 The ${unit.unitClass} succumbed and was removed from the field.`);
   }
 }
 
@@ -151,24 +151,24 @@ export interface UnitBehavior {
 
 const ReiBehavior: UnitBehavior = {
   validateMove(unit, target, dist, maxMoveDist) {
-    if (dist > maxMoveDist) throw new Error("Rei só move 1 casa.");
+    if (dist > maxMoveDist) throw new Error("King only moves 1 hex.");
   },
   isValidMovePosition(unit, targetPos, dist) {
     return dist === 1;
   },
   validateAttack(attacker, target, dist, rangeBonus) {
-    if (dist > 1 + rangeBonus) throw new Error("Rei só ataca adjacente.");
+    if (dist > 1 + rangeBonus) throw new Error("King only attacks adjacent hexes.");
   },
   applyDamage(attacker, target, state) {
     if (attacker.buffs.some(b => b.type === 'invulnerable')) {
       attacker.buffs = attacker.buffs.filter(b => b.type !== 'invulnerable');
-      addCombatLog(state, `⚖️ Invulnerabilidade consumida pelo ataque!`);
+      addCombatLog(state, `⚖️ Invulnerability consumed by the attack!`);
     }
 
     addCombatLog(state, `Base: ${attacker.attack}`);
     applyFinalDamage(target, attacker.attack, state);
     const extra = applyArtifactDamageEffects(attacker, target);
-    if (extra > 0) addCombatLog(state, `Artefatos: +${extra}`);
+    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`);
     applyFuryEffect(attacker, state);
     handleUnitDeath(state, target, attacker.playerId);
   }
@@ -182,11 +182,11 @@ const CavaleiroBehavior: UnitBehavior = {
   validateMove(unit, target, dist, maxMoveDist, state, useSpecial) {
     if (useSpecial) {
       if (dist > 3 || !isLine(unit.position, target)) {
-        throw new Error("Rompante de Ferro deve ser em linha reta de até 3 de distância.");
+        throw new Error("Iron Charge must be in a straight line up to 3 hexes away.");
       }
     } else {
-      if (dist > maxMoveDist) throw new Error(`Cavaleiro só move até ${maxMoveDist} casa(s).`);
-      if (!isLine(unit.position, target)) throw new Error("Cavaleiro só se move em linha reta.");
+      if (dist > maxMoveDist) throw new Error(`Knight only moves up to ${maxMoveDist} hex(es).`);
+      if (!isLine(unit.position, target)) throw new Error("Knight only moves in a straight line.");
     }
   },
   isValidMovePosition(unit, targetPos, dist, state, useSpecial) {
@@ -199,10 +199,10 @@ const CavaleiroBehavior: UnitBehavior = {
   validateAttack(attacker, target, dist, rangeBonus, useSpecial, state) {
     if (useSpecial) {
       if (dist > 3 || !isLine(attacker.position, target.position)) {
-        throw new Error("Rompante de Ferro em linha reta de até 3 de distância.");
+        throw new Error("Iron Charge in a straight line up to 3 hexes away.");
       }
     } else {
-      if (dist > 1 + rangeBonus) throw new Error("Cavaleiro só ataca colado.");
+      if (dist > 1 + rangeBonus) throw new Error("Knight only attacks adjacent hexes.");
     }
 
     // Validação de Pouso do Rompante de Ferro
@@ -213,7 +213,7 @@ const CavaleiroBehavior: UnitBehavior = {
         u.position.q === landingPos.q && u.position.r === landingPos.r
       );
       if (collision) {
-        throw new Error("Local de pouso do Rompante está ocupado!");
+        throw new Error("Charge landing spot is occupied!");
       }
     }
   },
@@ -224,7 +224,7 @@ const CavaleiroBehavior: UnitBehavior = {
 
     if (useSpecial) {
       damage += 2;
-      addCombatLog(state, `🐎 Rompante de Ferro: +2 de impacto extra!`);
+      addCombatLog(state, `🐎 Iron Charge: +2 extra impact!`);
       const line = getLineOfSight(attacker.position, target.position);
       if (line.length > 2) {
         const landingPos = line[line.length - 2];
@@ -234,18 +234,18 @@ const CavaleiroBehavior: UnitBehavior = {
         if (!collision) {
           attacker.position = landingPos;
         } else {
-          addCombatLog(state, `⚠️ Rompante: Local de pouso obstruído no momento do impacto!`);
+          addCombatLog(state, `⚠️ Charge: Landing spot obstructed at the moment of impact!`);
         }
       }
     }
     
     applyFinalDamage(target, damage, state);
     const extra = applyArtifactDamageEffects(attacker, target);
-    if (extra > 0) addCombatLog(state, `Artefatos: +${extra}`);
+    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`);
 
     if ((dist > 1 || useSpecial) && checkEffectTrigger(attacker)) {
       target.buffs.push({ type: 'stun', duration: 1 });
-      addCombatLog(state, `💫 O alvo ficou atordoado pelo choque!`);
+      addCombatLog(state, `💫 The target was stunned by the shock!`);
     }
     applyFuryEffect(attacker, state);
     handleUnitDeath(state, target, attacker.playerId);
@@ -259,10 +259,10 @@ const CavaleiroBehavior: UnitBehavior = {
 const LanceiroBehavior: UnitBehavior = {
   validateMove(unit, target, dist, maxMoveDist, state) {
     if (dist > maxMoveDist || unit.position.r === target.r) {
-      throw new Error("Lanceiro: Move apenas para frente/trás.");
+      throw new Error("Lancer: Moves only forward/backward.");
     }
     if (dist > 1 && !hasAmuleto(unit) && isPathBlocked(state, unit.position, target)) {
-      throw new Error("Caminho bloqueado!");
+      throw new Error("Path blocked!");
     }
   },
   isValidMovePosition(unit, targetPos, dist) {
@@ -270,9 +270,9 @@ const LanceiroBehavior: UnitBehavior = {
   },
   validateAttack(attacker, target, dist, rangeBonus, useSpecial, state) {
     if (!isLine(attacker.position, target.position) || attacker.position.r === target.position.r) {
-      throw new Error("Lanceiro: Ataca apenas em linha vertical.");
+      throw new Error("Lancer: Attacks only in a vertical line.");
     }
-    if (dist > 2 + rangeBonus) throw new Error("Lanceiro: Alcance máximo 2.");
+    if (dist > 2 + rangeBonus) throw new Error("Lancer: Maximum range 2.");
     if (dist > 1) checkTrajectory(state, attacker, target, 1);
   },
   applyDamage(attacker, target, state, dist) {
@@ -281,7 +281,7 @@ const LanceiroBehavior: UnitBehavior = {
     applyFinalDamage(target, attacker.attack, state);
 
     const extra = applyArtifactDamageEffects(attacker, target);
-    if (extra > 0) addCombatLog(state, `Artefatos: +${extra}`);
+    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`);
 
     if (checkEffectTrigger(attacker)) {
       const dq = (target.position.q - attacker.position.q) / dist;
@@ -290,7 +290,7 @@ const LanceiroBehavior: UnitBehavior = {
       const collision = Object.values(state.boardUnits).some(u => u.position.q === pushTarget.q && u.position.r === pushTarget.r);
       if (isInsideBoard(pushTarget) && !collision) {
         target.position = pushTarget;
-        addCombatLog(state, `💨 Impacto de Falange: Empurrou o alvo!`);
+        addCombatLog(state, `💨 Phalanx Impact: Pushed the target!`);
       }
     }
     applyFuryEffect(attacker, state);
@@ -304,23 +304,23 @@ const LanceiroBehavior: UnitBehavior = {
 
 const ArqueiroBehavior: UnitBehavior = {
   validateMove(unit, target, dist, maxMoveDist, state) {
-    if (dist > maxMoveDist) throw new Error("Arqueiro: Move apenas 1.");
+    if (dist > maxMoveDist) throw new Error("Archer: Moves only 1 hex.");
   },
   isValidMovePosition(unit, targetPos, dist) {
     return dist <= 1;
   },
   validateAttack(attacker, target, dist, rangeBonus) {
-    if (dist > 3 + rangeBonus) throw new Error("Arqueiro: Alcance 3.");
+    if (dist > 3 + rangeBonus) throw new Error("Archer: Range 3.");
   },
   applyDamage(attacker, target, state) {
     checkAndConsumeInvulnerability(attacker, state);
     addCombatLog(state, `Base: ${attacker.attack}`);
     applyFinalDamage(target, attacker.attack, state);
     const extra = applyArtifactDamageEffects(attacker, target);
-    if (extra > 0) addCombatLog(state, `Artefatos: +${extra}`);
+    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`);
     if (checkEffectTrigger(attacker)) {
       target.buffs.push({ type: 'stun', duration: 1 });
-      addCombatLog(state, `🎯 Tiro Preciso! O alvo foi paralisado.`);
+      addCombatLog(state, `🎯 Precision Shot! The target was paralyzed.`);
     }
     applyFuryEffect(attacker, state);
     handleUnitDeath(state, target, attacker.playerId);
@@ -335,9 +335,9 @@ const AssassinoBehavior: UnitBehavior = {
   validateMove(unit, target, dist, maxMoveDist, state, useSpecial) {
     if (useSpecial) {
       const isLeap = dist === 2 && isDiagonal(unit.position, target);
-      if (!isLeap) throw new Error("Transposição Etérea: Apenas diagonal de 2 casas.");
+      if (!isLeap) throw new Error("Ethereal Shift: Only 2 diagonal hexes.");
     } else {
-      if (dist !== 1) throw new Error("Assassino (Normal): Move apenas 1 casa.");
+      if (dist !== 1) throw new Error("Assassin (Normal): Moves only 1 hex.");
     }
   },
   isValidMovePosition(unit, targetPos, dist, state, useSpecial) {
@@ -347,9 +347,9 @@ const AssassinoBehavior: UnitBehavior = {
   validateAttack(attacker, target, dist, rangeBonus, useSpecial) {
     if (useSpecial) {
       const isLeap = dist === 2 && isDiagonal(attacker.position, target.position);
-      if (!isLeap) throw new Error("Transposição Etérea: Requer destino a 2 casas diagonais.");
+      if (!isLeap) throw new Error("Ethereal Shift: Requires destination 2 diagonal hexes away.");
     } else {
-      if (dist > 1 + rangeBonus) throw new Error("Assassino (Normal): Ataca apenas colado.");
+      if (dist > 1 + rangeBonus) throw new Error("Assassin (Normal): Attacks only adjacent hexes.");
     }
   },
   applyDamage(attacker, target, state, dist, useSpecial) {
@@ -361,15 +361,15 @@ const AssassinoBehavior: UnitBehavior = {
     applyFinalDamage(target, attacker.attack, state);
     
     applyDoT(target, 'bleed', 2, 1);
-    addCombatLog(state, `🩸 Toque Letal Aplicado! (Sangramento)`);
+    addCombatLog(state, `🩸 Lethal Touch Applied! (Bleeding)`);
     
     if (useSpecial) {
       applyFinalDamage(target, 2, state);
-      addCombatLog(state, `🦘 Salto Etéreo: +2 de dano bônus!`);
+      addCombatLog(state, `🦘 Ethereal Leap: +2 bonus damage!`);
     }
     
     const extra = applyArtifactDamageEffects(attacker, target);
-    if (extra > 0) addCombatLog(state, `Artefatos: +${extra}`);
+    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`);
 
     applyFuryEffect(attacker, state);
     const targetDied = target.hp <= 0;
@@ -378,7 +378,7 @@ const AssassinoBehavior: UnitBehavior = {
     if (useSpecial) {
       if (targetDied) {
         attacker.position = targetPos;
-        addCombatLog(state, `🦘 Transposição: Ocupou lugar do alvo.`);
+        addCombatLog(state, `🦘 Ethereal Shift: Occupied the target's spot.`);
       } else {
         const neighbors = getHexNeighbors(targetPos);
         let landed = false;
@@ -387,13 +387,13 @@ const AssassinoBehavior: UnitBehavior = {
           if (isInsideBoard(n) && !collision) {
             attacker.position = n;
             landed = true;
-            addCombatLog(state, `🦘 Transposição: Aterrizou ao lado.`);
+            addCombatLog(state, `🦘 Ethereal Shift: Landed nearby.`);
             break;
           }
         }
         if (!landed) {
           attacker.position = originalPos;
-          addCombatLog(state, `🦘 Sem espaço para transpor! Voltou à origem.`);
+          addCombatLog(state, `🦘 No space to shift! Returned to origin.`);
         }
       }
     }
@@ -406,18 +406,18 @@ const AssassinoBehavior: UnitBehavior = {
 
 const AlquimistaBehavior: UnitBehavior = {
   validateMove(unit, target, dist, maxMoveDist) {
-    if (dist > maxMoveDist) throw new Error("Alquimista só move 1.");
+    if (dist > maxMoveDist) throw new Error("Alchemist only moves 1 hex.");
   },
   isValidMovePosition(unit, targetPos, dist) {
     return dist === 1;
   },
   validateAttack(attacker, target, dist, rangeBonus) {
-    if (dist > 3 + rangeBonus) throw new Error("Alquimista: Alcance 3.");
+    if (dist > 3 + rangeBonus) throw new Error("Alchemist: Range 3.");
   },
   applyDamage(attacker, target, state) {
     checkAndConsumeInvulnerability(attacker, state);
     const splashRadius = (attacker.equippedArtifacts || []).includes('art_anel') ? 2 : 1;
-    addCombatLog(state, `⚗️ Cataclismo Alquímico: Iniciando reação!`);
+    addCombatLog(state, `⚗️ Arcane Cataclysm: Initiating reaction!`);
     
     // Lista de TODAS as unidades afetadas pelo splash (inclui aliados — friendly fire intencional)
     const affectedUnits: Unit[] = [];
@@ -431,13 +431,13 @@ const AlquimistaBehavior: UnitBehavior = {
     affectedUnits.forEach(u => {
       applyFinalDamage(u, attacker.attack, state);
       if (u.id === target.id) {
-        addCombatLog(state, `Alvo Principal: ${attacker.attack}`);
+        addCombatLog(state, `Main Target: ${attacker.attack}`);
       } else {
-        addCombatLog(state, `Dano em Área em ${u.unitClass}: ${attacker.attack}`);
+        addCombatLog(state, `AoE Damage on ${u.unitClass}: ${attacker.attack}`);
       }
       if (Math.random() < 0.3) {
         applyDoT(u, 'burn', 2, 1);
-        addCombatLog(state, `🔥 Fogo Alquímico: Incendiou o ${u.unitClass}!`);
+        addCombatLog(state, `🔥 Alchemical Fire: Ignited the ${u.unitClass}!`);
       }
       handleUnitDeath(state, u, attacker.playerId);
     });
@@ -451,20 +451,20 @@ const AlquimistaBehavior: UnitBehavior = {
 
 const ClerigoBehavior: UnitBehavior = {
   validateMove(unit, target, dist, maxMoveDist) {
-    if (dist > maxMoveDist) throw new Error("Clérigo só move 1.");
+    if (dist > maxMoveDist) throw new Error("Cleric only moves 1 hex.");
   },
   isValidMovePosition(unit, targetPos, dist) {
     return dist === 1;
   },
   validateAttack(attacker, target, dist, rangeBonus) {
-    if (dist > 1 + rangeBonus) throw new Error("Clérigo: Alcance 1.");
+    if (dist > 1 + rangeBonus) throw new Error("Cleric: Range 1.");
   },
   applyDamage(attacker, target, state) {
     checkAndConsumeInvulnerability(attacker, state);
     addCombatLog(state, `Base: ${attacker.attack}`);
     applyFinalDamage(target, attacker.attack, state);
     const extra = applyArtifactDamageEffects(attacker, target);
-    if (extra > 0) addCombatLog(state, `Artefatos: +${extra}`);
+    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`);
     applyFuryEffect(attacker, state);
     handleUnitDeath(state, target, attacker.playerId);
   }
@@ -475,15 +475,15 @@ const ClerigoBehavior: UnitBehavior = {
 // ══════════════════════════════════════════════
 
 const EstruturaBehavior: UnitBehavior = {
-  validateMove() { throw new Error("Estruturas não podem se mover."); },
+  validateMove() { throw new Error("Structures cannot move."); },
   isValidMovePosition() { return false; },
-  validateAttack() { throw new Error("Estruturas não podem atacar."); },
+  validateAttack() { throw new Error("Structures cannot attack."); },
   applyDamage(attacker, target, state) {
     // Apenas aplica o dano no alvo (muralha), sem contra-ataque ou lógica complexa
     addCombatLog(state, `Base: ${attacker.attack}`);
     applyFinalDamage(target, attacker.attack, state);
     const extra = applyArtifactDamageEffects(attacker, target);
-    if (extra > 0) addCombatLog(state, `Artefatos: +${extra}`);
+    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`);
     handleUnitDeath(state, target, attacker.playerId);
   }
 };

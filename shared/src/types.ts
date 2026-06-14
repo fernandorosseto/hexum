@@ -41,7 +41,6 @@ export interface Unit {
   equippedArtifacts?: string[]; // IDs dos artefatos equipados (ex: 'art_escudo')
 }
 
-export type AIDifficulty = 'BEGINNER' | 'ELITE' | 'GRANDMASTER' | 'DEUS';
 
 export type Phase = 'DRAW_PHASE' | 'MAIN_PHASE' | 'END_PHASE' | 'GAME_OVER';
 
@@ -56,17 +55,17 @@ export interface PlayerState {
 }
 
 export const buffLabels: Record<string, {label: string, color: string}> = {
-  poison: { label: '🐍 Veneno', color: 'bg-green-900/80 text-green-300 border-green-700/50' },
-  burn:   { label: '🔥 Queimadura', color: 'bg-orange-900/80 text-orange-300 border-orange-700/50' },
-  stun:   { label: '💫 Atordoado', color: 'bg-yellow-900/80 text-yellow-300 border-yellow-700/50' },
-  shield: { label: '🛡️ Escudo', color: 'bg-cyan-900/80 text-cyan-300 border-cyan-700/50' },
-  fury:   { label: '⚔️ Fúria', color: 'bg-red-900/80 text-red-300 border-red-700/50' },
-  taunt:  { label: '🚩 Provocar', color: 'bg-amber-900/80 text-amber-300 border-amber-700/50' },
-  immune_ranged: { label: '☁️ Proteção', color: 'bg-slate-800/80 text-slate-300 border-slate-600/50' },
-  bleed: { label: '🩸 Sangramento', color: 'bg-red-950/80 text-red-300 border-red-700/50' },
-  fear: { label: '💀 Medo', color: 'bg-purple-900/80 text-purple-300 border-purple-700/50' },
-  invulnerable: { label: '✨ Invulnerável', color: 'bg-yellow-900/80 text-yellow-200 border-yellow-600/50' },
-  rooted: { label: '🌿 Enraizado', color: 'bg-emerald-900/80 text-emerald-300 border-emerald-700/50' },
+  poison: { label: '🐍 Poison', color: 'bg-green-900/80 text-green-300 border-green-700/50' },
+  burn:   { label: '🔥 Burn', color: 'bg-orange-900/80 text-orange-300 border-orange-700/50' },
+  stun:   { label: '💫 Stunned', color: 'bg-yellow-900/80 text-yellow-300 border-yellow-700/50' },
+  shield: { label: '🛡️ Shield', color: 'bg-cyan-900/80 text-cyan-300 border-cyan-700/50' },
+  fury:   { label: '⚔️ Fury', color: 'bg-red-900/80 text-red-300 border-red-700/50' },
+  taunt:  { label: '🚩 Taunt', color: 'bg-amber-900/80 text-amber-300 border-amber-700/50' },
+  immune_ranged: { label: '☁️ Protection', color: 'bg-slate-800/80 text-slate-300 border-slate-600/50' },
+  bleed: { label: '🩸 Bleed', color: 'bg-red-950/80 text-red-300 border-red-700/50' },
+  fear: { label: '💀 Fear', color: 'bg-purple-900/80 text-purple-300 border-purple-700/50' },
+  invulnerable: { label: '✨ Invulnerable', color: 'bg-yellow-900/80 text-yellow-200 border-yellow-600/50' },
+  rooted: { label: '🌿 Rooted', color: 'bg-emerald-900/80 text-emerald-300 border-emerald-700/50' },
 };
 
 export interface GameState {
@@ -74,7 +73,7 @@ export interface GameState {
   turnNumber: number;
   currentPhase: Phase;
   currentTurnPlayerId: string;
-  aiDifficulty: AIDifficulty;
+
   sandboxMode?: boolean;
   winner?: string; // Player que ganhou
   players: Record<string, PlayerState>;

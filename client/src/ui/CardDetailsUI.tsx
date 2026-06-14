@@ -58,7 +58,7 @@ export const CardDetailsUI: React.FC = () => {
         data = {
           kind: 'artifact', title: art.name, icon: '',
           manaCost: art.manaCost,
-          ability: ARTIFACT_DESCRIPTIONS[art.id] || 'Equipamento permanente.',
+          ability: ARTIFACT_DESCRIPTIONS[art.id] || 'Permanent equipment.',
           colors: { bg: 'from-amber-900/60 to-yellow-950/80', glow: 'shadow-[0_0_40px_rgba(217,119,6,0.15)]', border: 'border-amber-500/60' },
         };
       } else {
@@ -67,7 +67,7 @@ export const CardDetailsUI: React.FC = () => {
           data = {
             kind: 'spell', title: spl.name, icon: '',
             manaCost: spl.manaCost,
-            ability: SPELL_DESCRIPTIONS[spl.id] || 'Efeito mágico instantâneo.',
+            ability: SPELL_DESCRIPTIONS[spl.id] || 'Instant magical effect.',
             colors: { bg: 'from-purple-900/60 to-indigo-950/80', glow: 'shadow-[0_0_40px_rgba(139,92,246,0.15)]', border: 'border-purple-500/60' },
           };
         }
@@ -112,16 +112,16 @@ export const CardDetailsUI: React.FC = () => {
           <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mb-4 border border-amber-500/50">
             <span className="text-3xl">👆</span>
           </div>
-          <h2 className="text-lg font-black text-amber-400 mb-2 tracking-wide uppercase">Modo Inspeção</h2>
+          <h2 className="text-lg font-black text-amber-400 mb-2 tracking-wide uppercase">Inspect Mode</h2>
           <p className="text-xs text-slate-300 font-medium leading-relaxed">
-            Toque em qualquer unidade no tabuleiro ou carta na mão para ver todos os detalhes e atributos.
+            Tap any unit on the board or card in your hand to see details and attributes.
           </p>
         </div>
       </motion.div>
     );
   }
 
-  const typeLabel = data.kind === 'unit' ? 'Unidade' : data.kind === 'artifact' ? 'Artefato' : 'Mágica';
+  const typeLabel = data.kind === 'unit' ? 'Unit' : data.kind === 'artifact' ? 'Artifact' : 'Spell';
   const typeBadgeColor = data.kind === 'unit' ? 'bg-[#0b622f]/80 text-[#a7f3d0]' : data.kind === 'artifact' ? 'bg-amber-700/80 text-amber-100' : 'bg-[#602471]/80 text-[#f5d0f9]';
 
 
@@ -242,7 +242,7 @@ export const CardDetailsUI: React.FC = () => {
                   if (fearInfo.inRange) {
                     return (
                       <span className="px-1.5 py-0.5 rounded text-[8px] font-bold border bg-purple-900/80 text-purple-300 border-purple-700/50">
-                        💀 Medo ({(fearInfo.chance * 100).toFixed(0)}%)
+                        💀 Fear ({(fearInfo.chance * 100).toFixed(0)}%)
                       </span>
                     );
                   }
@@ -295,7 +295,7 @@ export const CardDetailsUI: React.FC = () => {
               >
                 <span>{selectedAbility ? '✕' : (data!.unitClass === 'Cavaleiro' ? '⚡' : '🗡️')}</span>
                 <span className="truncate">
-                  {selectedAbility ? 'Parar' : (data!.unitClass === 'Cavaleiro' ? 'Rompante' : 'Mover')}
+                  {selectedAbility ? 'Stop' : (data!.unitClass === 'Cavaleiro' ? 'Surge' : 'Move')}
                 </span>
               </button>
             )}

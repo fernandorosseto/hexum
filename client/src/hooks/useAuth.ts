@@ -17,18 +17,13 @@ interface AuthState {
  * Uso: const { user, loading } = useAuth();
  */
 export function useAuth(): AuthState {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  // ── MOCK FOR GAME JAM: Skip login screen ──
+  // Use a random uid so PvP can still work with multiple guests
+  const [mockUser] = useState(() => ({
+    uid: 'guest_' + Math.random().toString(36).substring(2, 11),
+    displayName: 'Warrior (Guest)',
+    email: 'guest@hexum.local',
+  } as User));
 
-  useEffect(() => {
-    const unsubscribe = subscribeAuthState((currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-
-    // Cancela o listener ao desmontar
-    return () => unsubscribe();
-  }, []);
-
-  return { user, loading };
+  return { user: mockUser, loading: false };
 }

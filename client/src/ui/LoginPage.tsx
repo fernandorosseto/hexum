@@ -33,7 +33,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
     try {
       if (tab === 'register') {
         if (!displayName.trim()) {
-          setError('Digite seu nome de jogador.');
+          setError('Enter your player name.');
           setLoading(false);
           return;
         }
@@ -44,14 +44,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
       onAuthenticated();
     } catch (err: any) {
       const msg: Record<string, string> = {
-        'auth/email-already-in-use': 'Este e-mail já está cadastrado.',
-        'auth/invalid-email': 'E-mail inválido.',
-        'auth/weak-password': 'Senha fraca — mínimo 6 caracteres.',
-        'auth/user-not-found': 'Conta não encontrada.',
-        'auth/wrong-password': 'Senha incorreta.',
-        'auth/invalid-credential': 'E-mail ou senha incorretos.',
+        'auth/email-already-in-use': 'This email is already registered.',
+        'auth/invalid-email': 'Invalid email.',
+        'auth/weak-password': 'Weak password — minimum 6 characters.',
+        'auth/user-not-found': 'Account not found.',
+        'auth/wrong-password': 'Incorrect password.',
+        'auth/invalid-credential': 'Incorrect email or password.',
       };
-      setError(msg[err.code] ?? 'Erro inesperado. Tente novamente.');
+      setError(msg[err.code] ?? 'Unexpected error. Try again.');
     } finally {
       setLoading(false);
     }
@@ -64,7 +64,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
       await loginWithGoogle();
       onAuthenticated();
     } catch {
-      setError('Falha ao entrar com Google. Tente novamente.');
+      setError('Failed to login with Google. Try again.');
     } finally {
       setLoading(false);
     }
@@ -72,7 +72,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center overflow-hidden"
+      className="fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto py-8"
       style={{
         backgroundImage: `url(${backgroundImg})`,
         backgroundSize: 'cover',
@@ -123,10 +123,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
             {/* Header */}
             <div className="mb-5 text-center">
               <h1 className="text-lg font-black text-white tracking-[0.2em] uppercase">
-                {tab === 'login' ? 'Entre na Batalha' : 'Junte-se ao Combate'}
+                {tab === 'login' ? 'Enter the Battle' : 'Join the Combat'}
               </h1>
               <p className="text-slate-500 text-xs tracking-widest mt-1 uppercase">
-                {tab === 'login' ? 'Acesse sua conta para continuar' : 'Crie sua conta de guerreiro'}
+                {tab === 'login' ? 'Login to your account to continue' : 'Create your warrior account'}
               </p>
             </div>
 
@@ -142,7 +142,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
                       : 'text-slate-500 hover:text-slate-300'
                   }`}
                 >
-                  {t === 'login' ? '⚔️ Login' : '🛡️ Registro'}
+                  {t === 'login' ? '⚔️ Login' : '🛡️ Register'}
                 </button>
               ))}
             </div>
@@ -160,7 +160,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
                   >
                     <input
                       type="text"
-                      placeholder="Nome de jogador"
+                      placeholder="Player Name"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-amber-500/50 focus:bg-white/8 transition-all"
@@ -171,7 +171,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
 
               <input
                 type="email"
-                placeholder="E-mail"
+                placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -179,7 +179,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
               />
               <input
                 type="password"
-                placeholder="Senha"
+                placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -208,14 +208,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
                 className="w-full py-3.5 mt-1 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-white font-black text-sm uppercase tracking-widest shadow-[0_0_20px_rgba(245,158,11,0.25)] hover:shadow-[0_0_35px_rgba(245,158,11,0.45)] transition-all duration-200 active:scale-[0.98]"
               >
                 {loading
-                  ? '⏳ Aguarde...'
-                  : tab === 'login' ? '⚔️ Entrar na Batalha' : '🛡️ Criar Conta'}
+                  ? '⏳ Please wait...'
+                  : tab === 'login' ? '⚔️ Enter the Battle' : '🛡️ Create Account'}
               </button>
 
               {/* Divider */}
               <div className="flex items-center gap-3 py-1">
                 <div className="flex-1 h-px bg-white/8" />
-                <span className="text-slate-600 text-xs uppercase tracking-widest">ou</span>
+                <span className="text-slate-600 text-xs uppercase tracking-widest">or</span>
                 <div className="flex-1 h-px bg-white/8" />
               </div>
 
@@ -232,7 +232,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
                   <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
                   <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
                 </svg>
-                Continuar com Google
+                Continue with Google
               </button>
             </form>
           </div>

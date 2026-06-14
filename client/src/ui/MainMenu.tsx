@@ -6,28 +6,6 @@ import { logout } from '../firebase/auth';
 import heroImg from '../assets/hexum.png';
 import backgroundImg from '../assets/background.jpg';
 
-// ── Seletor de dificuldade ─────────────────────────────────
-const difficulties = [
-  { id: 'BEGINNER',    label: 'Iniciante', icon: '🔰', color: 'emerald' },
-  { id: 'ELITE',       label: 'Elite',     icon: '🔥', color: 'red'     },
-  { id: 'GRANDMASTER', label: 'Mestre',    icon: '👑', color: 'purple'  },
-  { id: 'DEUS',        label: 'Deus',      icon: '👁️', color: 'cyan'    },
-] as const;
-
-const diffColors: Record<string, string> = {
-  emerald: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40 shadow-emerald-500/20',
-  red:     'bg-red-500/15 text-red-400 border-red-500/40 shadow-red-500/20',
-  purple:  'bg-purple-500/15 text-amber-400 border-purple-500/40 shadow-purple-500/20',
-  cyan:    'bg-cyan-950/60 text-cyan-300 border-cyan-400/70 shadow-cyan-400/25',
-};
-
-const diffSubtitles: Record<string, string> = {
-  BEGINNER:    'Modo Casual',
-  ELITE:       'Desafio Extremo',
-  GRANDMASTER: 'Grão-Mestre',
-  DEUS:        'Onipresença Tática',
-};
-
 // ── Avatar dropdown (estilo Google) ───────────────────────
 const UserAvatar: React.FC<{ user: ReturnType<typeof useAuth>['user'] }> = ({ user }) => {
   const [open, setOpen] = useState(false);
@@ -68,7 +46,7 @@ const UserAvatar: React.FC<{ user: ReturnType<typeof useAuth>['user'] }> = ({ us
                 {initial}
               </div>
               <div className="min-w-0">
-                <p className="text-white font-bold text-sm truncate">{user?.displayName ?? 'Jogador'}</p>
+                <p className="text-white font-bold text-sm truncate">{user?.displayName ?? 'Player'}</p>
                 <p className="text-slate-500 text-xs truncate">{user?.email}</p>
               </div>
             </div>
@@ -88,7 +66,7 @@ const UserAvatar: React.FC<{ user: ReturnType<typeof useAuth>['user'] }> = ({ us
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
                 </svg>
-                Sair da conta
+                Sign Out
               </button>
             </div>
           </motion.div>
@@ -100,10 +78,8 @@ const UserAvatar: React.FC<{ user: ReturnType<typeof useAuth>['user'] }> = ({ us
 
 // ── MainMenu ───────────────────────────────────────────────
 export const MainMenu: React.FC = () => {
-  const { setCurrentView, aiDifficulty, setAiDifficulty } = useGameStore();
+  const { setCurrentView } = useGameStore();
   const { user } = useAuth();
-
-  const currentDiff = difficulties.find(d => d.id === aiDifficulty) ?? difficulties[0];
 
   return (
     <div
@@ -164,7 +140,7 @@ export const MainMenu: React.FC = () => {
         >
           {/* Title (mobile only, desktop shows in the art) */}
           <div className="md:hidden text-center mb-1">
-            <h1 className="text-white/80 text-xs font-black tracking-[0.4em] uppercase">Campo de Batalha</h1>
+            <h1 className="text-white/80 text-xs font-black tracking-[0.4em] uppercase">Battlefield</h1>
           </div>
 
           {/* Play button */}
@@ -175,43 +151,19 @@ export const MainMenu: React.FC = () => {
             <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/0 via-indigo-500/5 to-indigo-600/0 opacity-0 group-hover:opacity-100 transition-opacity" />
             <span className="text-2xl relative z-10">⚔️</span>
             <div className="text-left relative z-10">
-              <p className="text-white font-black text-base tracking-wide">Iniciar Batalha</p>
+              <p className="text-white font-black text-base tracking-wide">Start Battle</p>
               <p className="text-indigo-300/50 text-[11px] font-medium mt-0.5">
-                {diffSubtitles[aiDifficulty]} · {currentDiff.icon} {currentDiff.label}
+                Quick Match
               </p>
             </div>
           </button>
 
-          {/* Difficulty selector */}
-          <div className="grid grid-cols-4 gap-1.5 bg-black/30 border border-white/6 rounded-xl p-1.5 backdrop-blur-sm">
-            {difficulties.map(d => {
-              const active = aiDifficulty === d.id;
-              return (
-                <button
-                  key={d.id}
-                  onClick={() => setAiDifficulty(d.id)}
-                  className={`relative flex flex-col items-center justify-center gap-1 py-2.5 rounded-lg border transition-all duration-200 text-[10px] font-black uppercase tracking-tight overflow-hidden ${
-                    active
-                      ? `${diffColors[d.color]} border shadow-[0_0_12px]`
-                      : 'border-transparent text-slate-600 hover:text-slate-400 hover:bg-white/5'
-                  }`}
-                >
-                  {active && d.id === 'DEUS' && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-cyan-500/15 to-transparent animate-pulse" />
-                  )}
-                  <span className={`text-base relative z-10 ${active && d.id === 'DEUS' ? 'animate-bounce' : ''}`}>
-                    {d.icon}
-                  </span>
-                  <span className="relative z-10">{d.label}</span>
-                </button>
-              );
-            })}
-          </div>
+
 
           {/* Divider */}
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-white/6" />
-            <span className="text-white/15 text-[10px] tracking-widest uppercase">ou</span>
+            <span className="text-white/15 text-[10px] tracking-widest uppercase">or</span>
             <div className="flex-1 h-px bg-white/6" />
           </div>
 
@@ -222,8 +174,8 @@ export const MainMenu: React.FC = () => {
           >
             <span className="text-xl opacity-60 group-hover:opacity-100 transition-opacity">🛠️</span>
             <div className="text-left">
-              <p className="text-slate-300 group-hover:text-white font-bold text-sm transition-colors">Simulador de Guerra</p>
-              <p className="text-slate-600 text-[11px] group-hover:text-slate-500 transition-colors">Campo de adestramento & provas</p>
+              <p className="text-slate-300 group-hover:text-white font-bold text-sm transition-colors">War Simulator</p>
+              <p className="text-slate-600 text-[11px] group-hover:text-slate-500 transition-colors">Training ground & trials</p>
             </div>
           </button>
 
@@ -234,8 +186,8 @@ export const MainMenu: React.FC = () => {
           >
             <span className="text-xl opacity-70 group-hover:opacity-100 transition-opacity">👥</span>
             <div className="text-left">
-              <p className="text-emerald-300 group-hover:text-emerald-200 font-bold text-sm transition-colors">Jogar contra Amigo</p>
-              <p className="text-emerald-800 text-[11px] group-hover:text-emerald-600 transition-colors">Sala privada · PvP em tempo real</p>
+              <p className="text-emerald-300 group-hover:text-emerald-200 font-bold text-sm transition-colors">Play vs Friend</p>
+              <p className="text-emerald-800 text-[11px] group-hover:text-emerald-600 transition-colors">Private room · Real-time PvP</p>
             </div>
           </button>
 
@@ -246,7 +198,7 @@ export const MainMenu: React.FC = () => {
               className="text-[10px] text-slate-600 hover:text-slate-400 transition-colors flex items-center gap-1.5"
             >
               <span>📩</span>
-              <span className="tracking-widest uppercase">Enviar Feedback</span>
+              <span className="tracking-widest uppercase">Send Feedback</span>
             </button>
           </div>
         </motion.div>

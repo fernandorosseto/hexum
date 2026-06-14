@@ -92,11 +92,9 @@ function calculateSideValue(state: GameState, playerId: string, opponentId: stri
   const oppUnits = boardUnits.filter(u => u.playerId === opponentId);
   const oppKing = oppUnits.find(u => u.unitClass === 'Rei');
   const myKing = myUnits.find(u => u.unitClass === 'Rei');
-  const isDeus = state.aiDifficulty === 'DEUS';
-
-  // 1. Economia Ágil: Penalizamos mana sobrando para incentivar o uso total.
-  // Gasto total de mana é a estratégia vitoriosa.
-  value -= player.mana * 20; 
+  // 1. Economia Ágil: Penalizamos mana sobrando FORTEMENTE para incentivar o uso total.
+  // Jogar cartas é a prioridade.
+  value -= player.mana * 100; 
   value += player.maxMana * 100 + player.hand.length * 10;
 
   // 2. Unidades e Táticas Berserker
@@ -111,7 +109,7 @@ function calculateSideValue(state: GameState, playerId: string, opponentId: stri
     const hpFactor = unit.hp / unit.maxHp;
     value += baseVal * (0.3 + 0.7 * hpFactor);
 
-    if (isDeus && oppKing) {
+    if (oppKing) {
         const dKing = getHexDistance(unit.position, oppKing.position);
         if (unit.unitClass === 'Arqueiro' || unit.unitClass === 'Alquimista') {
             if (dKing === 3) value += 1500;
@@ -138,7 +136,7 @@ export function getBestAction(state: GameState, playerId: string): AIAction | nu
   if (startActions.length === 0) return null;
 
   const sorted = [...startActions].sort((a, b) => scoreAction(state, b) - scoreAction(state, a));
-  let depthLimit = state.aiDifficulty === 'DEUS' ? 7 : (state.aiDifficulty === 'GRANDMASTER' ? 3 : 1);
+  let depthLimit = 3; // Profundidade fixa equilibrada (Força + Performance)
   const oppId = playerId === 'p1' ? 'p2' : 'p1';
 
   let bestAction: AIAction | null = sorted[0];
@@ -193,8 +191,8 @@ function negamax(state: GameState, depth: number, alpha: number, beta: number, p
     const actions = getPossibleActions(state, pId);
     if (actions.length === 0) return evaluateState(state, pId);
 
-    // DEUS explora mais possibilidades (80) que o normal (40)
-    const breadth = state.aiDifficulty === 'DEUS' ? 80 : 40;
+    // Explora as 50 melhores jogadas possíveis
+    const breadth = 50;
     const sorted = actions.sort((a, b) => scoreAction(state, b) - scoreAction(state, a)).slice(0, breadth);
     let best = -Infinity;
 
@@ -265,6 +263,8 @@ export function getPossibleActions(state: GameState, playerId: string): AIAction
   const myUnits = boardUnits.filter(u => u.playerId === playerId);
   const oppUnits = boardUnits.filter(u => u.playerId !== playerId);
 
+  const oppKing = oppUnits.find(u => u.unitClass === 'Rei');
+
   for (const unit of myUnits) {
     if (unit.summoningSickness) continue;
     if (unit.canAttack) {
@@ -292,8 +292,12 @@ export function getPossibleActions(state: GameState, playerId: string): AIAction
     if (player.mana < cost) continue;
 
     if (cardId.startsWith('unit_')) {
-      const spawnPoints = getValidSpawnCoordinates(state, playerId, cardId);
-      for (const p of spawnPoints.slice(0, 8)) actions.push({ type: 'PLAY_CARD', cardId, target: p });
+      let spawnPoints = getValidSpawnCoordinates(state, playerId, cardId);
+      if (oppKing) {
+         // Sort spawn points closer to enemy king
+         spawnPoints.sort((a, b) => getHexDistance(a, oppKing.position) - getHexDistance(b, oppKing.position));
+      }
+      for (const p of spawnPoints.slice(0, 12)) actions.push({ type: 'PLAY_CARD', cardId, target: p });
     } else if (cardId.startsWith('spl_')) {
       const harmful = ['spl_raio', 'spl_transfusao', 'spl_meteoro', 'spl_raizes'];
       const helpful = ['spl_aurarunica', 'spl_nevoa', 'spl_passos', 'spl_bencao', 'spl_furia'];
@@ -333,9 +337,13 @@ function scoreAction(state: GameState, action: AIAction): number {
         return 5000 + (target?.attack || 0) * 100;
     }
     if (action.type === 'PLAY_CARD') {
-        if (action.cardId.startsWith('spl_meteoro')) return 8000;
-        if (action.cardId.startsWith('spl_raio')) return 7000;
-        return 4000;
+        const cost = getCardCost(action.cardId);
+        // Priorizar muito o uso de cartas!
+        if (action.cardId.startsWith('unit_')) return 10000 + cost * 500;
+        if (action.cardId.startsWith('spl_meteoro')) return 12000;
+        if (action.cardId.startsWith('spl_raio')) return 11000;
+        if (action.cardId.startsWith('art_')) return 9000;
+        return 8000;
     }
     return 100;
 }

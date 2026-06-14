@@ -30,7 +30,7 @@ const ArsenalBoxP1: React.FC = () => {
       >
         <div className="flex items-center gap-2">
           <div className={`w-1.5 h-1.5 rounded-full ${selectedPlayer === 'p1' ? 'bg-blue-400' : 'bg-red-400'}`} />
-          <h2 className="text-white/90 font-black tracking-widest text-[11px] uppercase">Simulador de Guerra</h2>
+          <h2 className="text-white/90 font-black tracking-widest text-[11px] uppercase">War Simulator</h2>
         </div>
         <div className="flex gap-1">
            <button onClick={() => setSelectedPlayer('p1')} className={`px-2 py-1 rounded text-[7px] font-black uppercase tracking-tighter transition-all ${selectedPlayer === 'p1' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-white/5 text-white/30 hover:bg-white/10'}`}>P1</button>
@@ -40,8 +40,8 @@ const ArsenalBoxP1: React.FC = () => {
 
       {/* Tabs */}
       <div className="flex border-b border-white/5 shrink-0">
-        <button onClick={() => setActiveTab('unidades')} className={`flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === 'unidades' ? 'bg-white/10 text-white border-b-2 border-blue-500' : 'text-white/40 hover:bg-white/5'}`}>Unidades</button>
-        <button onClick={() => setActiveTab('cartas')} className={`flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === 'cartas' ? 'bg-white/10 text-white border-b-2 border-blue-500' : 'text-white/40 hover:bg-white/5'}`}>Cartas</button>
+        <button onClick={() => setActiveTab('unidades')} className={`flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === 'unidades' ? 'bg-white/10 text-white border-b-2 border-blue-500' : 'text-white/40 hover:bg-white/5'}`}>Units</button>
+        <button onClick={() => setActiveTab('cartas')} className={`flex-1 py-3 text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === 'cartas' ? 'bg-white/10 text-white border-b-2 border-blue-500' : 'text-white/40 hover:bg-white/5'}`}>Cards</button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
@@ -59,18 +59,18 @@ const ArsenalBoxP1: React.FC = () => {
                    <div key={spell.id} className="flex gap-1">
                      <button disabled={!selectedHex} onClick={() => selectedHex && sandboxPlayCard(spell.id, selectedHex, selectedPlayer)} className={`flex-1 p-2 bg-white/5 disabled:opacity-20 border border-white/5 rounded-lg text-left text-[10px] text-white/70 hover:text-white font-medium flex justify-between items-center group ${selectedPlayer === 'p2' ? 'hover:bg-red-600/20' : 'hover:bg-blue-600/20'}`}>
                        <span>{spell.name}</span>
-                       <span className={`text-[7px] px-1 py-0.5 rounded uppercase font-black ${selectedPlayer === 'p1' ? 'bg-purple-500/20 text-purple-300' : 'bg-red-500/20 text-red-300'}`}>Lançar</span>
+                       <span className={`text-[7px] px-1 py-0.5 rounded uppercase font-black ${selectedPlayer === 'p1' ? 'bg-purple-500/20 text-purple-300' : 'bg-red-500/20 text-red-300'}`}>Cast</span>
                      </button>
-                     <button onClick={() => addCardToHand(spell.id)} className="px-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg text-white/30 hover:text-white transition-colors" title="Para a Mão">🎴</button>
+                     <button onClick={() => addCardToHand(spell.id)} className="px-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg text-white/30 hover:text-white transition-colors" title="To Hand">🎴</button>
                    </div>
                  ))}
                  {ARTIFACTS.map(art => (
                    <div key={art.id} className="flex gap-1">
                      <button disabled={!selectedHex} onClick={() => selectedHex && sandboxPlayCard(art.id, selectedHex, selectedPlayer)} className={`flex-1 p-2 bg-white/5 disabled:opacity-20 border border-white/5 rounded-lg text-left text-[10px] text-white/70 hover:text-white font-medium flex justify-between items-center group ${selectedPlayer === 'p2' ? 'hover:bg-red-600/20' : 'hover:bg-blue-600/20'}`}>
                        <span>{art.name}</span>
-                       <span className={`text-[7px] px-1 py-0.5 rounded uppercase font-black ${selectedPlayer === 'p1' ? 'bg-blue-500/20 text-blue-300' : 'bg-red-500/20 text-red-300'}`}>Equipar</span>
+                       <span className={`text-[7px] px-1 py-0.5 rounded uppercase font-black ${selectedPlayer === 'p1' ? 'bg-blue-500/20 text-blue-300' : 'bg-red-500/20 text-red-300'}`}>Equip</span>
                      </button>
-                     <button onClick={() => addCardToHand(art.id)} className="px-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg text-white/30 hover:text-white transition-colors" title="Para a Mão">🎴</button>
+                     <button onClick={() => addCardToHand(art.id)} className="px-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg text-white/30 hover:text-white transition-colors" title="To Hand">🎴</button>
                    </div>
                  ))}
              </div>
@@ -84,20 +84,20 @@ const ArsenalBoxP1: React.FC = () => {
           onClick={triggerEndTurn} 
           className="flex-1 py-2 bg-blue-950/40 hover:bg-blue-900/60 border border-blue-500/30 text-blue-400 text-[8px] font-black uppercase tracking-[0.2em] rounded-lg transition-all active:scale-95"
         >
-          Finalizar Turno
+          End Turn
         </button>
         <button 
           onClick={purifyArena} 
           className="flex-[0.6] py-2 bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-500 text-[8px] font-black uppercase tracking-[0.2em] rounded-lg transition-all active:scale-95 shadow-inner"
         >
-          Purificar
+          Purify
         </button>
         {import.meta.env.DEV && (
           <button 
             onClick={toggleAutoPlay} 
             className={`flex-[0.8] py-2 border text-[8px] font-black uppercase tracking-[0.1em] rounded-lg transition-all active:scale-95 flex items-center justify-center gap-1 ${isAutoPlay ? 'bg-amber-500/80 border-amber-400 text-slate-900 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : 'bg-slate-800/40 hover:bg-slate-700/60 border-white/10 text-white/60'}`}
           >
-            {isAutoPlay ? '🛑 Parar' : '🤖 Simular'}
+            {isAutoPlay ? '🛑 Stop' : '🤖 Simulate'}
           </button>
         )}
         {/* Resize Handle */}

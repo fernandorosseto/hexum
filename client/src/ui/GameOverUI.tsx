@@ -44,7 +44,7 @@ export const GameOverUI: React.FC = () => {
             hover:scale-105 active:scale-95 transition-all
           `}
         >
-           Ver Resultado {isVictory ? '👑' : '💀'}
+           View Result {isVictory ? '👑' : '💀'}
         </button>
       </div>
     );
@@ -74,10 +74,10 @@ export const GameOverUI: React.FC = () => {
             text-7xl font-black uppercase tracking-tightest drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)]
             ${isVictory ? 'text-emerald-400' : 'text-[#b794f4]'}
           `}>
-            {isVictory ? 'Vitória' : 'Derrota'}
+            {isVictory ? 'Victory' : 'Defeat'}
           </h1>
           <p className="text-white/50 font-bold tracking-[0.4em] uppercase text-[9px] drop-shadow-md">
-            {isVictory ? 'O Rei Inimigo foi derrubado' : 'Seu Rei caiu em combate'}
+            {isVictory ? 'The Enemy King was defeated' : 'Your King fell in combat'}
           </p>
         </div>
 
@@ -89,14 +89,14 @@ export const GameOverUI: React.FC = () => {
             }}
             className="w-full py-4 bg-white text-black font-black uppercase tracking-widest text-sm rounded-xl hover:bg-slate-100 transition-all active:scale-95 shadow-2xl"
           >
-            Nova Batalha
+            New Battle
           </button>
 
           <button
             onClick={() => setIsMinimized(true)}
             className="w-full py-2.5 bg-white/5 text-white/70 font-bold uppercase tracking-[0.2em] text-[10px] rounded-lg border border-white/5 hover:bg-white/10 transition-all"
           >
-            Revisar Tabuleiro
+            Review Board
           </button>
           
           <button
@@ -106,13 +106,13 @@ export const GameOverUI: React.FC = () => {
             }}
             className="w-full py-4 bg-[#0a0f1a]/80 text-white font-black uppercase tracking-widest text-sm rounded-xl border border-white/10 hover:bg-[#1a2233] transition-all active:scale-95"
           >
-            Sair para o Menu
+            Back to Menu
           </button>
         </div>
 
         {/* Footer info */}
         <p className="text-[10px] text-white/20 uppercase font-bold tracking-[0.1em] animate-pulse">
-          Retorno automático ao menu em 60s
+          Auto return to menu in 60s
         </p>
 
       </div>

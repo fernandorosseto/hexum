@@ -121,7 +121,6 @@ export function createInitialState(): GameState {
     turnNumber: 1,
     currentPhase: 'MAIN_PHASE',
     currentTurnPlayerId: p1Id,
-    aiDifficulty: 'BEGINNER',
     players: {
       [p1Id]: createInitialPlayer(p1Id),
       [p2Id]: createInitialPlayer(p2Id)
@@ -232,7 +231,6 @@ export function cloneGameState(state: GameState): GameState {
     turnNumber: state.turnNumber,
     currentPhase: state.currentPhase,
     currentTurnPlayerId: state.currentTurnPlayerId,
-    aiDifficulty: state.aiDifficulty,
     sandboxMode: state.sandboxMode,
     winner: state.winner,
     players: newPlayers,
@@ -330,24 +328,24 @@ export function moveTo(state: GameState, unitId: string, targetPosition: HexCoor
   const newState = cloneGameState(state);
   const unit = newState.boardUnits[unitId];
 
-  if (!unit || unit.playerId !== newState.currentTurnPlayerId) throw new Error("Unidade inválida ou não é seu turno.");
-  if (unit.summoningSickness) throw new Error("A unidade ainda está com enjoo de invocação.");
-  if (!unit.canMove) throw new Error("Esta unidade já se moveu neste turno.");
-  if (!isInsideBoard(targetPosition)) throw new Error("Destino fora dos limites do tabuleiro!");
+  if (!unit || unit.playerId !== newState.currentTurnPlayerId) throw new Error("Invalid unit or not your turn.");
+  if (unit.summoningSickness) throw new Error("Unit has summoning sickness.");
+  if (!unit.canMove) throw new Error("This unit already moved this turn.");
+  if (!isInsideBoard(targetPosition)) throw new Error("Destination out of board bounds!");
 
   if (useSpecial) {
-    if (unit.abilityCooldown > 0) throw new Error("Habilidade em recarga (Cooldown).");
-    if (unit.buffs.some(b => b.type === 'rooted')) throw new Error("Unidade enraizada: Não pode usar habilidades de impacto.");
+    if (unit.abilityCooldown > 0) throw new Error("Ability on cooldown.");
+    if (unit.buffs.some(b => b.type === 'rooted')) throw new Error("Rooted unit: Cannot use impact abilities.");
     
     const cost = unit.unitClass === 'Cavaleiro' ? 3 : (unit.unitClass === 'Assassino' ? 3 : 0);
     const player = newState.players[unit.playerId];
-    if (player.mana < cost) throw new Error("Mana insuficiente para habilidade especial.");
+    if (player.mana < cost) throw new Error("Not enough mana for special ability.");
     player.mana -= cost;
     unit.abilityCooldown = 2; // Inicia cooldown (pulará o próximo turno do dono)
   }
 
-  if (unit.buffs.some(b => b.type === 'stun')) throw new Error("Unidade atordoada!");
-  if (unit.buffs.some(b => b.type === 'rooted')) throw new Error("Unidade enraizada!");
+  if (unit.buffs.some(b => b.type === 'stun')) throw new Error("Unit is stunned!");
+  if (unit.buffs.some(b => b.type === 'rooted')) throw new Error("Unit is rooted!");
 
   const dist = getHexDistance(unit.position, targetPosition);
   
@@ -367,7 +365,7 @@ export function moveTo(state: GameState, unitId: string, targetPosition: HexCoor
   const collision = Object.values(newState.boardUnits).some(u =>
     u.position.q === targetPosition.q && u.position.r === targetPosition.r && u.position.s === targetPosition.s
   );
-  if (collision) throw new Error("Hexágono ocupado!");
+  if (collision) throw new Error("Hexagon occupied!");
 
   unit.position = targetPosition;
   unit.canMove = false;
@@ -426,29 +424,28 @@ export function attack(state: GameState, attackerId: string, targetId: string, u
   const attacker = newState.boardUnits[attackerId];
   const target = newState.boardUnits[targetId];
 
-  if (!attacker || !target) throw new Error("Ação de ataque inválida.");
-  if (attacker.playerId !== newState.currentTurnPlayerId) throw new Error("Não é seu turno.");
-  if (attacker.summoningSickness) throw new Error("A unidade ainda está com enjoo de invocação.");
-  if (!attacker.canAttack) throw new Error("Esta unidade já atacou.");
+  if (!attacker || !target) throw new Error("Invalid attack action.");
+  if (attacker.playerId !== newState.currentTurnPlayerId) throw new Error("Not your turn.");
+  if (attacker.summoningSickness) throw new Error("Unit has summoning sickness.");
+  if (!attacker.canAttack) throw new Error("This unit already attacked.");
 
   if (useSpecial) {
-    if (attacker.abilityCooldown > 0) throw new Error("Habilidade em recarga (Cooldown).");
-    if (attacker.buffs.some(b => b.type === 'rooted')) throw new Error("Unidade enraizada: Não pode usar habilidades de impacto.");
+    if (attacker.abilityCooldown > 0) throw new Error("Ability on cooldown.");
+    if (attacker.buffs.some(b => b.type === 'rooted')) throw new Error("Rooted unit: Cannot use impact abilities.");
 
     const cost = attacker.unitClass === 'Cavaleiro' ? 3 : (attacker.unitClass === 'Assassino' ? 3 : 0);
     const player = newState.players[attacker.playerId];
-    if (player.mana < cost) throw new Error("Mana insuficiente para habilidade especial.");
+    if (player.mana < cost) throw new Error("Not enough mana for special ability.");
     player.mana -= cost;
     attacker.abilityCooldown = 2;
   }
 
-  if (attacker.buffs.some(b => b.type === 'stun')) throw new Error("Unidade atordoada!");
+  if (attacker.buffs.some(b => b.type === 'stun')) throw new Error("Unit is stunned!");
 
   const dist = getHexDistance(attacker.position, target.position);
 
-  // Buff de imunidade a ataques à distância
   if (target.buffs.some(b => b.type === 'immune_ranged') && dist > 1) {
-    throw new Error("Alvo imune a ataques de longa distância (Névoa).");
+    throw new Error("Target immune to ranged attacks (Fog).");
   }
 
   // Bônus de Alcance (Artefatos)
@@ -465,7 +462,7 @@ export function attack(state: GameState, attackerId: string, targetId: string, u
   if (fearInfo.inRange && dist === 1) {
     if (Math.random() < fearInfo.chance) {
       if (!newState.combatLogs) newState.combatLogs = [];
-      newState.combatLogs.push(`😱 ${attacker.unitClass} sucumbiu ao Medo do Rei inimigo e hesitou no ataque!`);
+      newState.combatLogs.push(`😱 ${attacker.unitClass} succumbed to the enemy King's Fear and hesitated to attack!`);
       attacker.canAttack = false;
       return newState;
     }
@@ -491,7 +488,7 @@ export function playCard(state: GameState, playerId: string, cardId: string, tar
   const newState = cloneGameState(state);
   const player = newState.players[playerId];
 
-  if (!player.hand.includes(cardId)) throw new Error("Carta não está na mão.");
+  if (!player.hand.includes(cardId)) throw new Error("Card not in hand.");
 
   let card: Card | UnitCard | undefined;
   if (cardId.startsWith('unit_') || cardId.startsWith('hero_')) {
@@ -499,8 +496,8 @@ export function playCard(state: GameState, playerId: string, cardId: string, tar
   } else {
     card = ARTIFACTS.find(a => a.id === cardId) || SPELLS.find(s => s.id === cardId);
   }
-  if (!card) throw new Error("Carta inválida.");
-  if (player.mana < card.manaCost) throw new Error("Mana insuficiente.");
+  if (!card) throw new Error("Invalid card.");
+  if (player.mana < card.manaCost) throw new Error("Not enough mana.");
 
   // ── Unidade ──
   if (card.type === 'Unit') {
@@ -509,13 +506,13 @@ export function playCard(state: GameState, playerId: string, cardId: string, tar
     const distToKing = myKing ? getHexDistance(myKing.position, targetHex) : 999;
     const isAdjacentToKing = distToKing === 1;
 
-    if (!isInsideBoard(targetHex)) throw new Error("Não pode invocar fora do tabuleiro!");
-    if (!newState.sandboxMode && !isAdjacentToKing) throw new Error("Posicionamento inválido! As unidades devem ser invocadas em uma casa adjacente ao seu Rei.");
+    if (!isInsideBoard(targetHex)) throw new Error("Cannot summon outside the board!");
+    if (!newState.sandboxMode && !isAdjacentToKing) throw new Error("Invalid placement! Units must be summoned on an adjacent hex to your King.");
 
     const collision = Object.values(newState.boardUnits).find(u =>
       u.position.q === targetHex.q && u.position.r === targetHex.r && u.position.s === targetHex.s
     );
-    if (collision) throw new Error("Hexágono já ocupado.");
+    if (collision) throw new Error("Hexagon already occupied.");
 
     const newUnitId = `u_${Math.random().toString(36).substr(2, 5)}_${unitCard.unitClass.toLowerCase()}`;
     newState.boardUnits[newUnitId] = {
@@ -532,11 +529,11 @@ export function playCard(state: GameState, playerId: string, cardId: string, tar
     const isValidTarget = validCoords.some(c => c.q === targetHex.q && c.r === targetHex.r);
     
     if (!isValidTarget) {
-      throw new Error("Alvo inválido para este feitiço.");
+      throw new Error("Invalid target for this spell.");
     }
 
     const handler = SPELL_REGISTRY[card.id];
-    if (!handler) throw new Error(`Feitiço desconhecido: ${card.id}`);
+    if (!handler) throw new Error(`Unknown spell: ${card.id}`);
     handler.execute(newState, playerId, targetHex);
 
     // Cleanup de mortes após feitiço
@@ -555,8 +552,8 @@ export function playCard(state: GameState, playerId: string, cardId: string, tar
     const targetUnit = Object.values(newState.boardUnits).find(u =>
       u.position.q === targetHex.q && u.position.r === targetHex.r && u.position.s === targetHex.s
     );
-    if (!targetUnit) throw new Error("Selecione uma unidade para equipar.");
-    if (!newState.sandboxMode && targetUnit.playerId !== playerId) throw new Error("Deve equipar em uma unidade aliada.");
+    if (!targetUnit) throw new Error("Select a unit to equip.");
+    if (!newState.sandboxMode && targetUnit.playerId !== playerId) throw new Error("Must equip on an allied unit.");
 
     if (!targetUnit.equippedArtifacts) targetUnit.equippedArtifacts = [];
     targetUnit.equippedArtifacts.push(card.id);
@@ -582,13 +579,13 @@ export function heal(state: GameState, healerId: string, targetId: string): Game
   const healer = newState.boardUnits[healerId];
   const target = newState.boardUnits[targetId];
 
-  if (!healer.canAttack) throw new Error("Esta unidade já agiu neste turno.");
+  if (!healer.canAttack) throw new Error("This unit already acted this turn.");
 
   let healAmount = 2;
   if ((healer.equippedArtifacts || []).includes('art_tomo')) healAmount += 1;
 
   let rangeBonus = (healer.equippedArtifacts || []).includes('art_anel') ? 1 : 0;
-  if (getHexDistance(healer.position, target.position) > 1 + rangeBonus) throw new Error("Alvo fora de alcance para curar.");
+  if (getHexDistance(healer.position, target.position) > 1 + rangeBonus) throw new Error("Target out of range to heal.");
 
   target.hp = Math.min(target.maxHp, target.hp + healAmount);
   if (checkEffectTrigger(healer)) target.buffs.push({ type: 'shield', duration: 1 });
@@ -602,18 +599,18 @@ export function convert(state: GameState, healerId: string, targetId: string): G
   const healer = newState.boardUnits[healerId];
   const target = newState.boardUnits[targetId];
 
-  if (!healer || !target) throw new Error("Unidades inválidas.");
-  if (healer.unitClass !== 'Clerigo') throw new Error("Apenas Clérigos podem converter.");
-  if (healer.playerId !== newState.currentTurnPlayerId) throw new Error("Não é seu turno.");
-  if (healer.summoningSickness) throw new Error("A unidade ainda está com enjoo de invocação.");
-  if (!healer.canAttack) throw new Error("Esta unidade já agiu.");
-  if (target.playerId === healer.playerId) throw new Error("Não pode converter aliados.");
-  if (target.unitClass === 'Rei') throw new Error("O Rei não pode ser convertido.");
-  if ((target.equippedArtifacts || []).includes('art_corcel') && target.unitClass === 'Cavaleiro') throw new Error("Cavaleiro com Corcel é imune a conversão.");
+  if (!healer || !target) throw new Error("Invalid units.");
+  if (healer.unitClass !== 'Clerigo') throw new Error("Only Clerics can convert.");
+  if (healer.playerId !== newState.currentTurnPlayerId) throw new Error("Not your turn.");
+  if (healer.summoningSickness) throw new Error("Unit has summoning sickness.");
+  if (!healer.canAttack) throw new Error("This unit already acted.");
+  if (target.playerId === healer.playerId) throw new Error("Cannot convert allies.");
+  if (target.unitClass === 'Rei') throw new Error("The King cannot be converted.");
+  if ((target.equippedArtifacts || []).includes('art_corcel') && target.unitClass === 'Cavaleiro') throw new Error("Knight with Steed is immune to conversion.");
 
   let rangeBonus = (healer.equippedArtifacts || []).includes('art_anel') ? 1 : 0;
   const dist = getHexDistance(healer.position, target.position);
-  if (dist > 1 + rangeBonus) throw new Error("Conversão: Alvo deve estar no alcance.");
+  if (dist > 1 + rangeBonus) throw new Error("Conversion: Target must be in range.");
 
   const successChance = (1 + healer.roundsInField) / 100;
   if (Math.random() < successChance) {
@@ -632,9 +629,9 @@ export function offerCard(state: GameState, playerId: string, cardId: string): G
   const newState = cloneGameState(state);
   const player = newState.players[playerId];
 
-  if (playerId !== newState.currentTurnPlayerId) throw new Error("Não é seu turno.");
-  if (!player.canOfferCard) throw new Error("Você já fez uma oferenda este turno.");
-  if (!player.hand.includes(cardId)) throw new Error("Carta não está na mão.");
+  if (playerId !== newState.currentTurnPlayerId) throw new Error("Not your turn.");
+  if (!player.canOfferCard) throw new Error("You already made an offering this turn.");
+  if (!player.hand.includes(cardId)) throw new Error("Card not in hand.");
 
   player.hand = player.hand.filter(id => id !== cardId);
   player.maxMana = Math.min(player.maxMana + 1, 6);

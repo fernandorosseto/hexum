@@ -19,7 +19,7 @@ export interface SpellHandler {
 const AuraRunica: SpellHandler = {
   execute(state, playerId, targetHex) {
     const targetUnit = findUnitAtHex(state, targetHex);
-    if (!targetUnit || targetUnit.playerId !== playerId) throw new Error("Selecione um aliado para Aura Rúnica.");
+    if (!targetUnit || targetUnit.playerId !== playerId) throw new Error("Select an ally for Runic Aura.");
     targetUnit.maxHp += 2;
     targetUnit.hp += 2;
     targetUnit.buffs.push({ type: 'shield', duration: 99 });
@@ -29,12 +29,12 @@ const AuraRunica: SpellHandler = {
 const CadeiaDeRelampagos: SpellHandler = {
   execute(state, playerId, targetHex) {
     const targetUnit = findUnitAtHex(state, targetHex);
-    if (!targetUnit) throw new Error("Alvo inválido para Cadeia de Relâmpagos.");
+    if (!targetUnit) throw new Error("Invalid target for Chain Lightning.");
 
     const myKing = Object.values(state.boardUnits).find(u => u.unitClass === 'Rei' && u.playerId === playerId);
     if (myKing && !state.sandboxMode) {
       const dist = getHexDistance(myKing.position, targetHex);
-      if (dist > 5) throw new Error("Alvo fora de alcance (máximo 5 hexágonos do Rei).");
+      if (dist > 5) throw new Error("Target out of range (max 5 hexes from the King).");
     }
 
     applyFinalDamage(targetUnit, 2, state);
@@ -62,14 +62,14 @@ const CadeiaDeRelampagos: SpellHandler = {
 const TransfusaoSombria: SpellHandler = {
   execute(state, playerId, targetHex) {
     const targetUnit = findUnitAtHex(state, targetHex);
-    if (!targetUnit) throw new Error("Alvo inválido para Transfusão Sombria (selecione quem perderá HP).");
+    if (!targetUnit) throw new Error("Invalid target for Shadow Transfusion (select who will lose HP).");
 
     const myKing = Object.values(state.boardUnits).find(u => u.unitClass === 'Rei' && u.playerId === playerId);
-    if (!myKing) throw new Error("O Rei deve estar no tabuleiro para usar Transfusão.");
+    if (!myKing) throw new Error("The King must be on the board to use Transfusion.");
 
     if (!state.sandboxMode) {
       const dist = getHexDistance(myKing.position, targetHex);
-      if (dist > 1) throw new Error("O Rei deve estar adjacente ao alvo para realizar a transfusão.");
+      if (dist > 1) throw new Error("The King must be adjacent to the target to perform the transfusion.");
     }
 
     applyFinalDamage(targetUnit, 2, state);
@@ -80,7 +80,7 @@ const TransfusaoSombria: SpellHandler = {
 const NevoaEspessa: SpellHandler = {
   execute(state, playerId, targetHex) {
     const targetUnit = findUnitAtHex(state, targetHex);
-    if (!targetUnit || targetUnit.playerId !== playerId) throw new Error("Selecione um aliado para proteger com Névoa.");
+    if (!targetUnit || targetUnit.playerId !== playerId) throw new Error("Select an ally to protect with Fog.");
     targetUnit.buffs.push({ type: 'immune_ranged', duration: 2 });
   }
 };
@@ -104,14 +104,14 @@ const MuralhaDeGelo: SpellHandler = {
         wallsSpawned++;
       }
     }
-    if (wallsSpawned === 0) throw new Error("A Muralha requer espaços vazios adjacentes.");
+    if (wallsSpawned === 0) throw new Error("The Wall requires adjacent empty spaces.");
   }
 };
 
 const PassosDeVento: SpellHandler = {
   execute(state, playerId, targetHex) {
     const targetUnit = findUnitAtHex(state, targetHex);
-    if (!targetUnit || targetUnit.playerId !== playerId) throw new Error("Selecione um aliado para Passos de Vento.");
+    if (!targetUnit || targetUnit.playerId !== playerId) throw new Error("Select an ally for Wind Steps.");
     targetUnit.canMove = true;
     targetUnit.canAttack = true;
   }
@@ -139,7 +139,7 @@ const ChuvaDeMeteoros: SpellHandler = {
 const BencaoDivina: SpellHandler = {
   execute(state, playerId, targetHex) {
     const targetUnit = findUnitAtHex(state, targetHex);
-    if (!targetUnit || targetUnit.playerId !== playerId) throw new Error("Selecione um aliado para Bênção Divina.");
+    if (!targetUnit || targetUnit.playerId !== playerId) throw new Error("Select an ally for Divine Blessing.");
     targetUnit.hp = Math.min(targetUnit.maxHp, targetUnit.hp + 3);
     targetUnit.buffs = targetUnit.buffs.filter(b => b.type !== 'poison' && b.type !== 'burn' && b.type !== 'stun' && b.type !== 'bleed');
   }
@@ -148,7 +148,7 @@ const BencaoDivina: SpellHandler = {
 const RaizesDaTerra: SpellHandler = {
   execute(state, playerId, targetHex) {
     const targetUnit = findUnitAtHex(state, targetHex);
-    if (!targetUnit || targetUnit.playerId === playerId) throw new Error("Selecione um inimigo para enraizar.");
+    if (!targetUnit || targetUnit.playerId === playerId) throw new Error("Select an enemy to root.");
     targetUnit.buffs.push({ type: 'rooted', duration: 1 });
   }
 };
@@ -156,7 +156,7 @@ const RaizesDaTerra: SpellHandler = {
 const FuriaDeBatalha: SpellHandler = {
   execute(state, playerId, targetHex) {
     const targetUnit = findUnitAtHex(state, targetHex);
-    if (!targetUnit || targetUnit.playerId !== playerId) throw new Error("Selecione um aliado para Fúria.");
+    if (!targetUnit || targetUnit.playerId !== playerId) throw new Error("Select an ally for Fury.");
     targetUnit.attack += 2;
     targetUnit.buffs.push({ type: 'fury', duration: 1, value: 2 });
   }
