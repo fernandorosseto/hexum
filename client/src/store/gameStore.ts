@@ -102,6 +102,8 @@ interface GameStore extends GameState {
   stopTimer: () => void;
   decrementTimer: () => void;
   triggerRemoteVfx: (vfx: NonNullable<GameState['lastActionVfx']>) => void;
+  language: 'en' | 'pt';
+  setLanguage: (lang: 'en' | 'pt') => void;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -109,6 +111,8 @@ export const useGameStore = create<GameStore>()(
     persist(
       (set, get) => ({
       ...createInitialState(),
+      language: (typeof navigator !== 'undefined' && navigator.language.startsWith('pt')) ? 'pt' : 'en',
+      setLanguage: (lang: 'en' | 'pt') => set({ language: lang }),
       currentView: 'MENU',
       // PvP state
       lobbyId: null,
@@ -123,8 +127,9 @@ export const useGameStore = create<GameStore>()(
       setMatchStarted: (started) => set({ isMatchStarted: started }),
       clearLobbySession: () => {
         const initialState = createInitialState();
-        set({ 
+        set(state => ({ 
           ...initialState,
+          language: state.language,
           lobbyId: null, 
           lobbyCode: null,
           p1Name: 'Jogador 1',
@@ -135,13 +140,14 @@ export const useGameStore = create<GameStore>()(
           logs: [],
           selectedHex: null,
           selectedCard: null
-        });
+        }));
       },
       setCurrentView: (view) => {
         if (view === 'SANDBOX') {
           const initialState = createInitialState();
-          set({
+          set(state => ({
             ...initialState,
+            language: state.language,
             sandboxMode: true,
             isVsAI: false,
             isAutoPlay: false,
@@ -155,18 +161,19 @@ export const useGameStore = create<GameStore>()(
             selectedHex: null,
             selectedCard: null,
             logs: []
-          });
+          }));
         } else if (view === 'PLAY') {
           const initialState = createInitialState();
-          set({
+          set(state => ({
             ...initialState,
+            language: state.language,
             currentView: 'PLAY',
             sandboxMode: false,
             isVsAI: true,
             isAutoPlay: false,
             selectedHex: null,
             selectedCard: null
-          });
+          }));
         } else if (view === 'PVP') {
           // Modo PvP: não reseta o estado — o lobby já inicializou via createInitialState
           set({ currentView: 'PVP', sandboxMode: false, isVsAI: false, isAutoPlay: false });
@@ -410,8 +417,9 @@ export const useGameStore = create<GameStore>()(
       
       resetGame: () => {
         const initialState = createInitialState();
-        set({
+        set(state => ({
           ...initialState,
+          language: state.language,
           selectedHex: null,
           selectedCard: null,
           targetHex: null,
@@ -419,7 +427,7 @@ export const useGameStore = create<GameStore>()(
           animatingUnits: {},
           isAutoPlay: false,
           isAiThinking: false
-        });
+        }));
       }
     }),
     {

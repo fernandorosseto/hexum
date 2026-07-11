@@ -4,7 +4,7 @@ import { getUnitCard } from 'shared';
 export const createSandboxActions = (set: any, get: any) => ({
   spawnUnit: (unitName: string, hex: HexCoordinates, playerId: string) => {
     let card;
-    try { card = getUnitCard(unitName); } catch(e){}
+    try { card = getUnitCard(unitName, get().language); } catch(e){}
     if (!card) return;
 
     const unitId = `u_sbx_${Math.random().toString(36).substr(2, 5)}_${card.unitClass.toLowerCase()}`;
@@ -28,7 +28,11 @@ export const createSandboxActions = (set: any, get: any) => ({
     set((state: any) => ({
       boardUnits: { ...state.boardUnits, [unitId]: newUnit }
     }));
-    get().addLog(`[Sandbox] Spawned ${unitName} at (${hex.q}, ${hex.r}) for ${playerId}`, 'system');
+    const lang = get().language || 'pt';
+    const msg = lang === 'pt'
+      ? `[Sandbox] Invocou ${card?.name || unitName} em (${hex.q}, ${hex.r}) para ${playerId}`
+      : `[Sandbox] Spawned ${card?.name || unitName} at (${hex.q}, ${hex.r}) for ${playerId}`;
+    get().addLog(msg, 'system');
   },
 
   addCardToHand: (cardId: string) => {
@@ -42,7 +46,11 @@ export const createSandboxActions = (set: any, get: any) => ({
         }
       };
     });
-    get().addLog(`[Sandbox] Added card ${cardId} to hand`, 'system');
+    const lang = get().language || 'pt';
+    const msg = lang === 'pt'
+      ? `[Sandbox] Adicionou carta ${cardId} à mão`
+      : `[Sandbox] Added card ${cardId} to hand`;
+    get().addLog(msg, 'system');
   },
 
   sandboxPlayCard: (cardId: string, hex: HexCoordinates, playerId: string) => {
@@ -82,7 +90,11 @@ export const createSandboxActions = (set: any, get: any) => ({
 
   purifyArena: () => {
     set({ boardUnits: {} });
-    get().addLog("[Sandbox] Arena Purified!", 'system');
+    const lang = get().language || 'pt';
+    const msg = lang === 'pt'
+      ? `[Sandbox] Arena Purificada!`
+      : `[Sandbox] Arena Purified!`;
+    get().addLog(msg, 'system');
   },
 
   removeUnit: (unitId: string) => {
@@ -94,6 +106,10 @@ export const createSandboxActions = (set: any, get: any) => ({
         inspectedItem: null
       };
     });
-    get().addLog(`[Sandbox] Unit removed`, 'system');
+    const lang = get().language || 'pt';
+    const msg = lang === 'pt'
+      ? `[Sandbox] Unidade removida`
+      : `[Sandbox] Unit removed`;
+    get().addLog(msg, 'system');
   }
 });

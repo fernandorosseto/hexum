@@ -1,9 +1,10 @@
 import React from 'react';
 import { useGameStore } from '../store/gameStore';
-import { UNIT_DESCRIPTIONS, getUnitCard, ARTIFACTS, SPELLS, ARTIFACT_DESCRIPTIONS, SPELL_DESCRIPTIONS, getFearStatus, buffLabels } from 'shared';
+import { UNIT_DESCRIPTIONS, getUnitCard, ARTIFACTS, SPELLS, ARTIFACT_DESCRIPTIONS, SPELL_DESCRIPTIONS, getFearStatus, buffLabels, ARTIFACT_NAMES, SPELL_NAMES } from 'shared';
 import { motion } from 'framer-motion';
 import { CLASS_ICONS as UNIT_ICONS, UNIT_ART_COLORS } from '../constants/unitIcons';
 import { SpellIcon, ArtifactIcon } from '../assets/icons/VectorIcons';
+import { translations } from './translations';
 
 export const CardDetailsUI: React.FC = () => {
   const selectedCardId = useGameStore(state => state.selectedCard);
@@ -19,6 +20,8 @@ export const CardDetailsUI: React.FC = () => {
   const isInspectMode = useGameStore(state => state.isInspectMode);
   const toggleInspectMode = useGameStore(state => state.toggleInspectMode);
   const isCardDetailsVisible = useGameStore(state => state.isCardDetailsVisible);
+  const language = useGameStore(state => state.language);
+  const t = translations[language];
 
   // ── Data Resolution ──
   type CardData = {
@@ -42,8 +45,8 @@ export const CardDetailsUI: React.FC = () => {
   if (selectedCardId) {
     if (selectedCardId.startsWith('unit_') || selectedCardId.startsWith('hero_')) {
       try {
-        const card = getUnitCard(selectedCardId);
-        const ability = UNIT_DESCRIPTIONS[card.unitClass] || '';
+        const card = getUnitCard(selectedCardId, language);
+        const ability = UNIT_DESCRIPTIONS[card.unitClass]?.[language] || '';
         data = {
           kind: 'unit', title: card.name, icon: UNIT_ICONS[card.unitClass] || '👤',
           manaCost: card.manaCost, atk: card.baseAttack, hp: `${card.baseHp}`,
@@ -56,18 +59,18 @@ export const CardDetailsUI: React.FC = () => {
       const art = ARTIFACTS.find(a => a.id === selectedCardId);
       if (art) {
         data = {
-          kind: 'artifact', title: art.name, icon: '',
+          kind: 'artifact', title: ARTIFACT_NAMES[art.id]?.[language] || art.name, icon: '',
           manaCost: art.manaCost,
-          ability: ARTIFACT_DESCRIPTIONS[art.id] || 'Permanent equipment.',
+          ability: ARTIFACT_DESCRIPTIONS[art.id]?.[language] || t.permanentEquipment,
           colors: { bg: 'from-amber-900/60 to-yellow-950/80', glow: 'shadow-[0_0_40px_rgba(217,119,6,0.15)]', border: 'border-amber-500/60' },
         };
       } else {
         const spl = SPELLS.find(s => s.id === selectedCardId);
         if (spl) {
           data = {
-            kind: 'spell', title: spl.name, icon: '',
+            kind: 'spell', title: SPELL_NAMES[spl.id]?.[language] || spl.name, icon: '',
             manaCost: spl.manaCost,
-            ability: SPELL_DESCRIPTIONS[spl.id] || 'Instant magical effect.',
+            ability: SPELL_DESCRIPTIONS[spl.id]?.[language] || t.instantEffect,
             colors: { bg: 'from-purple-900/60 to-indigo-950/80', glow: 'shadow-[0_0_40px_rgba(139,92,246,0.15)]', border: 'border-purple-500/60' },
           };
         }
@@ -81,8 +84,8 @@ export const CardDetailsUI: React.FC = () => {
     );
     if (unitOnHex) {
       try {
-        const card = getUnitCard(unitOnHex.cardId);
-        const ability = UNIT_DESCRIPTIONS[card.unitClass] || '';
+        const card = getUnitCard(unitOnHex.cardId, language);
+        const ability = UNIT_DESCRIPTIONS[card.unitClass]?.[language] || '';
         data = {
           kind: 'unit', title: card.name, icon: UNIT_ICONS[card.unitClass] || '👤',
           manaCost: card.manaCost, atk: unitOnHex.attack, hp: `${unitOnHex.hp}`,
@@ -112,16 +115,16 @@ export const CardDetailsUI: React.FC = () => {
           <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mb-4 border border-amber-500/50">
             <span className="text-3xl">👆</span>
           </div>
-          <h2 className="text-lg font-black text-amber-400 mb-2 tracking-wide uppercase">Inspect Mode</h2>
+          <h2 className="text-lg font-black text-amber-400 mb-2 tracking-wide uppercase">{t.inspectMode}</h2>
           <p className="text-xs text-slate-300 font-medium leading-relaxed">
-            Tap any unit on the board or card in your hand to see details and attributes.
+            {t.inspectDetails}
           </p>
         </div>
       </motion.div>
     );
   }
 
-  const typeLabel = data.kind === 'unit' ? 'Unit' : data.kind === 'artifact' ? 'Artifact' : 'Spell';
+  const typeLabel = data.kind === 'unit' ? t.unit : data.kind === 'artifact' ? t.artifact : t.spell;
   const typeBadgeColor = data.kind === 'unit' ? 'bg-[#0b622f]/80 text-[#a7f3d0]' : data.kind === 'artifact' ? 'bg-amber-700/80 text-amber-100' : 'bg-[#602471]/80 text-[#f5d0f9]';
 
 
@@ -229,7 +232,7 @@ export const CardDetailsUI: React.FC = () => {
                 if (!info) return null;
                 return (
                   <span key={i} className={`px-1.5 py-0.5 rounded text-[8px] font-bold border ${info.color}`}>
-                    {info.label} ({buff.duration}t)
+                    {info.label[language]} ({buff.duration}t)
                   </span>
                 );
               })}
@@ -242,7 +245,7 @@ export const CardDetailsUI: React.FC = () => {
                   if (fearInfo.inRange) {
                     return (
                       <span className="px-1.5 py-0.5 rounded text-[8px] font-bold border bg-purple-900/80 text-purple-300 border-purple-700/50">
-                        💀 Fear ({(fearInfo.chance * 100).toFixed(0)}%)
+                        💀 {t.fear} ({(fearInfo.chance * 100).toFixed(0)}%)
                       </span>
                     );
                   }
@@ -258,10 +261,9 @@ export const CardDetailsUI: React.FC = () => {
           <div className="px-3 pb-2 pt-1 border-t border-slate-800/40">
             <div className="flex flex-wrap gap-1">
               {data.artifacts.map((artId, i) => {
-                const art = ARTIFACTS.find(a => a.id === artId);
                 return (
                   <span key={i} className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold border bg-amber-950/60 text-amber-300 border-amber-700/40">
-                    <ArtifactIcon id={artId} size={10} className="text-amber-400" /> {art?.name || artId}
+                    <ArtifactIcon id={artId} size={10} className="text-amber-400" /> {ARTIFACT_NAMES[artId]?.[language] || artId}
                   </span>
                 );
               })}
@@ -295,7 +297,7 @@ export const CardDetailsUI: React.FC = () => {
               >
                 <span>{selectedAbility ? '✕' : (data!.unitClass === 'Cavaleiro' ? '⚡' : '🗡️')}</span>
                 <span className="truncate">
-                  {selectedAbility ? 'Stop' : (data!.unitClass === 'Cavaleiro' ? 'Surge' : 'Move')}
+                  {selectedAbility ? t.stop : (data!.unitClass === 'Cavaleiro' ? t.surge : t.move)}
                 </span>
               </button>
             )}

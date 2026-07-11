@@ -9,6 +9,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useGameStore } from '../store/gameStore';
 import { createLobby, joinLobbyByCode, subscribeToLobby } from '../firebase/firestore';
 import { createInitialState } from 'shared';
+import { translations } from './translations';
 import backgroundImg from '../assets/background.jpg';
 
 type LobbyTab = 'create' | 'join';
@@ -16,6 +17,8 @@ type LobbyTab = 'create' | 'join';
 export const LobbyPage: React.FC = () => {
   const { user } = useAuth();
   const { setCurrentView, setLobbySession, setMatchStarted, setPlayerNames, clearLobbySession } = useGameStore();
+  const language = useGameStore(state => state.language);
+  const t = translations[language];
 
   const [tab, setTab]           = useState<LobbyTab>('create');
   const [loading, setLoading]   = useState(false);
@@ -51,7 +54,7 @@ export const LobbyPage: React.FC = () => {
 
       setWaitingLobbyId(lobbyId);
     } catch {
-      setError('Error creating room. Try again.');
+      setError(t.errorCreateRoom);
     } finally {
       setLoading(false);
     }
@@ -82,7 +85,7 @@ export const LobbyPage: React.FC = () => {
     try {
       const result = await joinLobbyByCode(joinCode.trim(), user.uid, displayName);
       if (!result) {
-        setError('Room not found or already in progress.');
+        setError(t.errorRoomNotFound);
         return;
       }
       // setLobbySession ANTES de setCurrentView para isPvP=true ao renderizar
@@ -91,7 +94,7 @@ export const LobbyPage: React.FC = () => {
       setMatchStarted(true);
       setCurrentView('PVP');
     } catch {
-      setError('Error joining room. Check the code.');
+      setError(t.errorJoinRoom);
     } finally {
       setLoading(false);
     }
@@ -127,30 +130,30 @@ export const LobbyPage: React.FC = () => {
               </div>
             </div>
 
-            <p className="text-slate-400 text-xs uppercase tracking-widest mb-4">Waiting for opponent</p>
+            <p className="text-slate-400 text-xs uppercase tracking-widest mb-4">{t.waitingOpponent}</p>
 
             {/* Código da sala */}
             <div className="bg-black/50 border border-indigo-500/30 rounded-xl px-6 py-4 mb-6">
-              <p className="text-slate-500 text-[10px] uppercase tracking-widest mb-1">Room Code</p>
+              <p className="text-slate-500 text-[10px] uppercase tracking-widest mb-1">{t.roomCode}</p>
               <p className="text-3xl font-black text-white tracking-[0.4em]">{roomCode || '...'}</p>
             </div>
 
             <p className="text-slate-600 text-xs mb-6">
-              Send this code to your friend. The match starts automatically when they join.
+              {t.roomCodeDesc}
             </p>
 
             <button
               onClick={() => { if (roomCode) navigator.clipboard.writeText(roomCode); }}
               className="w-full py-3 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 rounded-xl text-indigo-400 text-sm font-bold tracking-widest uppercase transition-all mb-3"
             >
-              📋 Copy Code
+              📋 {t.copyCode}
             </button>
 
             <button
               onClick={handleBack}
               className="text-slate-600 hover:text-slate-400 text-xs transition-colors"
             >
-              Cancel and go back
+              {t.cancelBack}
             </button>
           </div>
         </motion.div>
@@ -179,29 +182,29 @@ export const LobbyPage: React.FC = () => {
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
-          Back to Menu
+          {t.backToMenu}
         </button>
 
         <div className="bg-[#0a0d12]/90 border border-white/8 rounded-2xl overflow-hidden shadow-[0_20px_80px_rgba(0,0,0,0.7)]">
           <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-indigo-500/60 to-transparent" />
 
           <div className="px-7 pt-6 pb-7">
-            <h1 className="text-white font-black text-lg tracking-wide mb-1">⚔️ Play vs Friend</h1>
-            <p className="text-slate-500 text-xs mb-5">Real-time PvP via private room</p>
+            <h1 className="text-white font-black text-lg tracking-wide mb-1">⚔️ {t.playVsFriendTitle}</h1>
+            <p className="text-slate-500 text-xs mb-5">{t.privateRoom}</p>
 
             {/* Tabs */}
             <div className="flex bg-black/40 rounded-xl p-1 gap-1 mb-5">
-              {(['create', 'join'] as LobbyTab[]).map(t => (
+              {(['create', 'join'] as LobbyTab[]).map(tName => (
                 <button
-                  key={t}
-                  onClick={() => { setTab(t); setError(''); }}
+                  key={tName}
+                  onClick={() => { setTab(tName); setError(''); }}
                   className={`flex-1 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
-                    tab === t
+                    tab === tName
                       ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/40'
                       : 'text-slate-500 hover:text-slate-300'
                   }`}
                 >
-                  {t === 'create' ? '🏰 Create Room' : '🚪 Join'}
+                  {tName === 'create' ? `🏰 ${t.createRoom}` : `🚪 ${t.join}`}
                 </button>
               ))}
             </div>
@@ -216,15 +219,14 @@ export const LobbyPage: React.FC = () => {
                   transition={{ duration: 0.15 }}
                 >
                   <p className="text-slate-400 text-sm mb-5 leading-relaxed">
-                    Create a private room and send the generated code to your friend.
-                    The match starts automatically when they join.
+                    {t.createRoomDesc}
                   </p>
                   <button
                     onClick={handleCreate}
                     disabled={loading}
                     className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 disabled:opacity-50 rounded-xl text-white font-black text-sm uppercase tracking-widest shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all active:scale-[0.98]"
                   >
-                    {loading ? '⏳ Creating room...' : '🏰 Create Room'}
+                    {loading ? `⏳ ${t.creatingRoom}` : `🏰 ${t.createRoom}`}
                   </button>
                 </motion.div>
               ) : (
@@ -238,7 +240,7 @@ export const LobbyPage: React.FC = () => {
                 >
                   <input
                     type="text"
-                    placeholder="Enter the room code"
+                    placeholder={t.enterCodePlaceholder}
                     value={joinCode}
                     onChange={e => setJoinCode(e.target.value.toUpperCase())}
                     maxLength={6}
@@ -249,7 +251,7 @@ export const LobbyPage: React.FC = () => {
                     disabled={loading || joinCode.length < 6}
                     className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-white font-black text-sm uppercase tracking-widest shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all active:scale-[0.98]"
                   >
-                    {loading ? '⏳ Joining...' : '🚪 Join Room'}
+                    {loading ? `⏳ ${t.joining}` : `🚪 ${t.joinRoom}`}
                   </button>
                 </motion.div>
               )}

@@ -1,22 +1,22 @@
 import React from 'react';
 import { useGameStore } from '../store/gameStore';
-import { getUnitCard, ARTIFACTS, SPELLS } from 'shared';
+import { getUnitCard, ARTIFACTS, SPELLS, ARTIFACT_NAMES, SPELL_NAMES } from 'shared';
 import { CLASS_ICONS } from '../constants/unitIcons';
-import { SpellIcon, ArtifactIcon } from '../assets/icons/VectorIcons';
+import { translations } from './translations';
 
-function getCardDetails(cardId: string) {
+function getCardDetails(cardId: string, lang: 'en' | 'pt') {
   if (cardId.startsWith('unit_') || cardId.startsWith('hero_')) {
     try {
-      const card = getUnitCard(cardId);
+      const card = getUnitCard(cardId, lang);
       return { id: cardId, class: card.name, icon: CLASS_ICONS[card.unitClass] || '👤', cost: card.manaCost, atk: card.baseAttack, hp: card.baseHp, type: 'Unit' };
     } catch(e) { return null; }
   }
   const art = ARTIFACTS.find(a => a.id === cardId);
   if (art) {
-    return { id: cardId, class: art.name, icon: '' as any, cost: art.manaCost, atk: '-', hp: '-', type: 'Artifact' };
+    return { id: cardId, class: ARTIFACT_NAMES[art.id]?.[lang] || art.name, icon: '' as any, cost: art.manaCost, atk: '-', hp: '-', type: 'Artifact' };
   }
   const spl = SPELLS.find(s => s.id === cardId);
-  if (spl) return { id: cardId, class: spl.name, icon: '' as any, cost: spl.manaCost, atk: '-', hp: '-', type: 'Spell' };
+  if (spl) return { id: cardId, class: SPELL_NAMES[spl.id]?.[lang] || spl.name, icon: '' as any, cost: spl.manaCost, atk: '-', hp: '-', type: 'Spell' };
   return null;
 }
 
@@ -25,6 +25,8 @@ export const HandUI: React.FC = () => {
   const players = useGameStore(state => state.players);
   const myRole = useGameStore(state => state.myRole);
   const isPvP = useGameStore(state => state.isPvP);
+  const language = useGameStore(state => state.language);
+  const t = translations[language];
   
   // Em PvP, mostramos sempre a mão do MEU papel. 
   // Em Single Player, mostramos a mão do jogador da vez (p1).
@@ -51,7 +53,7 @@ export const HandUI: React.FC = () => {
           }}
           className="mb-2 bg-yellow-600 hover:bg-yellow-500 text-white font-black text-xs px-4 py-1.5 rounded-full border-2 border-yellow-300 shadow-[0_0_12px_rgba(202,138,4,0.5)] transition-all animate-bounce"
         >
-          🔥 SACRIFICE FOR MANA (+1)
+          🔥 {t.sacrificeForMana}
         </button>
       )}
 
@@ -66,7 +68,7 @@ export const HandUI: React.FC = () => {
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {hand.map((cardId, idx) => {
-          const card = getCardDetails(cardId);
+          const card = getCardDetails(cardId, language);
           if (!card) return null;
           const canAfford = isMyTurn && player.mana >= card.cost;
           const isSelected = selectedCard === card.id;
@@ -141,7 +143,7 @@ export const HandUI: React.FC = () => {
                   card.type === 'Artifact' ? 'bg-amber-600/90 text-amber-100 border-amber-400' :
                   'bg-[#602471]/90 text-[#f5d0f9] border-[#d8b4e2]'
                 }`}>
-                  {card.type}
+                  {card.type === 'Artifact' ? t.artifact : t.spell}
                 </div>
               )}
 
@@ -163,10 +165,9 @@ export const HandUI: React.FC = () => {
 
       {!isMyTurn && (
         <div className="mt-1 text-[10px] text-slate-500 font-bold uppercase tracking-wider animate-pulse">
-          {isAiThinking ? 'Opponent is thinking...' : 'Waiting for your turn...'}
+          {isAiThinking ? t.opponentThinking : t.waitingTurn}
         </div>
       )}
     </div>
   );
 };
-

@@ -50,7 +50,7 @@ function applyArtifactDamageEffects(attacker: Unit, target: Unit): number {
  */
 export function applyFinalDamage(target: Unit, damage: number, state: GameState): void {
   if (target.buffs.some(b => b.type === 'invulnerable')) {
-    addCombatLog(state, `🛡️ Invulnerable Target! (Damage Negated)`);
+    addCombatLog(state, `🛡️ Invulnerable Target! (Damage Negated)`, `🛡️ Alvo Invulnerável! (Dano Negado)`);
     return;
   }
 
@@ -64,14 +64,14 @@ export function applyFinalDamage(target: Unit, damage: number, state: GameState)
       const absorbed = Math.min(damage, shield.value);
       const remainingDamage = damage - absorbed;
       
-      addCombatLog(state, `🛡️ Shield absorbed ${absorbed} damage!`);
+      addCombatLog(state, `🛡️ Shield absorbed ${absorbed} damage!`, `🛡️ Escudo absorveu ${absorbed} de dano!`);
       
       // Decai a proteção: 3 -> 2 -> 1 -> remove
       if (shield.value > 1) {
         shield.value -= 1;
       } else {
         target.buffs.splice(shieldIndex, 1);
-        addCombatLog(state, `🛡️ The shield couldn't withstand the hit and broke!`);
+        addCombatLog(state, `🛡️ The shield couldn't withstand the hit and broke!`, `🛡️ O escudo não resistiu ao golpe e se quebrou!`);
       }
       
       if (remainingDamage > 0) {
@@ -82,7 +82,7 @@ export function applyFinalDamage(target: Unit, damage: number, state: GameState)
 
     // Escudo padrão (Aura Rúnica / Escudo Sagrado) - Absorve 1 hit total
     target.buffs.splice(shieldIndex, 1);
-    addCombatLog(state, `🛡️ Divine Protection! The shield absorbed the full impact.`);
+    addCombatLog(state, `🛡️ Divine Protection! The shield absorbed the full impact.`, `🛡️ Proteção Divina! O escudo absorveu todo o impacto.`);
     return;
   }
 
@@ -102,7 +102,7 @@ export function applyDoT(target: Unit, type: 'poison' | 'burn' | 'bleed', durati
 function applyFuryEffect(attacker: Unit, state: GameState): void {
   if (attacker.buffs.some(b => b.type === 'fury')) {
     attacker.hp -= 1;
-    addCombatLog(state, `🩸 Battle Fury: ${attacker.unitClass} lost 1 HP.`);
+    addCombatLog(state, `🩸 Battle Fury: ${attacker.unitClass} lost 1 HP.`, `🩸 Fúria de Batalha: ${attacker.unitClass} perdeu 1 de HP.`);
     handleUnitDeath(state, attacker, attacker.playerId === 'p1' ? 'p2' : 'p1');
   }
 }
@@ -110,12 +110,13 @@ function applyFuryEffect(attacker: Unit, state: GameState): void {
 function checkAndConsumeInvulnerability(attacker: Unit, state: GameState): void {
   if (attacker.buffs.some(b => b.type === 'invulnerable')) {
     attacker.buffs = attacker.buffs.filter(b => b.type !== 'invulnerable');
-    addCombatLog(state, `⚖️ Sacrifice! Invulnerability consumed by the attack.`);
+    addCombatLog(state, `⚖️ Sacrifice! Invulnerability consumed by the attack.`, `⚖️ Sacrifício! Invulnerabilidade consumida pelo ataque.`);
   }
 }
 
-export function addCombatLog(state: GameState, log: string): void {
+export function addCombatLog(state: GameState, logEn: string, logPt: string): void {
   if (!state.combatLogs) state.combatLogs = [];
+  const log = state.language === 'pt' ? logPt : logEn;
   state.combatLogs.push(log);
 }
 
@@ -126,7 +127,7 @@ export function handleUnitDeath(state: GameState, unit: Unit, killerPlayerId: st
       state.winner = unit.playerId === 'p1' ? 'p2' : 'p1';
     }
     delete state.boardUnits[unit.id];
-    addCombatLog(state, `💀 The ${unit.unitClass} succumbed and was removed from the field.`);
+    addCombatLog(state, `💀 The ${unit.unitClass} succumbed and was removed from the field.`, `💀 O ${unit.unitClass} sucumbiu e foi removido de campo.`);
   }
 }
 
@@ -162,13 +163,13 @@ const ReiBehavior: UnitBehavior = {
   applyDamage(attacker, target, state) {
     if (attacker.buffs.some(b => b.type === 'invulnerable')) {
       attacker.buffs = attacker.buffs.filter(b => b.type !== 'invulnerable');
-      addCombatLog(state, `⚖️ Invulnerability consumed by the attack!`);
+      addCombatLog(state, `⚖️ Invulnerability consumed by the attack!`, `⚖️ Invulnerabilidade consumida pelo ataque!`);
     }
 
-    addCombatLog(state, `Base: ${attacker.attack}`);
+    addCombatLog(state, `Base: ${attacker.attack}`, `Base: ${attacker.attack}`);
     applyFinalDamage(target, attacker.attack, state);
     const extra = applyArtifactDamageEffects(attacker, target);
-    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`);
+    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`, `Artefatos: +${extra}`);
     applyFuryEffect(attacker, state);
     handleUnitDeath(state, target, attacker.playerId);
   }
@@ -220,11 +221,11 @@ const CavaleiroBehavior: UnitBehavior = {
   applyDamage(attacker, target, state, dist, useSpecial) {
     checkAndConsumeInvulnerability(attacker, state);
     let damage = attacker.attack;
-    addCombatLog(state, `Base: ${attacker.attack}`);
+    addCombatLog(state, `Base: ${attacker.attack}`, `Base: ${attacker.attack}`);
 
     if (useSpecial) {
       damage += 2;
-      addCombatLog(state, `🐎 Iron Charge: +2 extra impact!`);
+      addCombatLog(state, `🐎 Iron Charge: +2 extra impact!`, `🐎 Investida de Ferro: +2 de impacto extra!`);
       const line = getLineOfSight(attacker.position, target.position);
       if (line.length > 2) {
         const landingPos = line[line.length - 2];
@@ -234,18 +235,18 @@ const CavaleiroBehavior: UnitBehavior = {
         if (!collision) {
           attacker.position = landingPos;
         } else {
-          addCombatLog(state, `⚠️ Charge: Landing spot obstructed at the moment of impact!`);
+          addCombatLog(state, `⚠️ Charge: Landing spot obstructed at the moment of impact!`, `⚠️ Investida: Local de pouso obstruído no momento do impacto!`);
         }
       }
     }
     
     applyFinalDamage(target, damage, state);
     const extra = applyArtifactDamageEffects(attacker, target);
-    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`);
+    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`, `Artefatos: +${extra}`);
 
     if ((dist > 1 || useSpecial) && checkEffectTrigger(attacker)) {
       target.buffs.push({ type: 'stun', duration: 1 });
-      addCombatLog(state, `💫 The target was stunned by the shock!`);
+      addCombatLog(state, `💫 The target was stunned by the shock!`, `💫 O alvo foi atordoado pelo choque!`);
     }
     applyFuryEffect(attacker, state);
     handleUnitDeath(state, target, attacker.playerId);
@@ -259,7 +260,7 @@ const CavaleiroBehavior: UnitBehavior = {
 const LanceiroBehavior: UnitBehavior = {
   validateMove(unit, target, dist, maxMoveDist, state) {
     if (dist > maxMoveDist || unit.position.r === target.r) {
-      throw new Error("Lancer: Moves only forward/backward.");
+      throw new Error(state?.language === 'en' ? "Lancer: Moves only forward/backward." : "Lanceiro: Move-se apenas para frente/trás.");
     }
     if (dist > 1 && !hasAmuleto(unit) && isPathBlocked(state, unit.position, target)) {
       throw new Error("Path blocked!");
@@ -277,11 +278,11 @@ const LanceiroBehavior: UnitBehavior = {
   },
   applyDamage(attacker, target, state, dist) {
     checkAndConsumeInvulnerability(attacker, state);
-    addCombatLog(state, `Base: ${attacker.attack}`);
+    addCombatLog(state, `Base: ${attacker.attack}`, `Base: ${attacker.attack}`);
     applyFinalDamage(target, attacker.attack, state);
 
     const extra = applyArtifactDamageEffects(attacker, target);
-    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`);
+    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`, `Artefatos: +${extra}`);
 
     if (checkEffectTrigger(attacker)) {
       const dq = (target.position.q - attacker.position.q) / dist;
@@ -290,7 +291,7 @@ const LanceiroBehavior: UnitBehavior = {
       const collision = Object.values(state.boardUnits).some(u => u.position.q === pushTarget.q && u.position.r === pushTarget.r);
       if (isInsideBoard(pushTarget) && !collision) {
         target.position = pushTarget;
-        addCombatLog(state, `💨 Phalanx Impact: Pushed the target!`);
+        addCombatLog(state, `💨 Phalanx Impact: Pushed the target!`, `💨 Impacto de Falange: Empurrou o alvo!`);
       }
     }
     applyFuryEffect(attacker, state);
@@ -314,13 +315,13 @@ const ArqueiroBehavior: UnitBehavior = {
   },
   applyDamage(attacker, target, state) {
     checkAndConsumeInvulnerability(attacker, state);
-    addCombatLog(state, `Base: ${attacker.attack}`);
+    addCombatLog(state, `Base: ${attacker.attack}`, `Base: ${attacker.attack}`);
     applyFinalDamage(target, attacker.attack, state);
     const extra = applyArtifactDamageEffects(attacker, target);
-    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`);
+    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`, `Artefatos: +${extra}`);
     if (checkEffectTrigger(attacker)) {
       target.buffs.push({ type: 'stun', duration: 1 });
-      addCombatLog(state, `🎯 Precision Shot! The target was paralyzed.`);
+      addCombatLog(state, `🎯 Precision Shot! The target was paralyzed.`, `🎯 Tiro Preciso! O alvo foi paralisado.`);
     }
     applyFuryEffect(attacker, state);
     handleUnitDeath(state, target, attacker.playerId);
@@ -344,10 +345,10 @@ const AssassinoBehavior: UnitBehavior = {
     if (useSpecial) return dist === 2 && isDiagonal(unit.position, targetPos);
     return dist === 1;
   },
-  validateAttack(attacker, target, dist, rangeBonus, useSpecial) {
+  validateAttack(attacker, target, dist, rangeBonus, useSpecial, state) {
     if (useSpecial) {
       const isLeap = dist === 2 && isDiagonal(attacker.position, target.position);
-      if (!isLeap) throw new Error("Ethereal Shift: Requires destination 2 diagonal hexes away.");
+      if (!isLeap) throw new Error(state?.language === 'en' ? "Ethereal Shift: Requires destination 2 diagonal hexes away." : "Salto Diagonal: Requer destino a 2 casas diagonais.");
     } else {
       if (dist > 1 + rangeBonus) throw new Error("Assassin (Normal): Attacks only adjacent hexes.");
     }
@@ -357,19 +358,19 @@ const AssassinoBehavior: UnitBehavior = {
     const originalPos = { ...attacker.position };
     const targetPos = { ...target.position };
 
-    addCombatLog(state, `Base: ${attacker.attack}`);
+    addCombatLog(state, `Base: ${attacker.attack}`, `Base: ${attacker.attack}`);
     applyFinalDamage(target, attacker.attack, state);
     
     applyDoT(target, 'bleed', 2, 1);
-    addCombatLog(state, `🩸 Lethal Touch Applied! (Bleeding)`);
+    addCombatLog(state, `🩸 Lethal Touch Applied! (Bleeding)`, `🩸 Toque Letal Aplicado! (Sangramento)`);
     
     if (useSpecial) {
       applyFinalDamage(target, 2, state);
-      addCombatLog(state, `🦘 Ethereal Leap: +2 bonus damage!`);
+      addCombatLog(state, `🦘 Ethereal Leap: +2 bonus damage!`, `🦘 Salto Etéreo: +2 de dano bônus!`);
     }
     
     const extra = applyArtifactDamageEffects(attacker, target);
-    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`);
+    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`, `Artefatos: +${extra}`);
 
     applyFuryEffect(attacker, state);
     const targetDied = target.hp <= 0;
@@ -378,7 +379,7 @@ const AssassinoBehavior: UnitBehavior = {
     if (useSpecial) {
       if (targetDied) {
         attacker.position = targetPos;
-        addCombatLog(state, `🦘 Ethereal Shift: Occupied the target's spot.`);
+        addCombatLog(state, `🦘 Ethereal Shift: Occupied the target's spot.`, `🦘 Deslocamento Etéreo: Ocupou o lugar do alvo.`);
       } else {
         const neighbors = getHexNeighbors(targetPos);
         let landed = false;
@@ -387,13 +388,13 @@ const AssassinoBehavior: UnitBehavior = {
           if (isInsideBoard(n) && !collision) {
             attacker.position = n;
             landed = true;
-            addCombatLog(state, `🦘 Ethereal Shift: Landed nearby.`);
+            addCombatLog(state, `🦘 Ethereal Shift: Landed nearby.`, `🦘 Deslocamento Etéreo: Pousou por perto.`);
             break;
           }
         }
         if (!landed) {
           attacker.position = originalPos;
-          addCombatLog(state, `🦘 No space to shift! Returned to origin.`);
+          addCombatLog(state, `🦘 No space to shift! Returned to origin.`, `🦘 Sem espaço para se deslocar! Retornou à origem.`);
         }
       }
     }
@@ -417,7 +418,7 @@ const AlquimistaBehavior: UnitBehavior = {
   applyDamage(attacker, target, state) {
     checkAndConsumeInvulnerability(attacker, state);
     const splashRadius = (attacker.equippedArtifacts || []).includes('art_anel') ? 2 : 1;
-    addCombatLog(state, `⚗️ Arcane Cataclysm: Initiating reaction!`);
+    addCombatLog(state, `⚗️ Arcane Cataclysm: Initiating reaction!`, `⚗️ Cataclismo Arcano: Iniciando reação!`);
     
     // Lista de TODAS as unidades afetadas pelo splash (inclui aliados — friendly fire intencional)
     const affectedUnits: Unit[] = [];
@@ -431,13 +432,13 @@ const AlquimistaBehavior: UnitBehavior = {
     affectedUnits.forEach(u => {
       applyFinalDamage(u, attacker.attack, state);
       if (u.id === target.id) {
-        addCombatLog(state, `Main Target: ${attacker.attack}`);
+        addCombatLog(state, `Main Target: ${attacker.attack}`, `Alvo Principal: ${attacker.attack}`);
       } else {
-        addCombatLog(state, `AoE Damage on ${u.unitClass}: ${attacker.attack}`);
+        addCombatLog(state, `AoE Damage on ${u.unitClass}: ${attacker.attack}`, `Dano em Área em ${u.unitClass}: ${attacker.attack}`);
       }
       if (Math.random() < 0.3) {
         applyDoT(u, 'burn', 2, 1);
-        addCombatLog(state, `🔥 Alchemical Fire: Ignited the ${u.unitClass}!`);
+        addCombatLog(state, `🔥 Alchemical Fire: Ignited the ${u.unitClass}!`, `🔥 Fogo Alquímico: Incendiou o ${u.unitClass}!`);
       }
       handleUnitDeath(state, u, attacker.playerId);
     });
@@ -461,10 +462,10 @@ const ClerigoBehavior: UnitBehavior = {
   },
   applyDamage(attacker, target, state) {
     checkAndConsumeInvulnerability(attacker, state);
-    addCombatLog(state, `Base: ${attacker.attack}`);
+    addCombatLog(state, `Base: ${attacker.attack}`, `Base: ${attacker.attack}`);
     applyFinalDamage(target, attacker.attack, state);
     const extra = applyArtifactDamageEffects(attacker, target);
-    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`);
+    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`, `Artefatos: +${extra}`);
     applyFuryEffect(attacker, state);
     handleUnitDeath(state, target, attacker.playerId);
   }
@@ -480,10 +481,10 @@ const EstruturaBehavior: UnitBehavior = {
   validateAttack() { throw new Error("Structures cannot attack."); },
   applyDamage(attacker, target, state) {
     // Apenas aplica o dano no alvo (muralha), sem contra-ataque ou lógica complexa
-    addCombatLog(state, `Base: ${attacker.attack}`);
+    addCombatLog(state, `Base: ${attacker.attack}`, `Base: ${attacker.attack}`);
     applyFinalDamage(target, attacker.attack, state);
     const extra = applyArtifactDamageEffects(attacker, target);
-    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`);
+    if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`, `Artefatos: +${extra}`);
     handleUnitDeath(state, target, attacker.playerId);
   }
 };

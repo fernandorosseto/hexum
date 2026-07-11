@@ -329,7 +329,7 @@ export function moveTo(state: GameState, unitId: string, targetPosition: HexCoor
   const unit = newState.boardUnits[unitId];
 
   if (!unit || unit.playerId !== newState.currentTurnPlayerId) throw new Error("Invalid unit or not your turn.");
-  if (unit.summoningSickness) throw new Error("Unit has summoning sickness.");
+  if (unit.summoningSickness) throw new Error(newState.language === 'en' ? "Unit has summoning sickness." : "Unidade está com enjoo de invocação.");
   if (!unit.canMove) throw new Error("This unit already moved this turn.");
   if (!isInsideBoard(targetPosition)) throw new Error("Destination out of board bounds!");
 
@@ -365,7 +365,7 @@ export function moveTo(state: GameState, unitId: string, targetPosition: HexCoor
   const collision = Object.values(newState.boardUnits).some(u =>
     u.position.q === targetPosition.q && u.position.r === targetPosition.r && u.position.s === targetPosition.s
   );
-  if (collision) throw new Error("Hexagon occupied!");
+  if (collision) throw new Error(newState.language === 'en' ? "Hexagon occupied!" : "Hexágono ocupado!");
 
   unit.position = targetPosition;
   unit.canMove = false;
@@ -426,7 +426,7 @@ export function attack(state: GameState, attackerId: string, targetId: string, u
 
   if (!attacker || !target) throw new Error("Invalid attack action.");
   if (attacker.playerId !== newState.currentTurnPlayerId) throw new Error("Not your turn.");
-  if (attacker.summoningSickness) throw new Error("Unit has summoning sickness.");
+  if (attacker.summoningSickness) throw new Error(newState.language === 'en' ? "Unit has summoning sickness." : "Unidade está com enjoo de invocação.");
   if (!attacker.canAttack) throw new Error("This unit already attacked.");
 
   if (useSpecial) {
@@ -445,7 +445,7 @@ export function attack(state: GameState, attackerId: string, targetId: string, u
   const dist = getHexDistance(attacker.position, target.position);
 
   if (target.buffs.some(b => b.type === 'immune_ranged') && dist > 1) {
-    throw new Error("Target immune to ranged attacks (Fog).");
+    throw new Error(newState.language === 'en' ? "Target immune to ranged attacks (Fog)." : "Alvo imune a ataques à distância (Névoa).");
   }
 
   // Bônus de Alcance (Artefatos)
@@ -462,7 +462,10 @@ export function attack(state: GameState, attackerId: string, targetId: string, u
   if (fearInfo.inRange && dist === 1) {
     if (Math.random() < fearInfo.chance) {
       if (!newState.combatLogs) newState.combatLogs = [];
-      newState.combatLogs.push(`😱 ${attacker.unitClass} succumbed to the enemy King's Fear and hesitated to attack!`);
+      const fearMsg = newState.language === 'pt'
+        ? `😱 ${attacker.unitClass} sucumbiu ao Medo do Rei inimigo e hesitou em atacar!`
+        : `😱 ${attacker.unitClass} succumbed to the enemy King's Fear and hesitated to attack!`;
+      newState.combatLogs.push(fearMsg);
       attacker.canAttack = false;
       return newState;
     }
@@ -497,7 +500,7 @@ export function playCard(state: GameState, playerId: string, cardId: string, tar
     card = ARTIFACTS.find(a => a.id === cardId) || SPELLS.find(s => s.id === cardId);
   }
   if (!card) throw new Error("Invalid card.");
-  if (player.mana < card.manaCost) throw new Error("Not enough mana.");
+  if (player.mana < card.manaCost) throw new Error(state.language === 'en' ? "Not enough mana." : "Mana insuficiente.");
 
   // ── Unidade ──
   if (card.type === 'Unit') {
@@ -610,7 +613,7 @@ export function convert(state: GameState, healerId: string, targetId: string): G
 
   let rangeBonus = (healer.equippedArtifacts || []).includes('art_anel') ? 1 : 0;
   const dist = getHexDistance(healer.position, target.position);
-  if (dist > 1 + rangeBonus) throw new Error("Conversion: Target must be in range.");
+  if (dist > 1 + rangeBonus) throw new Error(newState.language === 'en' ? "Conversion: Target must be in range." : "Conversão: Alvo deve estar ao alcance.");
 
   const successChance = (1 + healer.roundsInField) / 100;
   if (Math.random() < successChance) {

@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { translations } from './translations';
 
 export const GameOverUI: React.FC = () => {
   const winner = useGameStore(s => s.winner);
   const setCurrentView = useGameStore(s => s.setCurrentView);
   const resetGame = useGameStore(s => s.resetGame);
+  const language = useGameStore(s => s.language);
+  const t = translations[language];
   
   const [shouldShow, setShouldShow] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -44,8 +47,8 @@ export const GameOverUI: React.FC = () => {
             hover:scale-105 active:scale-95 transition-all
           `}
         >
-           View Result {isVictory ? '👑' : '💀'}
-        </button>
+           {t.viewResult} {isVictory ? '👑' : '💀'}
+         </button>
       </div>
     );
   }
@@ -74,10 +77,10 @@ export const GameOverUI: React.FC = () => {
             text-7xl font-black uppercase tracking-tightest drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)]
             ${isVictory ? 'text-emerald-400' : 'text-[#b794f4]'}
           `}>
-            {isVictory ? 'Victory' : 'Defeat'}
+            {isVictory ? t.victory : t.defeat}
           </h1>
           <p className="text-white/50 font-bold tracking-[0.4em] uppercase text-[9px] drop-shadow-md">
-            {isVictory ? 'The Enemy King was defeated' : 'Your King fell in combat'}
+            {isVictory ? t.enemyKingDefeated : t.kingFell}
           </p>
         </div>
 
@@ -89,14 +92,14 @@ export const GameOverUI: React.FC = () => {
             }}
             className="w-full py-4 bg-white text-black font-black uppercase tracking-widest text-sm rounded-xl hover:bg-slate-100 transition-all active:scale-95 shadow-2xl"
           >
-            New Battle
+            {t.newBattle}
           </button>
 
           <button
             onClick={() => setIsMinimized(true)}
             className="w-full py-2.5 bg-white/5 text-white/70 font-bold uppercase tracking-[0.2em] text-[10px] rounded-lg border border-white/5 hover:bg-white/10 transition-all"
           >
-            Review Board
+            {t.reviewBoard}
           </button>
           
           <button
@@ -106,13 +109,13 @@ export const GameOverUI: React.FC = () => {
             }}
             className="w-full py-4 bg-[#0a0f1a]/80 text-white font-black uppercase tracking-widest text-sm rounded-xl border border-white/10 hover:bg-[#1a2233] transition-all active:scale-95"
           >
-            Back to Menu
+            {t.backToMenu}
           </button>
         </div>
 
         {/* Footer info */}
         <p className="text-[10px] text-white/20 uppercase font-bold tracking-[0.1em] animate-pulse">
-          Auto return to menu in 60s
+          {t.autoReturn}
         </p>
 
       </div>

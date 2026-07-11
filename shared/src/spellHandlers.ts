@@ -34,7 +34,7 @@ const CadeiaDeRelampagos: SpellHandler = {
     const myKing = Object.values(state.boardUnits).find(u => u.unitClass === 'Rei' && u.playerId === playerId);
     if (myKing && !state.sandboxMode) {
       const dist = getHexDistance(myKing.position, targetHex);
-      if (dist > 5) throw new Error("Target out of range (max 5 hexes from the King).");
+      if (dist > 5) throw new Error(state.language === 'en' ? "Target out of range (max 5 hexes from the King)." : "Alvo fora de alcance (máx 5 hexágonos do Rei).");
     }
 
     applyFinalDamage(targetUnit, 2, state);

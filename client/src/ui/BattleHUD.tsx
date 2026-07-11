@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../store/gameStore';
 import { BattleLog } from './BattleLog';
 import { closeLobby } from '../firebase/firestore';
-
+import { translations } from './translations';
 
 export const BattleHUD: React.FC = () => {
   const currentTurnPlayerId = useGameStore(state => state.currentTurnPlayerId);
@@ -18,6 +18,8 @@ export const BattleHUD: React.FC = () => {
   const turnTimer = useGameStore(state => state.turnTimer);
   const isTimerRunning = useGameStore(state => state.isTimerRunning);
   const resetGame = useGameStore(state => state.resetGame);
+  const language = useGameStore(state => state.language);
+  const t = translations[language];
   
   const renderMana = (current: number, max: number) => {
     return Array.from({ length: 6 }).map((_, i) => (
@@ -30,7 +32,6 @@ export const BattleHUD: React.FC = () => {
       }`} />
     ));
   };
-
 
   const myRole = useGameStore(state => state.myRole);
   const isPvP = useGameStore(state => state.isPvP);
@@ -84,11 +85,11 @@ export const BattleHUD: React.FC = () => {
             {/* Detalhe de brilho no topo */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-red-500/50 to-transparent" />
 
-            <h3 className="text-white font-black text-xl mb-3 tracking-tight">Leave Battlefield?</h3>
+            <h3 className="text-white font-black text-xl mb-3 tracking-tight">{t.leaveBattlefield}</h3>
             <p className="text-slate-400 text-sm mb-8 leading-relaxed px-2">
               {isPvP 
-                ? "This action will be recorded as an immediate defeat in PvP." 
-                : "Your current journey will be lost."}
+                ? t.quitConfirmPvP
+                : t.quitConfirmPvE}
             </p>
             
             <div className="flex flex-col gap-3">
@@ -96,13 +97,13 @@ export const BattleHUD: React.FC = () => {
                 onClick={handleQuit}
                 className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-black text-xs rounded-2xl shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all active:scale-95 uppercase tracking-widest"
               >
-                Confirm Exit
+                {t.confirmExit}
               </button>
               <button 
                 onClick={() => setShowConfirm(false)}
                 className="w-full py-3 text-slate-500 hover:text-slate-300 font-bold text-xs transition-colors uppercase tracking-widest"
               >
-                Back to Game
+                {t.backToGame}
               </button>
             </div>
           </motion.div>
@@ -118,12 +119,12 @@ export const BattleHUD: React.FC = () => {
             else setShowConfirm(true);
           }}
           className="p-1 px-2 md:p-1.5 bg-slate-900/80 hover:bg-red-950/40 text-white/50 hover:text-red-400 rounded-lg border border-white/5 transition-all group flex items-center gap-1"
-          title={isPvP ? "Forfeit Match" : "Back to Menu"}
+          title={isPvP ? t.forfeit : t.quit}
         >
           <svg className="w-3 h-3 md:w-4 md:h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          <span className="text-[10px] md:hidden font-bold">{isPvP ? 'FORFEIT' : 'QUIT'}</span>
+          <span className="text-[10px] md:hidden font-bold">{isPvP ? t.forfeit : t.quit}</span>
         </button>
       </div>
 
@@ -134,7 +135,7 @@ export const BattleHUD: React.FC = () => {
             <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[#0b622f] to-[#084822] border-2 border-[#0b622f]/30 flex items-center justify-center text-white font-black text-[9px] md:text-xs shadow-md">P1</div>
             <div>
               <span className="text-[#a7f3d0] font-bold text-[10px] md:text-sm block leading-none">
-                {isPvP ? p1Name : 'P1'} {isPvP && myRole === 'p1' && <span className="text-[7px] md:text-[8px] opacity-60 font-medium ml-1">YOU</span>}
+                {isPvP ? p1Name : 'P1'} {isPvP && myRole === 'p1' && <span className="text-[7px] md:text-[8px] opacity-60 font-medium ml-1">{t.you}</span>}
               </span>
               <div className="flex gap-0.5 mt-0.5 md:mt-1">{renderMana(players['p1'].mana, players['p1'].maxMana)}</div>
             </div>
@@ -144,7 +145,7 @@ export const BattleHUD: React.FC = () => {
         {/* Centro — Turno (Ou Lab) */}
         <div className="flex flex-col items-center gap-0.5 md:gap-1">
           <span className="text-[8px] md:text-[10px] font-bold text-slate-500 uppercase tracking-[0.1em] md:tracking-[0.2em] whitespace-nowrap">
-            {sandboxMode ? 'SIMULATOR' : `Turn ${turnNumber}`}
+            {sandboxMode ? t.simulator : `${t.turn} ${turnNumber}`}
             {isPvP && lobbyCode && (
               <span className="ml-1.5 md:ml-3 text-indigo-400/60 border border-indigo-400/20 px-1 md:px-1.5 py-0.5 rounded text-[7px] md:text-[8px] tracking-widest">
                 ID: {lobbyCode}
@@ -159,7 +160,7 @@ export const BattleHUD: React.FC = () => {
           {isAiThinking && (
             <div className="flex items-center gap-2 px-3 py-1 bg-purple-900/30 border border-purple-500/30 rounded-lg animate-pulse">
               <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping" />
-              <span className="text-[10px] font-black text-purple-300 uppercase tracking-widest">AI Thinking...</span>
+              <span className="text-[10px] font-black text-purple-300 uppercase tracking-widest">{t.aiThinking}</span>
             </div>
           )}
           {isMyTurn && !sandboxMode && !isAiThinking && (
@@ -167,7 +168,7 @@ export const BattleHUD: React.FC = () => {
               onClick={triggerEndTurn}
               className="px-4 md:px-5 py-1 md:py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-black text-[10px] md:text-sm rounded-lg shadow-[0_2px_10px_rgba(37,99,235,0.3)] transition-all active:scale-95 border border-blue-400/30"
             >
-              PASS
+              {t.pass}
             </button>
           )}
         </div>
@@ -177,7 +178,7 @@ export const BattleHUD: React.FC = () => {
           <div className={`flex items-center gap-2 md:gap-3 px-2 md:px-4 py-1 md:py-2 rounded-xl transition-all duration-300 ${currentTurnPlayerId === 'p2' ? 'bg-[#602471]/20 ring-1 ring-[#602471]/60' : 'opacity-50'}`}>
             <div className="text-right">
               <span className="text-[#f5d0f9] font-bold text-[10px] md:text-sm block leading-none">
-                {isPvP ? p2Name : 'P2'} {isPvP && myRole === 'p2' && <span className="text-[7px] md:text-[8px] opacity-60 font-medium ml-1">YOU</span>}
+                {isPvP ? p2Name : 'P2'} {isPvP && myRole === 'p2' && <span className="text-[7px] md:text-[8px] opacity-60 font-medium ml-1">{t.you}</span>}
               </span>
               <div className="flex gap-0.5 mt-0.5 md:mt-1 justify-end">{renderMana(players['p2'].mana, players['p2'].maxMana)}</div>
             </div>
@@ -225,7 +226,6 @@ export const BattleHUD: React.FC = () => {
         </AnimatePresence>
       </div>
 
-
       {/* Barra de Tempo (Pavio) estilo Arena */}
       {!sandboxMode && isTimerRunning && (
         <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-slate-800 overflow-hidden">
@@ -237,7 +237,7 @@ export const BattleHUD: React.FC = () => {
           />
         </div>
       )}
-      {/* Debug Info para Mobile/PvP */}
+      
       {isPvP && (
         <div className="fixed bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-4 text-[8px] text-white/30 z-[100] bg-black/60 px-3 py-1 rounded-full backdrop-blur-md border border-white/10">
           <div className="flex gap-2">
@@ -247,16 +247,6 @@ export const BattleHUD: React.FC = () => {
               TURN: {currentTurnPlayerId}
             </span>
           </div>
-          {/* Botão de Contingência (Oculto pois a sincronização estabilizou)
-          <button 
-            onClick={() => {
-              window.dispatchEvent(new CustomEvent('force-pvp-sync'));
-            }}
-            className="bg-white/10 hover:bg-white/20 active:bg-white/30 px-2 py-0.5 rounded border border-white/20 transition-colors pointer-events-auto"
-          >
-            FORÇAR SYNC
-          </button>
-          */}
         </div>
       )}
     </div>

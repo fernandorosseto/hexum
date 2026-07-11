@@ -54,18 +54,18 @@ export interface PlayerState {
   graveyard: string[];
 }
 
-export const buffLabels: Record<string, {label: string, color: string}> = {
-  poison: { label: '🐍 Poison', color: 'bg-green-900/80 text-green-300 border-green-700/50' },
-  burn:   { label: '🔥 Burn', color: 'bg-orange-900/80 text-orange-300 border-orange-700/50' },
-  stun:   { label: '💫 Stunned', color: 'bg-yellow-900/80 text-yellow-300 border-yellow-700/50' },
-  shield: { label: '🛡️ Shield', color: 'bg-cyan-900/80 text-cyan-300 border-cyan-700/50' },
-  fury:   { label: '⚔️ Fury', color: 'bg-red-900/80 text-red-300 border-red-700/50' },
-  taunt:  { label: '🚩 Taunt', color: 'bg-amber-900/80 text-amber-300 border-amber-700/50' },
-  immune_ranged: { label: '☁️ Protection', color: 'bg-slate-800/80 text-slate-300 border-slate-600/50' },
-  bleed: { label: '🩸 Bleed', color: 'bg-red-950/80 text-red-300 border-red-700/50' },
-  fear: { label: '💀 Fear', color: 'bg-purple-900/80 text-purple-300 border-purple-700/50' },
-  invulnerable: { label: '✨ Invulnerable', color: 'bg-yellow-900/80 text-yellow-200 border-yellow-600/50' },
-  rooted: { label: '🌿 Rooted', color: 'bg-emerald-900/80 text-emerald-300 border-emerald-700/50' },
+export const buffLabels: Record<string, {label: Record<'en' | 'pt', string>, color: string}> = {
+  poison: { label: { en: '🐍 Poison', pt: '🐍 Veneno' }, color: 'bg-green-900/80 text-green-300 border-green-700/50' },
+  burn:   { label: { en: '🔥 Burn', pt: '🔥 Queimadura' }, color: 'bg-orange-900/80 text-orange-300 border-orange-700/50' },
+  stun:   { label: { en: '💫 Stunned', pt: '💫 Atordoado' }, color: 'bg-yellow-900/80 text-yellow-300 border-yellow-700/50' },
+  shield: { label: { en: '🛡️ Shield', pt: '🛡️ Escudo' }, color: 'bg-cyan-900/80 text-cyan-300 border-cyan-700/50' },
+  fury:   { label: { en: '⚔️ Fury', pt: '⚔️ Fúria' }, color: 'bg-red-900/80 text-red-300 border-red-700/50' },
+  taunt:  { label: { en: '🚩 Taunt', pt: '🚩 Provocar' }, color: 'bg-amber-900/80 text-amber-300 border-amber-700/50' },
+  immune_ranged: { label: { en: '☁️ Protection', pt: '☁️ Proteção' }, color: 'bg-slate-800/80 text-slate-300 border-slate-600/50' },
+  bleed: { label: { en: '🩸 Bleed', pt: '🩸 Sangramento' }, color: 'bg-red-950/80 text-red-300 border-red-700/50' },
+  fear: { label: { en: '💀 Fear', pt: '💀 Medo' }, color: 'bg-purple-900/80 text-purple-300 border-purple-700/50' },
+  invulnerable: { label: { en: '✨ Invulnerable', pt: '✨ Invulnerável' }, color: 'bg-yellow-900/80 text-yellow-200 border-yellow-600/50' },
+  rooted: { label: { en: '🌿 Rooted', pt: '🌿 Enraizado' }, color: 'bg-emerald-900/80 text-emerald-300 border-emerald-700/50' },
 };
 
 export interface GameState {
@@ -73,6 +73,7 @@ export interface GameState {
   turnNumber: number;
   currentPhase: Phase;
   currentTurnPlayerId: string;
+  language?: 'en' | 'pt';
 
   sandboxMode?: boolean;
   winner?: string; // Player que ganhou

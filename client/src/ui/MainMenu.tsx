@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../store/gameStore';
 import { useAuth } from '../hooks/useAuth';
 import { logout } from '../firebase/auth';
+import { translations } from './translations';
 import heroImg from '../assets/hexum.png';
 import backgroundImg from '../assets/background.jpg';
 
@@ -10,6 +11,8 @@ import backgroundImg from '../assets/background.jpg';
 const UserAvatar: React.FC<{ user: ReturnType<typeof useAuth>['user'] }> = ({ user }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const language = useGameStore(s => s.language);
+  const t = translations[language];
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -66,7 +69,7 @@ const UserAvatar: React.FC<{ user: ReturnType<typeof useAuth>['user'] }> = ({ us
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
                 </svg>
-                Sign Out
+                {t.signOut}
               </button>
             </div>
           </motion.div>
@@ -78,8 +81,9 @@ const UserAvatar: React.FC<{ user: ReturnType<typeof useAuth>['user'] }> = ({ us
 
 // ── MainMenu ───────────────────────────────────────────────
 export const MainMenu: React.FC = () => {
-  const { setCurrentView } = useGameStore();
+  const { setCurrentView, language, setLanguage } = useGameStore();
   const { user } = useAuth();
+  const t = translations[language];
 
   return (
     <div
@@ -100,11 +104,17 @@ export const MainMenu: React.FC = () => {
         </span>
         <div className="flex items-center gap-3">
           <button
+            onClick={() => setLanguage(language === 'pt' ? 'en' : 'pt')}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-bold text-slate-300 transition-colors"
+          >
+            <span>{language === 'pt' ? '🇧🇷 PT' : '🇺🇸 EN'}</span>
+          </button>
+          <button
             onClick={() => window.open('https://forms.gle/c9ReRbd2SAc5dggr7', '_blank')}
             className="hidden md:flex items-center gap-1.5 text-slate-500 hover:text-slate-300 text-xs tracking-wider transition-colors"
           >
             <span>📩</span>
-            <span>Feedback</span>
+            <span>{t.feedback}</span>
           </button>
           <UserAvatar user={user} />
         </div>
@@ -140,7 +150,7 @@ export const MainMenu: React.FC = () => {
         >
           {/* Title (mobile only, desktop shows in the art) */}
           <div className="md:hidden text-center mb-1">
-            <h1 className="text-white/80 text-xs font-black tracking-[0.4em] uppercase">Battlefield</h1>
+            <h1 className="text-white/80 text-xs font-black tracking-[0.4em] uppercase">{t.battlefield}</h1>
           </div>
 
           {/* Play button */}
@@ -151,19 +161,17 @@ export const MainMenu: React.FC = () => {
             <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/0 via-indigo-500/5 to-indigo-600/0 opacity-0 group-hover:opacity-100 transition-opacity" />
             <span className="text-2xl relative z-10">⚔️</span>
             <div className="text-left relative z-10">
-              <p className="text-white font-black text-base tracking-wide">Start Battle</p>
+              <p className="text-white font-black text-base tracking-wide">{t.startBattle}</p>
               <p className="text-indigo-300/50 text-[11px] font-medium mt-0.5">
-                Quick Match
+                {t.quickMatch}
               </p>
             </div>
           </button>
 
-
-
           {/* Divider */}
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-white/6" />
-            <span className="text-white/15 text-[10px] tracking-widest uppercase">or</span>
+            <span className="text-white/15 text-[10px] tracking-widest uppercase">{t.or}</span>
             <div className="flex-1 h-px bg-white/6" />
           </div>
 
@@ -174,8 +182,8 @@ export const MainMenu: React.FC = () => {
           >
             <span className="text-xl opacity-60 group-hover:opacity-100 transition-opacity">🛠️</span>
             <div className="text-left">
-              <p className="text-slate-300 group-hover:text-white font-bold text-sm transition-colors">War Simulator</p>
-              <p className="text-slate-600 text-[11px] group-hover:text-slate-500 transition-colors">Training ground & trials</p>
+              <p className="text-slate-300 group-hover:text-white font-bold text-sm transition-colors">{t.warSimulator}</p>
+              <p className="text-slate-600 text-[11px] group-hover:text-slate-500 transition-colors">{t.trainingGround}</p>
             </div>
           </button>
 
@@ -186,8 +194,8 @@ export const MainMenu: React.FC = () => {
           >
             <span className="text-xl opacity-70 group-hover:opacity-100 transition-opacity">👥</span>
             <div className="text-left">
-              <p className="text-emerald-300 group-hover:text-emerald-200 font-bold text-sm transition-colors">Play vs Friend</p>
-              <p className="text-emerald-800 text-[11px] group-hover:text-emerald-600 transition-colors">Private room · Real-time PvP</p>
+              <p className="text-emerald-300 group-hover:text-emerald-200 font-bold text-sm transition-colors">{t.playVsFriend}</p>
+              <p className="text-emerald-800 text-[11px] group-hover:text-emerald-600 transition-colors">{t.privateRoom}</p>
             </div>
           </button>
 
@@ -198,7 +206,7 @@ export const MainMenu: React.FC = () => {
               className="text-[10px] text-slate-600 hover:text-slate-400 transition-colors flex items-center gap-1.5"
             >
               <span>📩</span>
-              <span className="tracking-widest uppercase">Send Feedback</span>
+              <span className="tracking-widest uppercase">{t.sendFeedback}</span>
             </button>
           </div>
         </motion.div>
@@ -206,7 +214,7 @@ export const MainMenu: React.FC = () => {
 
       {/* Bottom copyright */}
       <div className="absolute bottom-4 left-0 right-0 flex justify-center z-10 pointer-events-none">
-        <p className="text-white/12 text-[10px] tracking-[0.3em] uppercase">© 2026 Hexum Studios</p>
+        <p className="text-white/12 text-[10px] tracking-[0.3em] uppercase">{t.copyright}</p>
       </div>
     </div>
   );

@@ -7,6 +7,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { registerWithEmail, loginWithEmail, loginWithGoogle } from '../firebase/auth';
+import { useGameStore } from '../store/gameStore';
+import { translations } from './translations';
 import backgroundImg from '../assets/background.jpg';
 import heroImg from '../assets/hexum.png';
 
@@ -24,6 +26,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const language = useGameStore(state => state.language);
+  const setLanguage = useGameStore(state => state.setLanguage);
+  const t = translations[language];
+
   const clearError = () => setError('');
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -33,7 +39,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
     try {
       if (tab === 'register') {
         if (!displayName.trim()) {
-          setError('Enter your player name.');
+          setError(t.errorEmptyName);
           setLoading(false);
           return;
         }
@@ -44,14 +50,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
       onAuthenticated();
     } catch (err: any) {
       const msg: Record<string, string> = {
-        'auth/email-already-in-use': 'This email is already registered.',
-        'auth/invalid-email': 'Invalid email.',
-        'auth/weak-password': 'Weak password — minimum 6 characters.',
-        'auth/user-not-found': 'Account not found.',
-        'auth/wrong-password': 'Incorrect password.',
-        'auth/invalid-credential': 'Incorrect email or password.',
+        'auth/email-already-in-use': t.authEmailInUse,
+        'auth/invalid-email': t.authInvalidEmail,
+        'auth/weak-password': t.authWeakPassword,
+        'auth/user-not-found': t.authUserNotFound,
+        'auth/wrong-password': t.authWrongPassword,
+        'auth/invalid-credential': t.authInvalidCredential,
       };
-      setError(msg[err.code] ?? 'Unexpected error. Try again.');
+      setError(msg[err.code] ?? t.authUnexpected);
     } finally {
       setLoading(false);
     }
@@ -64,7 +70,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
       await loginWithGoogle();
       onAuthenticated();
     } catch {
-      setError('Failed to login with Google. Try again.');
+      setError(t.failedGoogle);
     } finally {
       setLoading(false);
     }
@@ -79,6 +85,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
         backgroundPosition: 'center',
       }}
     >
+      {/* Language Selector Top Right */}
+      <div className="absolute top-4 right-4 z-50">
+        <button
+          onClick={() => setLanguage(language === 'pt' ? 'en' : 'pt')}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-bold text-slate-300 transition-colors shadow-lg"
+        >
+          <span>{language === 'pt' ? '🇧🇷 PT' : '🇺🇸 EN'}</span>
+        </button>
+      </div>
+
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/65 backdrop-blur-[2px]" />
 
@@ -123,26 +139,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
             {/* Header */}
             <div className="mb-5 text-center">
               <h1 className="text-lg font-black text-white tracking-[0.2em] uppercase">
-                {tab === 'login' ? 'Enter the Battle' : 'Join the Combat'}
+                {tab === 'login' ? t.enterBattle : t.joinCombat}
               </h1>
               <p className="text-slate-500 text-xs tracking-widest mt-1 uppercase">
-                {tab === 'login' ? 'Login to your account to continue' : 'Create your warrior account'}
+                {tab === 'login' ? t.loginDesc : t.registerDesc}
               </p>
             </div>
 
             {/* Tabs */}
             <div className="flex bg-black/40 rounded-xl p-1 gap-1 mb-5">
-              {(['login', 'register'] as AuthTab[]).map((t) => (
+              {(['login', 'register'] as AuthTab[]).map((tName) => (
                 <button
-                  key={t}
-                  onClick={() => { setTab(t); clearError(); }}
+                  key={tName}
+                  onClick={() => { setTab(tName); clearError(); }}
                   className={`flex-1 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all duration-200 ${
-                    tab === t
+                    tab === tName
                       ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
                       : 'text-slate-500 hover:text-slate-300'
                   }`}
                 >
-                  {t === 'login' ? '⚔️ Login' : '🛡️ Register'}
+                  {tName === 'login' ? `⚔️ ${t.login}` : `🛡️ ${t.register}`}
                 </button>
               ))}
             </div>
@@ -160,7 +176,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
                   >
                     <input
                       type="text"
-                      placeholder="Player Name"
+                      placeholder={t.playerNamePlaceholder}
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-amber-500/50 focus:bg-white/8 transition-all"
@@ -171,7 +187,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
 
               <input
                 type="email"
-                placeholder="Email"
+                placeholder={t.emailPlaceholder}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -179,7 +195,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
               />
               <input
                 type="password"
-                placeholder="Password"
+                placeholder={t.passwordPlaceholder}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -208,14 +224,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
                 className="w-full py-3.5 mt-1 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-white font-black text-sm uppercase tracking-widest shadow-[0_0_20px_rgba(245,158,11,0.25)] hover:shadow-[0_0_35px_rgba(245,158,11,0.45)] transition-all duration-200 active:scale-[0.98]"
               >
                 {loading
-                  ? '⏳ Please wait...'
-                  : tab === 'login' ? '⚔️ Enter the Battle' : '🛡️ Create Account'}
+                  ? `⏳ ${t.pleaseWait}`
+                  : tab === 'login' ? `⚔️ ${t.enterBattle}` : `🛡️ ${t.createAccount}`}
               </button>
 
               {/* Divider */}
               <div className="flex items-center gap-3 py-1">
                 <div className="flex-1 h-px bg-white/8" />
-                <span className="text-slate-600 text-xs uppercase tracking-widest">or</span>
+                <span className="text-slate-600 text-xs uppercase tracking-widest">{t.or}</span>
                 <div className="flex-1 h-px bg-white/8" />
               </div>
 
@@ -232,7 +248,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
                   <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
                   <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
                 </svg>
-                Continue with Google
+                {t.continueWithGoogle}
               </button>
             </form>
           </div>
@@ -245,7 +261,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
           transition={{ delay: 0.5 }}
           className="text-[10px] text-slate-400 uppercase tracking-[0.2em]"
         >
-          © 2026 Hexum Studios
+          {t.copyright}
         </motion.p>
       </motion.div>
     </div>
