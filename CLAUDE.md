@@ -199,6 +199,22 @@ A busca não era "imprecisa": era estruturalmente inválida.
 | Bundle único de 868 kB, com o aviso apenas silenciado | code-splitting por vendor (app: 197 kB) |
 | Lixo versionado na raiz (`mech*.txt`, `sprite*.txt`, `test_ai*.ts`, `ai_tournament_results.json`) e 4 imagens sem referência | removidos; a cobertura dos scripts virou `selfPlay.test.ts` |
 
+### Encontrado ao rodar o jogo no navegador
+
+Verificação com Chromium/Playwright numa partida real contra a IA — coisas que
+typecheck, lint e teste unitário não pegam:
+
+- O baralho é feito de ids `hero_*`, mas a resolução de nome só tratava `unit_*`:
+  toda invocação logava o id cru (`Played HERO_LANDSKNECHT`).
+- Os logs interpolavam `unit.unitClass`, que é sempre o identificador interno em
+  português — no modo inglês saía "The Lanceiro marched...". Agora passa por
+  `getClassDisplayName`.
+
+Confirmado no mesmo teste: menu e tabuleiro renderizam, o cronômetro corre
+(58s → 54s), a IA avança unidades, invoca tropa, faz oferenda de mana e encerra
+o turno, e o único erro de console é o bloqueio TLS do Google Fonts pelo proxy
+do ambiente — não é do projeto.
+
 ---
 
 ## 7. Dívidas em aberto (conhecidas e deliberadas)
