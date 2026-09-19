@@ -93,6 +93,12 @@ function calculateSideValue(state: GameState, playerId: string, opponentId: stri
     value -= threats.length * 2000;
   }
 
+  // Derrota por baralho vazio: a busca é rasa demais para enxergar o deck-out,
+  // então um termo de eval mantém a IA consciente do recurso nas últimas cartas.
+  if (player && player.deck.length <= 3) {
+    value -= (4 - player.deck.length) * 1500;
+  }
+
   value += calculateInfluenceBonus(state, playerId, opponentId);
   return value;
 }

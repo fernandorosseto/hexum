@@ -253,6 +253,86 @@ describe('Corcel de Guerra', () => {
   });
 });
 
+describe('derrota por baralho vazio', () => {
+  it('quem precisa comprar sem cartas perde a partida', () => {
+    const state = makeState([
+      makeUnit({ id: 'k1', unitClass: 'Rei', position: hex(0, 0) }),
+      makeUnit({ id: 'k2', playerId: 'p2', unitClass: 'Rei', position: hex(3, -3) }),
+    ]);
+    state.currentTurnPlayerId = 'p1';
+    state.players.p2.deck = [];               // p2 compra no início do próprio turno
+
+    const out = endTurn(state);
+
+    expect(out.currentPhase).toBe('GAME_OVER');
+    expect(out.winner).toBe('p1');
+    expect(out.winReason).toBe('deckout');
+  });
+
+  it('com carta no baralho o turno segue normalmente', () => {
+    const state = makeState([]);
+    state.currentTurnPlayerId = 'p1';
+    state.players.p2.deck = ['unit_lanceiro'];
+
+    const out = endTurn(state);
+
+    expect(out.currentPhase).toBe('MAIN_PHASE');
+    expect(out.players.p2.deck).toHaveLength(0);
+    expect(out.players.p2.hand).toContain('unit_lanceiro');
+  });
+
+  it('a regra não vale no Sandbox', () => {
+    const state = makeState([], { sandboxMode: true });
+    state.currentTurnPlayerId = 'p1';
+    state.players.p2.deck = [];
+
+    expect(endTurn(state).currentPhase).toBe('MAIN_PHASE');
+  });
+
+  it('Chamado dos Reforços adia o deck-out', () => {
+    const king = makeUnit({ id: 'k1', unitClass: 'Rei', position: hex(0, 0) });
+    const state = makeState([king]);
+    state.currentTurnPlayerId = 'p1';
+    state.players.p1.hand = ['spl_reforcos'];
+    state.players.p1.deck = [];
+    state.players.p2.deck = ['unit_lanceiro'];
+
+    const afterSpell = playCard(state, 'p1', 'spl_reforcos', hex(0, 0));
+    expect(afterSpell.players.p1.deck).toHaveLength(1);
+
+    // p1 passa, p2 joga e devolve a vez: p1 ainda tem o que comprar.
+    const back = endTurn(endTurn(afterSpell));
+    expect(back.currentPhase).toBe('MAIN_PHASE');
+    expect(back.currentTurnPlayerId).toBe('p1');
+  });
+
+  it('a partida inicial termina sozinha quando os baralhos acabam', () => {
+    let state = makeState([
+      makeUnit({ id: 'k1', unitClass: 'Rei', position: hex(0, 0) }),
+      makeUnit({ id: 'k2', playerId: 'p2', unitClass: 'Rei', position: hex(3, -3) }),
+    ]);
+    state = { ...state, players: createInitialState().players };
+
+    let turns = 0;
+    while (state.currentPhase !== 'GAME_OVER' && turns < 200) {
+      state = endTurn(state);
+      turns++;
+    }
+
+    expect(state.currentPhase).toBe('GAME_OVER');
+    expect(state.winReason).toBe('deckout');
+    expect(turns).toBeLessThan(60);
+  });
+
+  it('registra o motivo também quando o Rei cai', () => {
+    const state = makeState([
+      makeUnit({ id: 'k1', unitClass: 'Rei', hp: 1, buffs: [{ type: 'poison', duration: 2, value: 1 }], position: hex(0, 0) }),
+      makeUnit({ id: 'k2', playerId: 'p2', unitClass: 'Rei', position: hex(3, -3) }),
+    ]);
+    expect(endTurn(state).winReason).toBe('king');
+  });
+});
+
 describe('endTurn', () => {
   it('aplica DoT e mata o Rei do dono do turno declarando o adversário vencedor', () => {
     const state = makeState([

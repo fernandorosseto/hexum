@@ -131,6 +131,7 @@ export function handleUnitDeath(state: GameState, unit: Unit): void {
     if (unit.unitClass === 'Rei' && !state.sandboxMode) {
       state.currentPhase = 'GAME_OVER';
       state.winner = unit.playerId === 'p1' ? 'p2' : 'p1';
+      state.winReason = 'king';
     }
     delete state.boardUnits[unit.id];
     addCombatLog(

@@ -145,6 +145,7 @@ Registro do que estava quebrado, para não regredir. Cada item tem teste.
 | Artefatos empilhavam sem limite (3× Lâmina = +6 de ataque) | sem repetição, máx. `MAX_ARTIFACTS_PER_UNIT` |
 | `sort(() => 0.5 - Math.random())` e ids de 5 caracteres | Fisher-Yates e ids por contador |
 | Log do medo acumulava entre turnos | `combatLogs` limpo antes da checagem |
+| Partida podia não terminar: `drawCard` era no-op com baralho vazio | **derrota por baralho vazio**; `winReason` (`king` / `deckout` / `surrender`) explica o fim na tela de resultado |
 
 ### IA (`shared/src/aiEngine.ts`)
 
@@ -225,9 +226,9 @@ do ambiente — não é do projeto.
    mora num documento único e o Firestore autoriza por documento, não por campo.
    Só um servidor (Cloud Functions ou Node) resolve — e é o mesmo trabalho que
    torna o ranking confiável.
-2. **Sem regra de fim por baralho.** Não existe fadiga, derrota por deck vazio nem
-   limite de mão; uma partida em que ninguém alcança o Rei pode não terminar.
-   É decisão de design, não bug — por isso não foi inventada uma regra.
+2. **Sem limite de tamanho de mão.** Quem não gasta cartas acumula mão (chega a
+   ~20 numa partida que vai até o deck-out). Não trava o jogo — a derrota por
+   baralho vazio garante o fim —, mas continua um espaço de design em aberto.
 3. **Assets pesados.** `hexum.png` (8,9 MB) e `muralha_gelo.png` (6,4 MB)
    respondem pela maior parte dos ~19 MB do `dist/`. Reexportar em WebP/AVIF na
    resolução real de uso é a maior economia disponível — não foi feito porque

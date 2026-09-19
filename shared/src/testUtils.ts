@@ -22,14 +22,22 @@ export function makeUnit(over: Partial<Unit> & { id: string }): Unit {
   };
 }
 
-/** Estado limpo: sem unidades, sem cartas, mana à vontade, turno do p1. */
+/**
+ * Estado limpo: sem unidades, sem cartas na mão, mana à vontade, turno do p1.
+ *
+ * O baralho NÃO fica vazio de propósito: desde a regra de derrota por baralho
+ * vazio, um deck sem cartas faz o próximo `endTurn` encerrar a partida. Testes
+ * que queiram exercitar o deck-out zeram o deck explicitamente.
+ */
 export function makeState(units: Unit[] = [], over: Partial<GameState> = {}): GameState {
+  const stockDeck = () => Array.from({ length: 10 }, () => 'unit_lanceiro');
+
   const state = createInitialState();
   state.boardUnits = {};
   for (const u of units) state.boardUnits[u.id] = u;
   state.currentTurnPlayerId = 'p1';
-  state.players.p1 = { ...state.players.p1, mana: 9, maxMana: 9, hand: [], deck: [] };
-  state.players.p2 = { ...state.players.p2, mana: 9, maxMana: 9, hand: [], deck: [] };
+  state.players.p1 = { ...state.players.p1, mana: 9, maxMana: 9, hand: [], deck: stockDeck() };
+  state.players.p2 = { ...state.players.p2, mana: 9, maxMana: 9, hand: [], deck: stockDeck() };
   return { ...state, ...over };
 }
 

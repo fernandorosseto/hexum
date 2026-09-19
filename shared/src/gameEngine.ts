@@ -2,7 +2,7 @@ import type { GameState, Unit, Card, UnitCard } from './types';
 import { getHexDistance, getHexNeighbors, isInsideBoard, BOARD_RADIUS } from './hexMath';
 import type { HexCoordinates } from './hexMath';
 import { ARTIFACTS, SPELLS, getUnitCard, tryGetUnitCard } from './cardLibrary';
-import { UNIT_BEHAVIORS, checkEffectTrigger, handleUnitDeath } from './unitBehaviors';
+import { UNIT_BEHAVIORS, checkEffectTrigger, handleUnitDeath, addCombatLog } from './unitBehaviors';
 import { SPELL_REGISTRY } from './spellHandlers';
 import { ARTIFACT_REGISTRY } from './artifactHandlers';
 import { getValidAttackTargets } from './getValidAttackTargets';
@@ -200,12 +200,16 @@ function addInitialUnit(state: GameState, playerId: string, heroId: string, pos:
 //  Compra de Cartas
 // ══════════════════════════════════════════════
 
-export function drawCard(state: GameState, playerId: string) {
+/**
+ * Compra uma carta. Devolve `false` quando o baralho está vazio — quem precisa
+ * comprar e não consegue perde a partida (ver `endTurn`).
+ */
+export function drawCard(state: GameState, playerId: string): boolean {
   const player = state.players[playerId];
-  if (player.deck.length > 0) {
-    const cardId = player.deck.pop();
-    if (cardId) player.hand.push(cardId);
-  }
+  const cardId = player.deck.pop();
+  if (!cardId) return false;
+  player.hand.push(cardId);
+  return true;
 }
 
 function drawInitialHand(state: GameState, playerId: string) {
@@ -256,6 +260,7 @@ export function cloneGameState(state: GameState): GameState {
     language: state.language,
     sandboxMode: state.sandboxMode,
     winner: state.winner,
+    winReason: state.winReason,
     players: newPlayers,
     boardUnits: newBoard,
     combatLogs: state.combatLogs ? [...state.combatLogs] : [],
@@ -302,6 +307,7 @@ export function endTurn(state: GameState): GameState {
         if (unit.unitClass === 'Rei' && !newState.sandboxMode) {
           newState.currentPhase = 'GAME_OVER';
           newState.winner = endingPlayerId === 'p1' ? 'p2' : 'p1';
+          newState.winReason = 'king';
         }
         delete newState.boardUnits[unitId];
       }
@@ -323,7 +329,20 @@ export function endTurn(state: GameState): GameState {
   nextPlayer.mana = nextPlayer.maxMana;
   nextPlayer.canOfferCard = true;
 
-  drawCard(newState, nextPlayerId);
+  // Derrota por baralho vazio: quem precisa comprar e não tem carta perde.
+  // No Sandbox a regra não vale, para não interromper testes.
+  const drew = drawCard(newState, nextPlayerId);
+  if (!drew && !newState.sandboxMode) {
+    newState.currentPhase = 'GAME_OVER';
+    newState.winner = nextPlayerId === 'p1' ? 'p2' : 'p1';
+    newState.winReason = 'deckout';
+    addCombatLog(
+      newState,
+      `📜 ${nextPlayerId === 'p1' ? 'Blue' : 'Purple'} has no cards left to draw and was defeated.`,
+      `📜 ${nextPlayerId === 'p1' ? 'Azul' : 'Roxo'} ficou sem cartas para comprar e foi derrotado.`,
+    );
+    return newState;
+  }
 
   // Zera estados de invocação / fadiga das tropas inimigas
   for (const unitId in newState.boardUnits) {

@@ -313,6 +313,7 @@ export const useGameStore = create<GameStore>()(
         set({
           currentPhase: 'GAME_OVER',
           winner: winnerId,
+          winReason: 'surrender',
           isTimerRunning: false,
           actionSeq: state.actionSeq + 1,
           isResolving: false,

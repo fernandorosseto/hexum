@@ -151,7 +151,14 @@ O ambiente de testes definitivo para validar táticas e balanceamento.
 
 ## ☠️ 7. Condição de Vitória
 
-O jogo termina quando o **Rei** de qualquer jogador chega a **0 HP** — **o vencedor é sempre o adversário do Rei que caiu**, inclusive quando a morte vem de fogo amigo (Meteoro, Relâmpago) ou de Veneno no fim do turno. No **Simulador de Guerra** o Rei não encerra a partida, para permitir testes.
+A partida termina por um de dois caminhos:
+
+1. **Rei derrotado** — o **Rei** de um jogador chega a **0 HP**. O vencedor é sempre o adversário do Rei que caiu, inclusive quando a morte vem de fogo amigo (Meteoro, Relâmpago) ou de Veneno no fim do turno.
+2. **Baralho vazio (deck-out)** — no início do seu turno você compra uma carta. Quem precisa comprar e **não tem mais cartas no baralho perde**. O baralho inicial tem 17 cartas, 3 vão para a mão de abertura e uma é comprada por turno, então uma partida em que ninguém alcança o Rei termina por volta do turno 35. **Chamado dos Reforços** devolve uma carta ao baralho e adia o deck-out.
+
+A tela de fim de jogo informa qual dos dois motivos encerrou a partida (`winReason`).
+
+No **Simulador de Guerra** nenhuma das duas regras encerra a partida, para permitir testes.
 
 ---
 
@@ -164,4 +171,4 @@ O jogo termina quando o **Rei** de qualquer jogador chega a **0 HP** — **o ven
 
 ### Lacunas conhecidas de design (não implementadas)
 
-- **Sem regra de fadiga / deck vazio.** `drawCard` simplesmente não faz nada quando o baralho acaba, e não há limite de tamanho de mão. Uma partida em que ninguém consegue matar o Rei adversário pode durar indefinidamente. Definir a regra (derrota por deck vazio? dano de fadiga? limite de mão?) é uma decisão de design em aberto.
+- **Sem limite de tamanho de mão.** Quem não gasta cartas acumula mão indefinidamente (chega a ~20 cartas numa partida que vai até o deck-out). Não trava o jogo — o deck-out já garante o fim —, mas é um espaço de design em aberto (limite de mão? descarte forçado?).
