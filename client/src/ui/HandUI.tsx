@@ -1,6 +1,6 @@
 import React from 'react';
 import { useGameStore } from '../store/gameStore';
-import { getUnitCard, ARTIFACTS, SPELLS, ARTIFACT_NAMES, SPELL_NAMES } from 'shared';
+import { getUnitCard, ARTIFACTS, SPELLS, ARTIFACT_NAMES, SPELL_NAMES, getPendingDiscards } from 'shared';
 import { CLASS_ICONS } from '../constants/unitIcons';
 import { translations } from './translations';
 
@@ -40,14 +40,30 @@ export const HandUI: React.FC = () => {
   const setSelectedCard = useGameStore(state => state.setSelectedCard);
   const setSelectedHex = useGameStore(state => state.setSelectedHex);
   const offerCard = useGameStore(state => state.offerCard);
+  const discardCard = useGameStore(state => state.discardCard);
   const isAiThinking = useGameStore(state => state.isAiThinking);
-  
+
   const isMyTurn = currentTurnPlayerId === targetPlayerId;
+
+  // Limite de mão: o turno fica parado até o excedente ser descartado.
+  const pendingDiscards = useGameStore(state => getPendingDiscards(state, targetPlayerId));
+  const isDiscarding = pendingDiscards > 0;
 
   return (
     <div className="relative flex flex-col md:flex-col items-center gap-4">
 
-      {selectedCard && player?.canOfferCard && isMyTurn && (
+      {isDiscarding && (
+        <div className="mb-1 px-4 py-2 rounded-xl bg-amber-950/90 border-2 border-amber-500/70 shadow-[0_0_20px_rgba(245,158,11,0.35)] text-center animate-pulse">
+          <p className="text-amber-300 font-black text-[10px] uppercase tracking-widest leading-none">
+            {t.discardTitle}
+          </p>
+          <p className="text-amber-100/80 text-[11px] font-bold mt-1 leading-none">
+            {t.discardPrompt.replace('{n}', String(pendingDiscards))}
+          </p>
+        </div>
+      )}
+
+      {!isDiscarding && selectedCard && player?.canOfferCard && isMyTurn && (
         <button 
           onClick={() => {
             offerCard(selectedCard);
@@ -80,6 +96,10 @@ export const HandUI: React.FC = () => {
               key={`${cardId}-${idx}`} 
               onClick={() => {
                 if (!isMyTurn) return;
+                if (isDiscarding) {
+                  discardCard(card.id);
+                  return;
+                }
                 setSelectedCard(isSelected ? null : card.id);
                 setSelectedHex(null);
               }}
@@ -89,6 +109,7 @@ export const HandUI: React.FC = () => {
                 transition-all duration-200 cursor-pointer 
                 ${isSelected ? '-translate-y-3 scale-110' : 'hover:scale-105 hover:-translate-y-2'}
                 ${!canAfford && !isSelected ? 'opacity-80' : ''}
+                ${isDiscarding ? 'ring-4 ring-amber-500/70 rounded-full' : ''}
               `}
             >
               {/* Camada de Fundo (igual ao token) */}

@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { persist, subscribeWithSelector } from 'zustand/middleware';
-import { endTurn, createInitialState, hasAnyValidAction, getBestAction } from 'shared';
+import {
+  endTurn, createInitialState, hasAnyValidAction, getBestAction,
+  discardCard as discardCardRule, getPendingDiscards, HAND_LIMIT,
+} from 'shared';
 import type { GameState, HexCoordinates } from 'shared';
 import { createCombatActions } from './combatActions';
 import { createSandboxActions } from './sandboxActions';
@@ -81,6 +84,8 @@ export interface GameStore extends GameState {
   attemptHeal: (healerId: string, targetId: string) => void;
   attemptPlayCard: (cardId: string, hex: HexCoordinates) => void;
   triggerEndTurn: () => void;
+  /** Descarta uma carta durante a END_PHASE (limite de mão). */
+  discardCard: (cardId: string) => void;
   runAiTurn: () => Promise<void>;
   addLog: (message: string, playerId: string) => void;
   clearLogs: () => void;
@@ -256,6 +261,12 @@ export const useGameStore = create<GameStore>()(
         // jogador ausente. Fora do PvP o relógio é apenas informativo.
         set({ isTimerRunning: false });
         if (state.isPvP && state.currentTurnPlayerId === state.myRole) {
+          if (state.currentPhase === 'END_PHASE') {
+            // Descarte pendente: escolhe por ele, senão a sala fica parada.
+            const hand = state.players[state.currentTurnPlayerId]?.hand ?? [];
+            if (hand.length > 0) get().discardCard(hand[hand.length - 1]);
+            return;
+          }
           get().triggerEndTurn();
         }
       },
@@ -404,15 +415,30 @@ export const useGameStore = create<GameStore>()(
           const currentGameState = get();
           const pId = currentGameState.currentTurnPlayerId;
           const newState = endTurn(currentGameState);
+          // Mão acima do limite: o turno fica parado até o jogador descartar.
+          const awaitingDiscard = newState.currentPhase === 'END_PHASE';
+
           set({
             ...newState,
             selectedHex: null,
-            turnTimer: TURN_SECONDS,
-            isTimerRunning: true,
+            selectedCard: null,
+            ...(awaitingDiscard ? {} : { turnTimer: TURN_SECONDS, isTimerRunning: true }),
             // Qualquer animação pendente do turno anterior deixa de valer.
             actionSeq: currentGameState.actionSeq + 1,
             isResolving: false,
           });
+
+          if (awaitingDiscard) {
+            const pending = getPendingDiscards(newState, pId);
+            get().addLog(
+              get().language === 'pt'
+                ? `Mão acima do limite de ${HAND_LIMIT}: descarte ${pending} carta(s).`
+                : `Hand over the ${HAND_LIMIT}-card limit: discard ${pending} card(s).`,
+              pId,
+            );
+            return;
+          }
+
           get().addLog(`${pId === 'p1' ? 'Blue' : 'Purple'}'s turn ended.`, pId);
 
           const updatedState = get();
@@ -436,6 +462,39 @@ export const useGameStore = create<GameStore>()(
           }
         } catch (err) {
           console.warn("Erro de Turno:", err instanceof Error ? err.message : err);
+        }
+      },
+
+      discardCard: (cardId) => {
+        try {
+          const current = get();
+          const pId = current.currentTurnPlayerId;
+          const newState = discardCardRule(current, pId, cardId);
+          const stillPending = newState.currentPhase === 'END_PHASE';
+
+          set({
+            ...newState,
+            selectedCard: null,
+            selectedHex: null,
+            ...(stillPending ? {} : { turnTimer: TURN_SECONDS, isTimerRunning: true }),
+          });
+
+          get().addLog(
+            get().language === 'pt' ? `Descartou uma carta.` : `Discarded a card.`,
+            pId,
+          );
+
+          if (stillPending) return;
+
+          get().addLog(`${pId === 'p1' ? 'Blue' : 'Purple'}'s turn ended.`, pId);
+
+          const updated = get();
+          if (updated.currentPhase !== 'GAME_OVER' &&
+              (updated.isAutoPlay || (updated.isVsAI && updated.currentTurnPlayerId === 'p2'))) {
+            setTimeout(() => get().runAiTurn(), updated.isAutoPlay ? 200 : 1000);
+          }
+        } catch (err) {
+          console.warn('Erro ao descartar:', err instanceof Error ? err.message : err);
         }
       },
 
@@ -466,8 +525,18 @@ export const useGameStore = create<GameStore>()(
             }
 
             const action = getBestAction(before, currentPlayer, { timeBudgetMs: 800 });
-            if (!action || action.type === 'END_TURN') {
+            if (!action) {
               before.triggerEndTurn();
+              break;
+            }
+            if (action.type === 'END_TURN') {
+              before.triggerEndTurn();
+              // Se parou no limite de mão, o turno ainda é nosso: seguir para
+              // descartar em vez de sair e deixar a partida travada.
+              if (get().currentPhase === 'END_PHASE' && get().currentTurnPlayerId === currentPlayer) {
+                actionsTaken++;
+                continue;
+              }
               break;
             }
 
@@ -482,6 +551,7 @@ export const useGameStore = create<GameStore>()(
               case 'PLAY_CARD': actions.attemptPlayCard(action.cardId, action.target); break;
               case 'OFFER':     actions.offerCard(action.cardId); break;
               case 'HEAL':      actions.attemptHeal(action.healerId, action.targetId); break;
+              case 'DISCARD':   actions.discardCard(action.cardId); break;
             }
             actionsTaken++;
 

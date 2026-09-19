@@ -107,6 +107,10 @@ client/src/
   senão um clique no meio da janela é desfeito quando o timer antigo dispara.
 - **Sandbox relaxa regras montando um estado temporário** nos wrappers
   (`combatActions`), não no motor. O motor só conhece a flag `sandboxMode`.
+- **`END_PHASE` é o turno PARADO no limite de mão**, não um "fim de turno".
+  `endTurn` devolve o estado sem passar a vez e só `discardCard` retoma a
+  transição. Quem adicionar fluxo de turno precisa tratar essa fase: chamar
+  `endTurn` de novo nela é no-op de propósito (senão os DoTs reaplicariam).
 - **`Mago` é apelido de `Alquimista`** — mesmo `UnitBehavior`, e `getUnitCard`
   mapeia os dois para `unit_alquimista`. Não existe unidade `Mago` invocável.
 
@@ -146,6 +150,7 @@ Registro do que estava quebrado, para não regredir. Cada item tem teste.
 | `sort(() => 0.5 - Math.random())` e ids de 5 caracteres | Fisher-Yates e ids por contador |
 | Log do medo acumulava entre turnos | `combatLogs` limpo antes da checagem |
 | Partida podia não terminar: `drawCard` era no-op com baralho vazio | **derrota por baralho vazio**; `winReason` (`king` / `deckout` / `surrender`) explica o fim na tela de resultado |
+| Mão crescia sem limite | **limite de 5 cartas na virada do turno**: `endTurn` para em `END_PHASE` e o jogador escolhe o descarte (`discardCard`) |
 
 ### IA (`shared/src/aiEngine.ts`)
 
@@ -226,19 +231,16 @@ do ambiente — não é do projeto.
    mora num documento único e o Firestore autoriza por documento, não por campo.
    Só um servidor (Cloud Functions ou Node) resolve — e é o mesmo trabalho que
    torna o ranking confiável.
-2. **Sem limite de tamanho de mão.** Quem não gasta cartas acumula mão (chega a
-   ~20 numa partida que vai até o deck-out). Não trava o jogo — a derrota por
-   baralho vazio garante o fim —, mas continua um espaço de design em aberto.
-3. **Assets pesados.** `hexum.png` (8,9 MB) e `muralha_gelo.png` (6,4 MB)
+2. **Assets pesados.** `hexum.png` (8,9 MB) e `muralha_gelo.png` (6,4 MB)
    respondem pela maior parte dos ~19 MB do `dist/`. Reexportar em WebP/AVIF na
    resolução real de uso é a maior economia disponível — não foi feito porque
    mexe em arte.
-4. **Efeitos probabilísticos quase invisíveis.** `checkEffectTrigger` devolve
+3. **Efeitos probabilísticos quase invisíveis.** `checkEffectTrigger` devolve
    `(1 + roundsInField) / 100` — 1% no turno de invocação. É a chance de Atordoar
    do Cavaleiro e do Arqueiro, de Empurrar do Lanceiro, do Escudo Sagrado e da
    Conversão do Clérigo. A "Chamado da Fé", habilidade-assinatura do Clérigo,
    falha ~97% das vezes e consome a ação. Números de balanceamento foram mantidos
    como estão por decisão do dono do projeto.
-5. **PvP não foi testado ponta a ponta** contra um Firestore real (não há
+4. **PvP não foi testado ponta a ponta** contra um Firestore real (não há
    credenciais neste ambiente). A lógica pura está coberta por testes; o caminho de
    rede, não.

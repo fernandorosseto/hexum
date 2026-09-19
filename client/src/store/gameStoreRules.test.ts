@@ -68,6 +68,53 @@ describe('cronômetro de turno', () => {
   });
 });
 
+describe('limite de mão (store)', () => {
+  const overLimit = ['unit_lanceiro', 'spl_raio', 'art_carvalho', 'unit_arqueiro', 'spl_meteoro', 'unit_cavaleiro'];
+
+  it('triggerEndTurn para em END_PHASE e não passa a vez', () => {
+    const state = useGameStore.getState();
+    useGameStore.setState({
+      players: { ...state.players, p1: { ...state.players.p1, hand: [...overLimit] } },
+    });
+
+    useGameStore.getState().triggerEndTurn();
+
+    const after = useGameStore.getState();
+    expect(after.currentPhase).toBe('END_PHASE');
+    expect(after.currentTurnPlayerId).toBe('p1');
+  });
+
+  it('discardCard libera a vez quando a mão chega ao limite', () => {
+    const state = useGameStore.getState();
+    useGameStore.setState({
+      players: { ...state.players, p1: { ...state.players.p1, hand: [...overLimit] } },
+    });
+    useGameStore.getState().triggerEndTurn();
+
+    useGameStore.getState().discardCard('spl_meteoro');
+
+    const after = useGameStore.getState();
+    expect(after.currentPhase).toBe('MAIN_PHASE');
+    expect(after.currentTurnPlayerId).toBe('p2');
+    expect(after.players.p1.hand).toHaveLength(5);
+    expect(after.players.p1.graveyard).toContain('spl_meteoro');
+  });
+
+  it('descarte inválido não quebra nem passa a vez', () => {
+    const state = useGameStore.getState();
+    useGameStore.setState({
+      players: { ...state.players, p1: { ...state.players.p1, hand: [...overLimit] } },
+    });
+    useGameStore.getState().triggerEndTurn();
+
+    useGameStore.getState().discardCard('carta_inexistente');
+
+    const after = useGameStore.getState();
+    expect(after.currentPhase).toBe('END_PHASE');
+    expect(after.players.p1.hand).toHaveLength(6);
+  });
+});
+
 describe('triggerEndTurn', () => {
   it('invalida animações pendentes e reinicia o cronômetro', () => {
     useGameStore.setState({ actionSeq: 7, isResolving: true, turnTimer: 3 });

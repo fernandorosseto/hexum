@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   createInitialState, cloneGameState, hasAnyValidAction, playCard, attack, heal,
   offerCard, endTurn, moveTo, getFearStatus, getCardManaCost, getValidSpawnCoordinates,
-  MAX_ARTIFACTS_PER_UNIT,
+  discardCard, getPendingDiscards, HAND_LIMIT, MAX_ARTIFACTS_PER_UNIT,
 } from './gameEngine';
 import { makeState, makeUnit, hex } from './testUtils';
 
@@ -313,10 +313,18 @@ describe('derrota por baralho vazio', () => {
     ]);
     state = { ...state, players: createInitialState().players };
 
+    // Ninguém joga nada: só passar a vez e descartar o excedente da mão.
+    let steps = 0;
     let turns = 0;
-    while (state.currentPhase !== 'GAME_OVER' && turns < 200) {
-      state = endTurn(state);
-      turns++;
+    while (state.currentPhase !== 'GAME_OVER' && steps < 500) {
+      if (state.currentPhase === 'END_PHASE') {
+        const pId = state.currentTurnPlayerId;
+        state = discardCard(state, pId, state.players[pId].hand[0]);
+      } else {
+        state = endTurn(state);
+        turns++;
+      }
+      steps++;
     }
 
     expect(state.currentPhase).toBe('GAME_OVER');
@@ -330,6 +338,93 @@ describe('derrota por baralho vazio', () => {
       makeUnit({ id: 'k2', playerId: 'p2', unitClass: 'Rei', position: hex(3, -3) }),
     ]);
     expect(endTurn(state).winReason).toBe('king');
+  });
+});
+
+describe('limite de mão', () => {
+  const fullHand = (n: number) => Array.from({ length: n }, () => 'unit_lanceiro');
+
+  it('para o turno em END_PHASE quando a mão passa do limite', () => {
+    const state = makeState([]);
+    state.players.p1.hand = fullHand(HAND_LIMIT + 2);
+
+    const out = endTurn(state);
+
+    expect(out.currentPhase).toBe('END_PHASE');
+    expect(out.currentTurnPlayerId).toBe('p1');   // a vez NÃO passou
+    expect(out.turnNumber).toBe(state.turnNumber);
+    expect(getPendingDiscards(out, 'p1')).toBe(2);
+  });
+
+  it('não interrompe quem termina dentro do limite', () => {
+    const state = makeState([]);
+    state.players.p1.hand = fullHand(HAND_LIMIT);
+
+    const out = endTurn(state);
+
+    expect(out.currentPhase).toBe('MAIN_PHASE');
+    expect(out.currentTurnPlayerId).toBe('p2');
+  });
+
+  it('descartar manda a carta para o cemitério e só libera a vez no limite', () => {
+    const state = makeState([]);
+    state.players.p1.hand = [...fullHand(HAND_LIMIT), 'spl_raio', 'art_carvalho'];
+
+    const paused = endTurn(state);
+    const afterFirst = discardCard(paused, 'p1', 'art_carvalho');
+
+    expect(afterFirst.currentPhase).toBe('END_PHASE');      // ainda 6 cartas
+    expect(afterFirst.currentTurnPlayerId).toBe('p1');
+    expect(afterFirst.players.p1.graveyard).toContain('art_carvalho');
+
+    const afterSecond = discardCard(afterFirst, 'p1', 'spl_raio');
+
+    expect(afterSecond.currentPhase).toBe('MAIN_PHASE');
+    expect(afterSecond.currentTurnPlayerId).toBe('p2');     // agora a vez passou
+    expect(afterSecond.players.p1.hand).toHaveLength(HAND_LIMIT);
+    expect(afterSecond.players.p1.graveyard).toEqual(['art_carvalho', 'spl_raio']);
+  });
+
+  it('recusa descarte fora da END_PHASE, de carta ausente e do jogador errado', () => {
+    const state = makeState([]);
+    state.players.p1.hand = fullHand(HAND_LIMIT + 1);
+
+    expect(() => discardCard(state, 'p1', 'unit_lanceiro')).toThrow(/discard/i);
+
+    const paused = endTurn(state);
+    expect(() => discardCard(paused, 'p2', 'unit_lanceiro')).toThrow(/turn|turno/i);
+    expect(() => discardCard(paused, 'p1', 'spl_meteoro')).toThrow(/not in hand/i);
+  });
+
+  it('endTurn em END_PHASE não reaplica veneno nem passa a vez', () => {
+    const state = makeState([
+      makeUnit({ id: 'u1', hp: 5, buffs: [{ type: 'poison', duration: 3, value: 1 }], position: hex(0, 0) }),
+    ]);
+    state.players.p1.hand = fullHand(HAND_LIMIT + 1);
+
+    const paused = endTurn(state);
+    expect(paused.boardUnits.u1.hp).toBe(4);
+
+    const again = endTurn(paused);
+    expect(again.boardUnits.u1.hp).toBe(4);                 // não tomou dano de novo
+    expect(again.currentPhase).toBe('END_PHASE');
+  });
+
+  it('o Sandbox ignora o limite de mão', () => {
+    const state = makeState([], { sandboxMode: true });
+    state.players.p1.hand = fullHand(HAND_LIMIT + 3);
+
+    expect(endTurn(state).currentPhase).toBe('MAIN_PHASE');
+  });
+
+  it('getPendingDiscards só responde para quem está devendo descarte', () => {
+    const state = makeState([]);
+    state.players.p1.hand = fullHand(HAND_LIMIT + 1);
+    const paused = endTurn(state);
+
+    expect(getPendingDiscards(paused, 'p1')).toBe(1);
+    expect(getPendingDiscards(paused, 'p2')).toBe(0);
+    expect(getPendingDiscards(state, 'p1')).toBe(0);        // fora da END_PHASE
   });
 });
 

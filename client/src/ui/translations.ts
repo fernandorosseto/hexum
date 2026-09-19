@@ -29,6 +29,10 @@ export const translations = {
     turn: 'Turn',
 
     // GameOverUI
+    discardTitle: 'Hand limit reached',
+    discardPrompt: 'Choose {n} card(s) to discard',
+    discardBadge: 'Discard',
+    waitingDiscard: 'Opponent is discarding…',
     victory: 'Victory',
     defeat: 'Defeat',
     enemyKingDefeated: 'The Enemy King was defeated',
@@ -143,6 +147,10 @@ export const translations = {
     turn: 'Turno',
 
     // GameOverUI
+    discardTitle: 'Limite de mão atingido',
+    discardPrompt: 'Escolha {n} carta(s) para descartar',
+    discardBadge: 'Descartar',
+    waitingDiscard: 'Adversário está descartando…',
     victory: 'Vitória',
     defeat: 'Derrota',
     enemyKingDefeated: 'O Rei inimigo foi derrotado',

@@ -1,7 +1,7 @@
 import type { GameState } from './types';
 import { getHexDistance, getHexNeighbors, isInsideBoard, BOARD_RADIUS, type HexCoordinates } from './hexMath';
 import {
-  moveTo, attack, playCard, offerCard, heal, endTurn,
+  moveTo, attack, playCard, offerCard, heal, endTurn, discardCard,
   getValidSpawnCoordinates, getValidMoveCoordinates, getCardManaCost,
 } from './gameEngine';
 import { getValidAttackTargets } from './getValidAttackTargets';
@@ -12,6 +12,7 @@ export type AIAction =
   | { type: 'PLAY_CARD'; cardId: string; target: HexCoordinates }
   | { type: 'OFFER'; cardId: string }
   | { type: 'HEAL'; healerId: string; targetId: string }
+  | { type: 'DISCARD'; cardId: string }
   | { type: 'END_TURN' };
 
 export interface SearchOptions {
@@ -29,6 +30,11 @@ const INNER_BREADTH = 12;
 
 function otherPlayer(playerId: string): string {
   return playerId === 'p1' ? 'p2' : 'p1';
+}
+
+/** Remove repetidos preservando a ordem (mãos costumam ter cartas iguais). */
+function dedupe(values: string[]): string[] {
+  return [...new Set(values)];
 }
 
 // ══════════════════════════════════════════════
@@ -133,6 +139,11 @@ export function getPossibleActions(state: GameState, playerId: string): AIAction
   if (!state.sandboxMode && state.currentTurnPlayerId !== playerId) return [];
   if (state.currentPhase === 'GAME_OVER') return [];
 
+  // Turno parado no limite de mão: a única jogada legal é descartar.
+  if (state.currentPhase === 'END_PHASE') {
+    return dedupe(player.hand).map(cardId => ({ type: 'DISCARD' as const, cardId }));
+  }
+
   const actions: AIAction[] = [];
   const boardUnits = Object.values(state.boardUnits);
   const myUnits = boardUnits.filter(u => u.playerId === playerId);
@@ -225,6 +236,7 @@ export function simulateAction(state: GameState, playerId: string, action: AIAct
       case 'PLAY_CARD': return playCard(state, playerId, action.cardId, action.target);
       case 'OFFER':     return offerCard(state, playerId, action.cardId);
       case 'HEAL':      return heal(state, action.healerId, action.targetId);
+      case 'DISCARD':   return discardCard(state, playerId, action.cardId);
       case 'END_TURN':  return endTurn(state);
     }
   } catch {
@@ -252,6 +264,11 @@ function scoreAction(state: GameState, action: AIAction): number {
     }
     case 'HEAL':     return 4000;
     case 'MOVE':     return 1000;
+    case 'DISCARD': {
+      // Descarta o que está mais fora de alcance: carta cara vale menos agora.
+      const cost = getCardManaCost(action.cardId);
+      return Number.isFinite(cost) ? 500 + cost * 50 : 900;
+    }
     case 'OFFER':    return 200;
     case 'END_TURN': return 0;
   }

@@ -273,6 +273,9 @@ export function cloneGameState(state: GameState): GameState {
 // ══════════════════════════════════════════════
 
 export function endTurn(state: GameState): GameState {
+  // Já parado aguardando descarte: reentrar aplicaria os DoTs de novo.
+  if (state.currentPhase === 'END_PHASE') return cloneGameState(state);
+
   const newState = cloneGameState(state);
 
   const endingPlayerId = newState.currentTurnPlayerId;
@@ -319,9 +322,57 @@ export function endTurn(state: GameState): GameState {
      return newState;
   }
 
-  // 2. Transição de Turno e Fase Inicial do Próximo Jogador
+  // 2. Limite de mão: quem termina o turno acima do limite precisa descartar
+  // ANTES de a vez passar. O turno fica parado em END_PHASE até `discardCard`
+  // resolver — é uma decisão do jogador, não um descarte automático.
+  if (!newState.sandboxMode && newState.players[endingPlayerId].hand.length > HAND_LIMIT) {
+    newState.currentPhase = 'END_PHASE';
+    return newState;
+  }
+
+  return advanceToNextPlayer(newState);
+}
+
+/**
+ * Descarta uma carta durante a END_PHASE. Quando a mão chega ao limite, a vez
+ * passa de fato para o próximo jogador.
+ */
+export function discardCard(state: GameState, playerId: string, cardId: string): GameState {
+  const newState = cloneGameState(state);
+
+  if (newState.currentPhase !== 'END_PHASE') throw new Error("Nothing to discard right now.");
+  if (playerId !== newState.currentTurnPlayerId) {
+    throw new Error(newState.language === 'pt' ? "Não é o seu turno." : "Not your turn.");
+  }
+
+  const player = newState.players[playerId];
+  const index = player.hand.indexOf(cardId);
+  if (index === -1) throw new Error("Card not in hand.");
+
+  player.hand.splice(index, 1);
+  player.graveyard.push(cardId);
+
+  // Ainda acima do limite: continua em END_PHASE aguardando o próximo descarte.
+  if (player.hand.length > HAND_LIMIT) return newState;
+
+  newState.currentPhase = 'MAIN_PHASE';
+  return advanceToNextPlayer(newState);
+}
+
+/** Quantas cartas ainda precisam ser descartadas para o turno poder passar. */
+export function getPendingDiscards(state: GameState, playerId: string): number {
+  if (state.currentPhase !== 'END_PHASE') return 0;
+  if (state.currentTurnPlayerId !== playerId) return 0;
+  const player = state.players[playerId];
+  if (!player) return 0;
+  return Math.max(0, player.hand.length - HAND_LIMIT);
+}
+
+/** Passa a vez: mana, compra, reset de fadiga das tropas do próximo jogador. */
+function advanceToNextPlayer(newState: GameState): GameState {
   newState.turnNumber += 1;
-  const nextPlayerId = newState.currentTurnPlayerId === 'p1' ? 'p2' : 'p1';
+  const endingPlayerId = newState.currentTurnPlayerId;
+  const nextPlayerId = endingPlayerId === 'p1' ? 'p2' : 'p1';
   newState.currentTurnPlayerId = nextPlayerId;
   const nextPlayer = newState.players[nextPlayerId];
 
@@ -556,6 +607,9 @@ export function attack(state: GameState, attackerId: string, targetId: string, u
 
 /** Quantos artefatos diferentes uma mesma unidade pode carregar. */
 export const MAX_ARTIFACTS_PER_UNIT = 3;
+
+/** Tamanho máximo da mão ao encerrar o turno; o excedente é descartado. */
+export const HAND_LIMIT = 5;
 
 export function playCard(state: GameState, playerId: string, cardId: string, targetHex: HexCoordinates): GameState {
   const newState = cloneGameState(state);

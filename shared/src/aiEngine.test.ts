@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { evaluateState, getPossibleActions, simulateAction, getBestAction } from './aiEngine';
-import { createInitialState } from './gameEngine';
+import { createInitialState, endTurn } from './gameEngine';
 import { makeState, makeUnit, hex } from './testUtils';
 
 afterEach(() => vi.restoreAllMocks());
@@ -37,6 +37,31 @@ describe('getPossibleActions', () => {
   it('sempre oferece END_TURN', () => {
     const state = createInitialState();
     expect(getPossibleActions(state, 'p1').some(a => a.type === 'END_TURN')).toBe(true);
+  });
+
+  it('em END_PHASE só oferece descarte, sem repetir carta igual', () => {
+    const state = makeState([]);
+    state.players.p1.hand = ['unit_lanceiro', 'unit_lanceiro', 'spl_raio', 'art_carvalho', 'unit_arqueiro', 'spl_meteoro'];
+    const paused = endTurn(state);
+    expect(paused.currentPhase).toBe('END_PHASE');
+
+    const actions = getPossibleActions(paused, 'p1');
+
+    expect(actions.every(a => a.type === 'DISCARD')).toBe(true);
+    expect(actions).toHaveLength(5); // 6 cartas, 2 iguais
+  });
+
+  it('a IA resolve o descarte e devolve a vez ao adversário', () => {
+    const state = makeState([]);
+    state.players.p1.hand = ['unit_lanceiro', 'spl_raio', 'art_carvalho', 'unit_arqueiro', 'spl_meteoro', 'unit_cavaleiro'];
+    const paused = endTurn(state);
+
+    const action = getBestAction(paused, 'p1', { timeBudgetMs: 500 });
+    expect(action?.type).toBe('DISCARD');
+
+    const resolved = simulateAction(paused, 'p1', action!);
+    expect(resolved?.currentPhase).toBe('MAIN_PHASE');
+    expect(resolved?.currentTurnPlayerId).toBe('p2');
   });
 
   it('gera cura para o Clérigo com aliado ferido ao alcance', () => {

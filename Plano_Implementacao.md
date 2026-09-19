@@ -74,5 +74,5 @@ Implementada sobre **Firebase** (Auth anônima + Firestore) em vez do par Node.j
 ## Fase 6: Dívidas em aberto
 
 - [x] **Regra de fim por baralho:** derrota por baralho vazio implementada — quem precisa comprar e não tem carta perde, e a tela de fim de jogo informa o motivo (`winReason`). Uma partida sem abate de Rei termina por volta do turno 35.
-- [ ] **Limite de tamanho de mão:** ainda não existe; quem não gasta cartas acumula mão. Não trava o jogo, mas é espaço de design em aberto.
+- [x] **Limite de tamanho de mão:** 5 cartas na virada do turno; o excedente é descartado pelo próprio jogador (fase `END_PHASE`), e a IA resolve o próprio descarte.
 - [ ] **Peso dos assets:** `hexum.png` (8,9 MB) e `muralha_gelo.png` (6,4 MB) respondem pela maior parte dos ~19 MB do `dist/`.

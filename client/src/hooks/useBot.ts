@@ -17,7 +17,8 @@ export function useBot() {
     const state = useGameStore.getState();
     if (state.isPvP || state.sandboxMode) return;
     if (!state.isVsAI && !state.isAutoPlay) return;
-    if (currentPhase !== 'MAIN_PHASE') return;
+    // END_PHASE = turno parado no limite de mão; a IA ainda precisa descartar.
+    if (currentPhase !== 'MAIN_PHASE' && currentPhase !== 'END_PHASE') return;
     if (!state.isAutoPlay && currentTurnPlayerId !== 'p2') return;
 
     const timer = setTimeout(() => {

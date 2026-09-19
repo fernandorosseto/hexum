@@ -13,6 +13,7 @@ Este documento centraliza as mecânicas, regras de tabuleiro e habilidades das c
 - **Recursos (Mana):** Cada jogador possui um máximo de **6 pontos de Mana**. O jogo inicia com **1 ponto de Mana** e este valor aumenta (+1) a cada turno, recarregando completamente.
 - **Ações por Unidade:** Cada unidade em campo pode, no mesmo turno, **mover-se** E **atacar/usar habilidade especial** — são ações independentes controladas por flags separadas (`canMove` e `canAttack`).
 - **Oferenda de Carta:** Uma vez por turno, o jogador pode descartar uma carta da mão para **ganhar +1 de Mana Máximo** permanente.
+- **Limite de Mão:** a mão pode ter no máximo **5 cartas** ao encerrar o turno. Quem termina acima disso **escolhe** o que descartar — o turno fica parado até resolver, e as cartas descartadas vão para o cemitério. Durante o turno a mão pode passar de 5 livremente (a compra e o *Chamado dos Reforços* podem estourar o limite); a cobrança é só na virada.
 - **Condição de Vitória:** O jogo termina imediatamente se a unidade **Rei** de um dos jogadores for derrotada (HP ≤ 0).
 
 ---
@@ -171,4 +172,4 @@ No **Simulador de Guerra** nenhuma das duas regras encerra a partida, para permi
 
 ### Lacunas conhecidas de design (não implementadas)
 
-- **Sem limite de tamanho de mão.** Quem não gasta cartas acumula mão indefinidamente (chega a ~20 cartas numa partida que vai até o deck-out). Não trava o jogo — o deck-out já garante o fim —, mas é um espaço de design em aberto (limite de mão? descarte forçado?).
+- Nada pendente nesta seção no momento.
