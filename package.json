@@ -7,5 +7,15 @@
   ],
   "dependencies": {
     "firebase": "^12.12.1"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace client",
+    "build": "npm run build --workspace client",
+    "preview": "npm run preview --workspace client",
+    "lint": "npm run lint --workspace client",
+    "typecheck": "npm run typecheck --workspace client",
+    "test": "npm run test --workspace shared && npm run test --workspace client",
+    "test:shared": "npm run test --workspace shared",
+    "test:client": "npm run test --workspace client"
   }
 }

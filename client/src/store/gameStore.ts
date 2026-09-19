@@ -5,7 +5,7 @@ import type { GameState, HexCoordinates } from 'shared';
 import { createCombatActions } from './combatActions';
 import { createSandboxActions } from './sandboxActions';
 import type { 
-  AnimationType, TransfusionAnimation, ProjectileAnimation, ThrustAnimation,
+  AnimationActor, AnimationType, TransfusionAnimation, ProjectileAnimation, ThrustAnimation,
   CleaveAnimation, OverheadSlashAnimationData, ShadowSlashAnimation, ArcaneExplosionAnimation,
   SimpleSpellAnimation, WallSpellAnimation
 } from './animationActions';
@@ -40,7 +40,7 @@ interface GameLog {
   playerId: string;
 }
 
-interface GameStore extends GameState {
+export interface GameStore extends GameState {
   currentView: 'MENU' | 'PLAY' | 'SANDBOX' | 'PVP';
   setCurrentView: (view: 'MENU' | 'PLAY' | 'SANDBOX' | 'PVP') => void;
   // PvP
@@ -331,16 +331,31 @@ export const useGameStore = create<GameStore>()(
         const state = get();
         
         if (type === 'ATTACK' && sourceId && targetId) {
-          const attacker = state.boardUnits[sourceId] || { id: sourceId, position: sourcePos, unitClass: 'Arqueiro' }; // Fallback minimal
-          const target = state.boardUnits[targetId] || { id: targetId, position: targetPos, hp: 0 };
-          
-          if (attacker.position && target.position) {
-            const animations: Record<string, any> = { [sourceId]: 'attacking', [targetId]: 'damaged' };
+          // A unidade pode já ter sumido do tabuleiro local quando o VFX chega.
+          const localAttacker = state.boardUnits[sourceId];
+          const localTarget = state.boardUnits[targetId];
+          const attackerPos = localAttacker?.position ?? sourcePos;
+          const targetPosition = localTarget?.position ?? targetPos;
+
+          if (attackerPos && targetPosition) {
+            const attacker: AnimationActor = {
+              id: sourceId,
+              position: attackerPos,
+              playerId: localAttacker?.playerId ?? '',
+              unitClass: localAttacker?.unitClass ?? 'Arqueiro',
+            };
+            const target: AnimationActor = {
+              id: targetId,
+              position: targetPosition,
+              playerId: localTarget?.playerId ?? '',
+              unitClass: localTarget?.unitClass,
+            };
+            const animations: Record<string, AnimationType> = { [sourceId]: 'attacking', [targetId]: 'damaged' };
             const dummyState = { ...state };
             const dummyMsg = "";
-            const targetDied = target.hp <= 0;
+            const targetDied = (localTarget?.hp ?? 0) <= 0;
 
-            const uClass = (state.boardUnits[sourceId]?.unitClass) || attacker.unitClass;
+            const uClass = attacker.unitClass;
 
             if (uClass === 'Arqueiro') scheduleProjectileAnimation(set, get, attacker, target, dummyState, animations, dummyMsg, targetDied);
             else if (uClass === 'Lanceiro') scheduleThrustAnimation(set, get, attacker, target, dummyState, animations, dummyMsg, targetDied);
@@ -418,8 +433,8 @@ export const useGameStore = create<GameStore>()(
               }
             }, 1500);
           }
-        } catch (err: any) {
-          console.warn("Erro de Turno:", err.message);
+        } catch (err) {
+          console.warn("Erro de Turno:", err instanceof Error ? err.message : err);
         }
       },
 

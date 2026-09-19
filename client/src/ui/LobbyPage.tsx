@@ -70,7 +70,7 @@ export const LobbyPage: React.FC = () => {
     });
 
     return () => unsub();
-  }, [waitingLobbyId, setCurrentView]);
+  }, [waitingLobbyId, setCurrentView, setMatchStarted, setPlayerNames]);
 
   // ── Entrar em sala (guest = p2) ────────────────────────────
   const handleJoin = async () => {

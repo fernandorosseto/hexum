@@ -6,12 +6,16 @@
 //  quando o timer antigo disparava.
 // ============================================================
 
-type StoreSet = (partial: unknown, replace?: boolean) => void;
-type StoreGet = () => { actionSeq: number };
+/** Qualquer store que participe do guard precisa expor o contador. */
+export interface SequencedStore {
+  actionSeq: number;
+}
 
-export interface GuardedAction {
+export type GuardedSet<S> = (partial: Partial<S> | ((state: S) => Partial<S>)) => void;
+
+export interface GuardedAction<S> {
   /** `set` que só escreve enquanto esta ação for a mais recente. */
-  set: StoreSet;
+  set: GuardedSet<S>;
   /** true enquanto nenhuma ação posterior tiver começado. */
   isCurrent: () => boolean;
 }
@@ -20,15 +24,18 @@ export interface GuardedAction {
  * Marca o início de uma ação de jogo e devolve um `set` protegido.
  * Toda ação que agenda animação deve passar por aqui.
  */
-export function beginAction(set: StoreSet, get: StoreGet): GuardedAction {
+export function beginAction<S extends SequencedStore>(
+  set: GuardedSet<S>,
+  get: () => S,
+): GuardedAction<S> {
   const seq = get().actionSeq + 1;
-  set({ actionSeq: seq });
+  set({ actionSeq: seq } as Partial<S>);
 
   const isCurrent = () => get().actionSeq === seq;
   return {
     isCurrent,
-    set: (partial, replace) => {
-      if (isCurrent()) set(partial, replace);
+    set: partial => {
+      if (isCurrent()) set(partial);
     },
   };
 }

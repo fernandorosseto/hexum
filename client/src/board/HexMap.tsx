@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useCallback, useMemo, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { 
   getValidMoveCoordinates, 
@@ -6,7 +6,7 @@ import {
   getValidAttackTargets, 
   getLineOfSight, 
 } from 'shared';
-import type { HexCoordinates } from 'shared';
+import type { GameState, HexCoordinates, Unit } from 'shared';
 import { useGameStore } from '../store/gameStore';
 import { useZoomPan } from '../hooks/useZoomPan';
 import { HexGrid } from './HexGrid';
@@ -85,37 +85,48 @@ export const HexMap: React.FC = () => {
     return () => window.removeEventListener('resize', updateConstraints);
   }, []);
 
-  const getUnitAt = (q: number, r: number) => {
-    return Object.values(boardUnits).find(u => u.position.q === q && u.position.r === r);
-  };
+  const getUnitAt = useCallback(
+    (q: number, r: number) => Object.values(boardUnits).find(u => u.position.q === q && u.position.r === r),
+    [boardUnits],
+  );
+
+  /**
+   * Estado usado só para calcular os realces. Parte do estado REAL do store —
+   * antes era um objeto solto com três campos e um `as any`, sem `players` nem
+   * `sandboxMode`, então qualquer regra que lesse esses campos falhava calada.
+   */
+  const buildPreviewState = useCallback((unit: Unit, relaxed: Partial<Unit>): GameState => {
+    const base = useGameStore.getState();
+    return {
+      ...base,
+      boardUnits: { ...boardUnits, [unit.id]: { ...unit, ...relaxed } },
+      currentTurnPlayerId: unit.playerId,
+      currentPhase: 'MAIN_PHASE',
+    };
+  }, [boardUnits]);
 
   const validMoves = useMemo(() => {
     if (!selectedHex) return [];
     const unit = getUnitAt(selectedHex.q, selectedHex.r);
     if (!unit) return [];
     if (!sandboxMode && unit.playerId !== currentTurnPlayerId) return [];
-    const unitToVal = sandboxMode ? { ...unit, canMove: true, summoningSickness: false } : unit;
-    const mockBoard = { ...boardUnits, [unit.id]: unitToVal };
-    const isUsingSpecial = !!selectedAbility;
-    return getValidMoveCoordinates({ boardUnits: mockBoard, currentTurnPlayerId: unit.playerId, currentPhase: 'MAIN_PHASE' } as any, unit.id, isUsingSpecial);
-  }, [selectedHex, boardUnits, currentTurnPlayerId, sandboxMode, selectedAbility]);
+    const relaxed = sandboxMode ? { canMove: true, summoningSickness: false } : {};
+    return getValidMoveCoordinates(buildPreviewState(unit, relaxed), unit.id, !!selectedAbility);
+  }, [selectedHex, currentTurnPlayerId, sandboxMode, selectedAbility, getUnitAt, buildPreviewState]);
 
   const validAttacks = useMemo(() => {
     if (!selectedHex) return [];
     const unit = getUnitAt(selectedHex.q, selectedHex.r);
     if (!unit) return [];
     if (!sandboxMode && unit.playerId !== currentTurnPlayerId) return [];
-    const unitToVal = sandboxMode ? { ...unit, canAttack: true, summoningSickness: false } : unit;
-    const mockBoard = { ...boardUnits, [unit.id]: unitToVal };
-    const isUsingSpecial = !!selectedAbility;
-    return getValidAttackTargets({ boardUnits: mockBoard, currentTurnPlayerId: unit.playerId, currentPhase: 'MAIN_PHASE' } as any, unit.id, isUsingSpecial);
-  }, [selectedHex, boardUnits, currentTurnPlayerId, sandboxMode, selectedAbility]);
+    const relaxed = sandboxMode ? { canAttack: true, summoningSickness: false } : {};
+    return getValidAttackTargets(buildPreviewState(unit, relaxed), unit.id, !!selectedAbility);
+  }, [selectedHex, currentTurnPlayerId, sandboxMode, selectedAbility, getUnitAt, buildPreviewState]);
 
   const validSpawns = useMemo(() => {
     if (!selectedCard) return [];
-    const gameState = useGameStore.getState();
-    return getValidSpawnCoordinates(gameState, currentTurnPlayerId, selectedCard);
-  }, [selectedCard, boardUnits, currentTurnPlayerId]);
+    return getValidSpawnCoordinates(useGameStore.getState(), currentTurnPlayerId, selectedCard);
+  }, [selectedCard, currentTurnPlayerId]);
 
   const chargePathHexes = useMemo(() => {
     if ((selectedAbility !== 'choque' && selectedAbility !== 'salto') || !selectedHex) return [];

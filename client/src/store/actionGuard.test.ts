@@ -1,9 +1,17 @@
 import { describe, it, expect, vi } from 'vitest';
-import { beginAction } from './actionGuard';
+import { beginAction, type GuardedSet } from './actionGuard';
+
+interface FakeStore {
+  actionSeq: number;
+  foo?: number;
+  revertido?: boolean;
+}
 
 function fakeStore(seq = 0) {
-  const state = { actionSeq: seq };
-  const set = vi.fn((partial: unknown) => Object.assign(state, partial));
+  const state: FakeStore = { actionSeq: seq };
+  const set = vi.fn<GuardedSet<FakeStore>>(partial => {
+    Object.assign(state, typeof partial === 'function' ? partial(state) : partial);
+  });
   return { state, set, get: () => state };
 }
 

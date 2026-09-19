@@ -8,15 +8,17 @@ function getCardDetails(cardId: string, lang: 'en' | 'pt') {
   if (cardId.startsWith('unit_') || cardId.startsWith('hero_')) {
     try {
       const card = getUnitCard(cardId, lang);
-      return { id: cardId, class: card.name, icon: CLASS_ICONS[card.unitClass] || '👤', cost: card.manaCost, atk: card.baseAttack, hp: card.baseHp, type: 'Unit' };
-    } catch(e) { return null; }
+      return { id: cardId, class: card.name, icon: typeof CLASS_ICONS[card.unitClass] === 'string' ? (CLASS_ICONS[card.unitClass] as string) : '', cost: card.manaCost, atk: card.baseAttack, hp: card.baseHp, type: 'Unit' };
+    } catch {
+      return null; // carta desconhecida: não aparece na mão
+    }
   }
   const art = ARTIFACTS.find(a => a.id === cardId);
   if (art) {
-    return { id: cardId, class: ARTIFACT_NAMES[art.id]?.[lang] || art.name, icon: '' as any, cost: art.manaCost, atk: '-', hp: '-', type: 'Artifact' };
+    return { id: cardId, class: ARTIFACT_NAMES[art.id]?.[lang] || art.name, icon: '', cost: art.manaCost, atk: '-', hp: '-', type: 'Artifact' };
   }
   const spl = SPELLS.find(s => s.id === cardId);
-  if (spl) return { id: cardId, class: SPELL_NAMES[spl.id]?.[lang] || spl.name, icon: '' as any, cost: spl.manaCost, atk: '-', hp: '-', type: 'Spell' };
+  if (spl) return { id: cardId, class: SPELL_NAMES[spl.id]?.[lang] || spl.name, icon: '', cost: spl.manaCost, atk: '-', hp: '-', type: 'Spell' };
   return null;
 }
 

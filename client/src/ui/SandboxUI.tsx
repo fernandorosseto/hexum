@@ -104,7 +104,7 @@ const ArsenalBoxP1: React.FC = () => {
           </button>
         )}
         {/* Resize Handle */}
-        <motion.div drag dragMomentum={false} dragConstraints={{ left: 0, top: 0 }} onDrag={(_e, info) => { setSize(prev => ({ width: Math.max(180, prev.width + info.delta.x), height: Math.max(200, prev.height + info.delta.y) })); }} onDragEnd={(e) => { (e.target as any).style.transform = 'none'; }} className="absolute bottom-1 right-1 w-3 h-3 cursor-nwse-resize flex items-center justify-center group"><div className="w-1 h-1 bg-white/20 rounded-full group-hover:bg-blue-500 transition-colors" /></motion.div>
+        <motion.div drag dragMomentum={false} dragConstraints={{ left: 0, top: 0 }} onDrag={(_e, info) => { setSize(prev => ({ width: Math.max(180, prev.width + info.delta.x), height: Math.max(200, prev.height + info.delta.y) })); }} onDragEnd={(e) => { if (e.target instanceof HTMLElement) e.target.style.transform = 'none'; }} className="absolute bottom-1 right-1 w-3 h-3 cursor-nwse-resize flex items-center justify-center group"><div className="w-1 h-1 bg-white/20 rounded-full group-hover:bg-blue-500 transition-colors" /></motion.div>
       </div>
     </motion.div>
   );

@@ -9,11 +9,15 @@ import {
   AnimationType 
 } from './animationActions';
 import { beginAction } from './actionGuard';
+import type { GameStore } from './gameStore';
+
+type StoreSet = (partial: Partial<GameStore> | ((state: GameStore) => Partial<GameStore>)) => void;
+type StoreGet = () => GameStore;
 
 /** Janela máxima de animação; depois dela a UI volta a aceitar cliques. */
 const RESOLVE_WINDOW_MS = 1400;
 
-export const createCombatActions = (set: any, get: any) => {
+export const createCombatActions = (set: StoreSet, get: StoreGet) => {
   const checkAutoPass = () => {
     const state = get();
     // No modo Sandbox ou se já acabou o jogo, não fazemos auto-pass
@@ -230,7 +234,6 @@ export const createCombatActions = (set: any, get: any) => {
         newState.players['p1'].mana = 99;
         newState.players['p1'].maxMana = 99;
       }
-      const deadUnitIds = Object.keys(currentGameState.boardUnits).filter(id => !newState.boardUnits[id]);
       let hasCustomAnimation = false;
       let animationDuration = 0;
       let setupAnimations = () => {};
@@ -339,7 +342,9 @@ export const createCombatActions = (set: any, get: any) => {
         } else if (cardId.startsWith('spl_')) {
           cardName = SPELL_NAMES[cardId]?.[lang] || cardName;
         }
-      } catch (e) {}
+      } catch {
+        // Sem nome traduzido: mantém o fallback derivado do id.
+      }
 
       let playMsg = lang === 'pt' ? `Jogou ${cardName}` : `Played ${cardName}`;
       if (cardId.startsWith('unit_')) {

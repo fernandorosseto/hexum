@@ -28,7 +28,6 @@ function App() {
   const currentTurnPlayerId = useGameStore(s => s.currentTurnPlayerId);
   const phase = useGameStore(s => s.currentPhase);
   const currentView = useGameStore(s => s.currentView);
-  const isLogVisible = useGameStore(s => s.isLogVisible);
   const isHandVisible = useGameStore(s => s.isHandVisible);
   const toggleHand = useGameStore(s => s.toggleHand);
   const isCardDetailsVisible = useGameStore(s => s.isCardDetailsVisible);

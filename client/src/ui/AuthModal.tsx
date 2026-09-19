@@ -14,6 +14,13 @@ interface AuthModalProps {
 
 type AuthTab = 'login' | 'register';
 
+/** Código de erro do Firebase Auth, quando houver. */
+function authErrorCode(error: unknown): string {
+  return typeof error === 'object' && error !== null && 'code' in error
+    ? String((error as { code: unknown }).code)
+    : '';
+}
+
 export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess }) => {
   const [tab, setTab] = useState<AuthTab>('login');
   const [displayName, setDisplayName] = useState('');
@@ -37,7 +44,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess }) => {
         await loginWithEmail(email, password);
       }
       onSuccess();
-    } catch (err: any) {
+    } catch (err) {
       const msg: Record<string, string> = {
         'auth/email-already-in-use': 'Este e-mail já está cadastrado.',
         'auth/invalid-email': 'E-mail inválido.',
@@ -46,7 +53,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess }) => {
         'auth/wrong-password': 'Senha incorreta.',
         'auth/invalid-credential': 'E-mail ou senha incorretos.',
       };
-      setError(msg[err.code] ?? 'Erro inesperado. Tente novamente.');
+      setError(msg[authErrorCode(err)] ?? 'Erro inesperado. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -58,7 +65,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess }) => {
     try {
       await loginWithGoogle();
       onSuccess();
-    } catch (err: any) {
+    } catch {
       setError('Falha ao entrar com Google. Tente novamente.');
     } finally {
       setLoading(false);

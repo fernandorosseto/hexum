@@ -97,7 +97,7 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
           selectedHex:  null,
           selectedCard: null,
           targetHex:    null,
-        } as any);
+        });
 
         // Dispara VFX se houver um novo timestamp
         if (lobby.gameState.lastActionVfx && lobby.gameState.lastActionVfx.timestamp !== useGameStore.getState().lastActionVfx?.timestamp) {
