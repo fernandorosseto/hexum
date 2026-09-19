@@ -1,5 +1,6 @@
 import type { GameState, Unit, UnitClass } from './types';
 import { getHexDistance, getHexNeighbors, isLine, getLineOfSight, isDiagonal, isInsideBoard } from './hexMath';
+import { getClassDisplayName } from './cardLibrary';
 import type { HexCoordinates } from './hexMath';
 
 // ══════════════════════════════════════════════
@@ -132,7 +133,11 @@ export function handleUnitDeath(state: GameState, unit: Unit): void {
       state.winner = unit.playerId === 'p1' ? 'p2' : 'p1';
     }
     delete state.boardUnits[unit.id];
-    addCombatLog(state, `💀 The ${unit.unitClass} succumbed and was removed from the field.`, `💀 O ${unit.unitClass} sucumbiu e foi removido de campo.`);
+    addCombatLog(
+      state,
+      `💀 The ${getClassDisplayName(unit.unitClass, 'en')} succumbed and was removed from the field.`,
+      `💀 O ${getClassDisplayName(unit.unitClass, 'pt')} sucumbiu e foi removido de campo.`,
+    );
   }
 }
 

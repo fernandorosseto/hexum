@@ -1,7 +1,7 @@
 import type { HexCoordinates, Unit } from 'shared';
 import { 
   moveTo, attack, heal, playCard, offerCard, getHexDistance, getHexNeighbors, 
-  hasAnyValidAction, getUnitCard, ARTIFACT_NAMES, SPELL_NAMES
+  hasAnyValidAction, tryGetUnitCard, getClassDisplayName, ARTIFACT_NAMES, SPELL_NAMES
 } from 'shared';
 import { 
   scheduleProjectileAnimation, scheduleThrustAnimation, scheduleMeleeAnimation, 
@@ -69,14 +69,15 @@ export const createCombatActions = (set: StoreSet, get: StoreGet) => {
       });
 
       const lang: 'en' | 'pt' = (get().language || 'pt') as 'en' | 'pt';
+      const who = getClassDisplayName(unit.unitClass, lang);
       const moveTemplates = lang === 'pt' ? [
-        `O ${unit.unitClass} marchou pelo campo de batalha.`,
-        `O ${unit.unitClass} se posicionou estrategicamente.`,
-        `O ${unit.unitClass} avançou em direção ao objetivo.`
+        `O ${who} marchou pelo campo de batalha.`,
+        `O ${who} se posicionou estrategicamente.`,
+        `O ${who} avançou em direção ao objetivo.`
       ] : [
-        `The ${unit.unitClass} marched across the battlefield.`,
-        `${unit.unitClass} positioned strategically.`,
-        `The ${unit.unitClass} advanced toward the objective.`
+        `The ${who} marched across the battlefield.`,
+        `${who} positioned strategically.`,
+        `The ${who} advanced toward the objective.`
       ];
       const moveMsg = moveTemplates[Math.floor(Math.random() * moveTemplates.length)];
       get().addLog(moveMsg, unit.playerId);
@@ -127,14 +128,16 @@ export const createCombatActions = (set: StoreSet, get: StoreGet) => {
 
       const details = (newState.combatLogs && newState.combatLogs.length > 0) ? `. ${newState.combatLogs.join('. ')}` : '';
       const lang: 'en' | 'pt' = (get().language || 'pt') as 'en' | 'pt';
+      const who = getClassDisplayName(attacker.unitClass, lang);
+      const foe = getClassDisplayName(target.unitClass, lang);
       const attackTemplates = lang === 'pt' ? [
-        `O ${attacker.unitClass} golpeou o ${target.unitClass} com um ataque preciso, causando ${damageDealt} de dano!`,
-        `O ${attacker.unitClass} atacou o ${target.unitClass} infligindo ${damageDealt} de dano.`,
-        `O impacto do ${attacker.unitClass} atingiu o ${target.unitClass} com força: ${damageDealt} de dano.`
+        `O ${who} golpeou o ${foe} com um ataque preciso, causando ${damageDealt} de dano!`,
+        `O ${who} atacou o ${foe} infligindo ${damageDealt} de dano.`,
+        `O impacto do ${who} atingiu o ${foe} com força: ${damageDealt} de dano.`
       ] : [
-        `The ${attacker.unitClass} struck ${target.unitClass} with a precise blow dealing ${damageDealt} damage!`,
-        `${attacker.unitClass} attacked ${target.unitClass} inflicting ${damageDealt} damage.`,
-        `The impact from ${attacker.unitClass} hit ${target.unitClass} hard: ${damageDealt} damage.`
+        `The ${who} struck ${foe} with a precise blow dealing ${damageDealt} damage!`,
+        `${who} attacked ${foe} inflicting ${damageDealt} damage.`,
+        `The impact from ${who} hit ${foe} hard: ${damageDealt} damage.`
       ];
       const attackMsg = attackTemplates[Math.floor(Math.random() * attackTemplates.length)] + details;
 
@@ -204,8 +207,8 @@ export const createCombatActions = (set: StoreSet, get: StoreGet) => {
       });
       const lang: 'en' | 'pt' = (get().language || 'pt') as 'en' | 'pt';
       const msg = lang === 'pt'
-        ? `O ${healer.unitClass} usou preces divinas para curar o ${target.unitClass}!`
-        : `The ${healer.unitClass} used divine prayers to heal ${target.unitClass}!`;
+        ? `O ${getClassDisplayName(healer.unitClass, lang)} usou preces divinas para curar o ${getClassDisplayName(target.unitClass, lang)}!`
+        : `The ${getClassDisplayName(healer.unitClass, lang)} used divine prayers to heal ${getClassDisplayName(target.unitClass, lang)}!`;
       get().addLog(msg, healer.playerId);
       setTimeout(() => action.set({ animatingUnits: {} }), 600);
       checkAutoPass();
@@ -333,10 +336,12 @@ export const createCombatActions = (set: StoreSet, get: StoreGet) => {
 
       // Prepara a mensagem de log
       const lang: 'en' | 'pt' = (get().language || 'pt') as 'en' | 'pt';
-      let cardName = cardId.replace('unit_', '').replace('spl_', '').replace('art_', '').toUpperCase();
+      // O baralho é feito de ids `hero_*`; tratar só `unit_*` fazia o log
+      // mostrar o id cru ("Played HERO_LANDSKNECHT") em toda invocação.
+      let cardName = cardId.replace(/^(unit|hero|spl|art)_/, '').toUpperCase();
       try {
-        if (cardId.startsWith('unit_')) {
-          cardName = getUnitCard(cardId, lang).name;
+        if (cardId.startsWith('unit_') || cardId.startsWith('hero_')) {
+          cardName = tryGetUnitCard(cardId, lang)?.name ?? cardName;
         } else if (cardId.startsWith('art_')) {
           cardName = ARTIFACT_NAMES[cardId]?.[lang] || cardName;
         } else if (cardId.startsWith('spl_')) {
@@ -347,7 +352,7 @@ export const createCombatActions = (set: StoreSet, get: StoreGet) => {
       }
 
       let playMsg = lang === 'pt' ? `Jogou ${cardName}` : `Played ${cardName}`;
-      if (cardId.startsWith('unit_')) {
+      if (cardId.startsWith('unit_') || cardId.startsWith('hero_')) {
         const pName = currentGameState.currentTurnPlayerId === 'p1'
           ? (lang === 'pt' ? 'Azul' : 'Blue')
           : (lang === 'pt' ? 'Roxo' : 'Purple');
@@ -466,8 +471,8 @@ export const createCombatActions = (set: StoreSet, get: StoreGet) => {
       set({ ...newState, animatingUnits: { [targetId]: 'healing' } });
       const lang: 'en' | 'pt' = (get().language || 'pt') as 'en' | 'pt';
       const msg = lang === 'pt'
-        ? `O ${healer.unitClass} curou o ${target.unitClass}`
-        : `${healer.unitClass} healed ${target.unitClass}`;
+        ? `O ${getClassDisplayName(healer.unitClass, lang)} curou o ${getClassDisplayName(target.unitClass, lang)}`
+        : `${getClassDisplayName(healer.unitClass, lang)} healed ${getClassDisplayName(target.unitClass, lang)}`;
       get().addLog(msg, healer.playerId);
       setTimeout(() => set({ animatingUnits: {} }), 600);
       checkAutoPass();

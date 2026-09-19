@@ -137,6 +137,15 @@ export function tryGetUnitCard(idOrClass: string, lang: 'en' | 'pt' = 'en'): Uni
   }
 }
 
+/**
+ * Nome da classe no idioma pedido ("Lanceiro" -> "Lancer").
+ * Os logs usavam `unit.unitClass` cru, que é sempre o identificador interno em
+ * português e destoava no modo inglês.
+ */
+export function getClassDisplayName(unitClass: string, lang: 'en' | 'pt' = 'en'): string {
+  return tryGetUnitCard(unitClass, lang)?.name ?? unitClass;
+}
+
 export function getUnitCard(idOrClass: string, lang: 'en' | 'pt' = 'en'): UnitCard {
   // Retro-compatibilidade se a chamada vier pela classe crua (ex: "Cavaleiro" na Forja/UI)
   const rawClassFallback: Record<string, string> = {
