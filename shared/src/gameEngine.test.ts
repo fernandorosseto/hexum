@@ -3,6 +3,7 @@ import {
   createInitialState, cloneGameState, hasAnyValidAction, playCard, attack, heal,
   offerCard, endTurn, moveTo, getFearStatus, getCardManaCost, getValidSpawnCoordinates,
   discardCard, getPendingDiscards, HAND_LIMIT, MAX_ARTIFACTS_PER_UNIT,
+  redactStateFor, HIDDEN_CARD,
 } from './gameEngine';
 import { makeState, makeUnit, hex } from './testUtils';
 
@@ -338,6 +339,49 @@ describe('derrota por baralho vazio', () => {
       makeUnit({ id: 'k2', playerId: 'p2', unitClass: 'Rei', position: hex(3, -3) }),
     ]);
     expect(endTurn(state).winReason).toBe('king');
+  });
+});
+
+describe('redactStateFor (visão pública)', () => {
+  it('esconde a mão e o baralho do adversário preservando as contagens', () => {
+    const state = createInitialState();
+    const view = redactStateFor(state, 'p1');
+
+    expect(view.players.p1.hand).toEqual(state.players.p1.hand);
+    expect(view.players.p1.deck).toEqual(state.players.p1.deck);
+
+    expect(view.players.p2.hand.every(c => c === HIDDEN_CARD)).toBe(true);
+    expect(view.players.p2.deck.every(c => c === HIDDEN_CARD)).toBe(true);
+    expect(view.players.p2.hand).toHaveLength(state.players.p2.hand.length);
+    expect(view.players.p2.deck).toHaveLength(state.players.p2.deck.length);
+  });
+
+  it('nenhum id real do adversário sobrevive na serialização', () => {
+    const state = createInitialState();
+    const serialized = JSON.stringify(redactStateFor(state, 'p1').players.p2);
+
+    for (const cardId of [...state.players.p2.hand, ...state.players.p2.deck]) {
+      expect(serialized).not.toContain(cardId);
+    }
+  });
+
+  it('mantém tabuleiro, mana e cemitério visíveis para os dois', () => {
+    const state = makeState([makeUnit({ id: 'u1', playerId: 'p2', position: hex(1, 0) })]);
+    state.players.p2.mana = 4;
+    state.players.p2.graveyard = ['spl_raio'];
+
+    const view = redactStateFor(state, 'p1');
+
+    expect(view.boardUnits.u1.playerId).toBe('p2');
+    expect(view.players.p2.mana).toBe(4);
+    expect(view.players.p2.graveyard).toEqual(['spl_raio']);
+  });
+
+  it('não altera o estado de origem', () => {
+    const state = createInitialState();
+    const originalHand = [...state.players.p2.hand];
+    redactStateFor(state, 'p1');
+    expect(state.players.p2.hand).toEqual(originalHand);
   });
 });
 

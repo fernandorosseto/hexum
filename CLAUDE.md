@@ -29,10 +29,15 @@ npm run build        # tsc -b && vite build
 npm run typecheck    # tsc -b
 npm run lint         # ESLint — está limpo, mantenha assim
 npm test             # testes do motor + do cliente
+npm run test:rules   # firestore.rules no emulador (não precisa de credenciais)
 ```
 
 `npm test` roda `shared` e `client`. Para um só: `npm run test:shared` ou
 `npm run test:client`.
+
+`npm run test:rules` sobe o emulador do Firestore (precisa de Java) com um
+project id `demo-`, aplica `firestore.rules` e verifica quem pode ler e escrever
+o quê. Roda offline e entra no CI.
 
 O jogo roda offline sem configuração nenhuma. Para o PvP, copie
 `client/.env.example` para `client/.env` e preencha as credenciais do Firebase.
@@ -54,6 +59,10 @@ shared/src/
   aiEngine.ts              busca alfa-beta + tabela de transposição + orçamento de tempo
   getValidAttackTargets.ts helper de UI
   testUtils.ts             fábricas de estado/unidade para os testes
+                           (`redactStateFor` vive em gameEngine.ts)
+
+tests/
+  firestoreRules.test.ts   regras de segurança contra o emulador
 
 client/src/
   store/gameStore.ts       Zustand + persist + subscribeWithSelector
@@ -226,11 +235,24 @@ do ambiente — não é do projeto.
 ## 7. Dívidas em aberto (conhecidas e deliberadas)
 
 1. **Sem servidor autoritativo.** O cliente resolve a própria jogada e publica o
-   `GameState`. As regras do Firestore e a validação de snapshot reduzem a
-   superfície, mas **o adversário ainda enxerga sua mão e seu baralho**: o estado
-   mora num documento único e o Firestore autoriza por documento, não por campo.
-   Só um servidor (Cloud Functions ou Node) resolve — e é o mesmo trabalho que
+   `GameState`. As regras do Firestore (agora testadas, ver abaixo) e a validação
+   de snapshot reduzem a superfície, mas **o adversário ainda enxerga sua mão e
+   seu baralho**: o estado mora num documento único e o Firestore autoriza por
+   documento, não por campo. Só um servidor resolve — e é o mesmo trabalho que
    torna o ranking confiável.
+
+   **Já preparado para essa migração** (não depende do plano Blaze):
+   - `redactStateFor(state, viewerId)` devolve a visão pública do estado — mão e
+     baralho do adversário viram `HIDDEN_CARD`, preservando só as contagens.
+   - `npm run build --workspace shared` emite CommonJS em `shared/dist`,
+     consumível direto por Node/Cloud Functions (verificado rodando o motor fora
+     do navegador).
+   - As regras de segurança têm suíte própria no emulador.
+
+   O que falta é o projeto `functions/` em si: uma callable `playAction` que
+   carrega o estado, valida o turno, roda o redutor de `shared/` e grava o
+   documento público + um documento privado por jogador. Isso exige **plano
+   Blaze** (pós-pago; a cota gratuita cobre o uso de um jogo desse porte).
 2. **Assets pesados.** `hexum.png` (8,9 MB) e `muralha_gelo.png` (6,4 MB)
    respondem pela maior parte dos ~19 MB do `dist/`. Reexportar em WebP/AVIF na
    resolução real de uso é a maior economia disponível — não foi feito porque
@@ -241,6 +263,8 @@ do ambiente — não é do projeto.
    Conversão do Clérigo. A "Chamado da Fé", habilidade-assinatura do Clérigo,
    falha ~97% das vezes e consome a ação. Números de balanceamento foram mantidos
    como estão por decisão do dono do projeto.
-4. **PvP não foi testado ponta a ponta** contra um Firestore real (não há
-   credenciais neste ambiente). A lógica pura está coberta por testes; o caminho de
-   rede, não.
+4. **O caminho de rede do PvP não foi testado contra um Firestore real.** As
+   regras de segurança e a lógica pura (`pvpSync`, código de sala, transação)
+   estão cobertas por testes, incluindo o emulador. O que continua sem
+   verificação é a ida e volta real: latência, reconexão e `onSnapshot` contra o
+   serviço de produção.

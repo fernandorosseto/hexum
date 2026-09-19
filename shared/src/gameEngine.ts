@@ -875,3 +875,40 @@ export function cleanupDeaths(state: GameState): GameState {
   return state;
 }
 
+
+// ══════════════════════════════════════════════
+//  Visão pública do estado (informação oculta)
+// ══════════════════════════════════════════════
+
+/** Ocupa o lugar de uma carta que o observador não pode ver. */
+export const HIDDEN_CARD = 'hidden';
+
+/**
+ * Devolve o estado como `viewerId` pode enxergá-lo: a mão e o baralho do
+ * adversário viram marcadores opacos, preservando apenas a QUANTIDADE (que a
+ * UI mostra e o deck-out depende).
+ *
+ * Existe para o dia em que a resolução das jogadas sair do cliente: o servidor
+ * guarda o estado real e publica uma cópia redigida por jogador. Hoje o PvP
+ * ainda publica o estado inteiro num documento só — ver CLAUDE.md §7.
+ *
+ * ⚠️ O resultado é para EXIBIÇÃO, não para simulação: comprar uma carta a
+ * partir de um estado redigido devolveria `HIDDEN_CARD`.
+ */
+export function redactStateFor(state: GameState, viewerId: string): GameState {
+  const redacted = cloneGameState(state);
+
+  for (const playerId in redacted.players) {
+    if (playerId === viewerId) continue;
+    const player = redacted.players[playerId];
+    redacted.players[playerId] = {
+      ...player,
+      hand: player.hand.map(() => HIDDEN_CARD),
+      deck: player.deck.map(() => HIDDEN_CARD),
+      // O cemitério é informação pública: os dois viram o que já foi jogado.
+      graveyard: [...player.graveyard],
+    };
+  }
+
+  return redacted;
+}

@@ -65,7 +65,9 @@ Implementada sobre **Firebase** (Auth anônima + Firestore) em vez do par Node.j
 - [x] Identidade de jogador sem tela de login (Auth anônima), com `VITE_AUTH_MODE=firebase` para ligar contas de verdade.
 - [x] `firestore.rules` versionadas: só os participantes leem a sala, só o dono escreve no próprio perfil.
 - [x] Validação do snapshot recebido (`hooks/pvpSync.ts`): recusa escrita fora do turno do remetente e estado que volta no tempo.
-- [ ] **Servidor autoritativo** (Cloud Functions ou Node): resolver as jogadas fora do cliente. É o que falta para (a) esconder a mão e o baralho do adversário, (b) impedir que um cliente escreva qualquer `GameState` e (c) tornar o ranking confiável.
+- [x] Regras de segurança testadas no emulador (`npm run test:rules`), sem credenciais e dentro do CI.
+- [x] Preparação para o servidor: `redactStateFor` (visão pública do estado) e build CommonJS do `shared/` para consumo em Node.
+- [ ] **Servidor autoritativo** (Cloud Functions): resolver as jogadas fora do cliente. É o que falta para (a) esconder a mão e o baralho do adversário, (b) impedir que um cliente escreva qualquer `GameState` e (c) tornar o ranking confiável. **Depende do plano Blaze.**
 - [ ] Histórico/ranking gravados pelo servidor (`saveMatchResult` hoje só escreve o placar do próprio jogador).
 - [ ] Deck building persistente e matchmaking.
 

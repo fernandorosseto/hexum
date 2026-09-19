@@ -30,3 +30,27 @@ jobs:
 
       - name: Build de produção
         run: npm run build
+
+  regras-firestore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # O emulador do Firestore roda sobre a JVM.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Instalar dependências
+        run: npm ci
+
+      # Não precisa de credenciais nem de projeto real: o emulador usa um
+      # project id "demo-" e roda inteiramente offline.
+      - name: Testar firestore.rules no emulador
+        run: npm run test:rules

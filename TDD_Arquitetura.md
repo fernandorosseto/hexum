@@ -188,13 +188,16 @@ interface Buff {
 *   **Framework:** Vitest. `npm test` na raiz roda motor e cliente.
 *   **`shared/`** — `gameEngine.test.ts` (regras, validações, artefatos, medo, linha de visão), `aiEngine.test.ts` (soma-zero, geração de ações, troca de turno, mate em 1, orçamento de tempo) e `selfPlay.test.ts` (fumaça IA vs IA).
 *   **`client/`** — `gameStoreRules.test.ts` (rendição, cronômetro, fim de turno), `actionGuard.test.ts`, `pvpSync.test.ts` (aceitação de snapshot remoto), mais os testes de projeção hexagonal e de sprite.
-*   **CI** (`.github/workflows/ci.yml`) roda typecheck, lint, testes e build a cada push.
+*   **Regras do Firestore** — `tests/firestoreRules.test.ts` roda contra o emulador (`npm run test:rules`), sem credenciais e offline: verifica que um terceiro não lê a sala alheia, que ninguém escreve no lugar de outro e que a vaga de convidado só é ocupada com o próprio uid.
+*   **CI** (`.github/workflows/ci.yml`) roda typecheck, lint, testes e build a cada push, mais um job separado com o emulador para as regras.
 
 ---
 
 ## 🚀 8. Roadmap Técnico (Futuro)
 
-1.  **Servidor Autoritativo (a maior lacuna):** mover a resolução de jogadas para Cloud Functions ou um serviço Node. Resolve de uma vez (a) o adversário enxergar sua mão e seu baralho, (b) o cliente poder escrever qualquer `GameState` e (c) a confiabilidade do ranking. O modelo isomórfico permite reaproveitar 100% do `shared/`.
+1.  **Servidor Autoritativo (a maior lacuna):** mover a resolução de jogadas para Cloud Functions. Resolve de uma vez (a) o adversário enxergar sua mão e seu baralho, (b) o cliente poder escrever qualquer `GameState` e (c) a confiabilidade do ranking.
+
+    Modelo alvo: `matches/{id}` público (tabuleiro, HP, mana, contagem de cartas) + `matches/{id}/private/{uid}` com a mão daquele jogador; nenhum dos dois gravável pelo cliente, que passa a mandar intenção por callable. Duas peças já existem: `redactStateFor` produz a visão pública, e `npm run build --workspace shared` emite CommonJS consumível por Node. Falta o projeto `functions/`, que exige plano Blaze.
 2.  **Regra de fim por baralho:** hoje não existe fadiga, derrota por deck vazio nem limite de mão — uma partida equilibrada pode não terminar.
 3.  **Peso dos assets:** `hexum.png` (8,9 MB) e `muralha_gelo.png` (6,4 MB) dominam os ~19 MB do `dist/`. Reexportar em WebP/AVIF na resolução real de uso é a maior economia disponível.
 4.  **Contas e ranking:** `VITE_AUTH_MODE=firebase` já liga login por e-mail/Google; falta a Cloud Function que escreve as estatísticas.
