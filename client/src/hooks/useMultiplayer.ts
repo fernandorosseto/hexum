@@ -14,6 +14,7 @@ import {
   type LobbyDoc,
 } from '../firebase/firestore';
 import type { GameState } from 'shared';
+import { shouldAcceptRemoteState } from './pvpSync';
 
 interface UseMultiplayerOptions {
   lobbyId: string | null;
@@ -28,6 +29,7 @@ interface UseMultiplayerOptions {
  */
 export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
   const { user } = useAuth();
+  const myUid = user?.uid ?? null;
   const setCurrentView = useGameStore(s => s.setCurrentView);
   const currentPhase   = useGameStore(s => s.currentPhase);
 
@@ -38,6 +40,7 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
   useEffect(() => {
     if (!lobbyId || !myRole) return;
 
+    const role = myRole;
     const unsub = subscribeToLobby(lobbyId, (lobby: LobbyDoc) => {
       // Sala finalizada: se a partida terminou aqui também, deixamos o jogador
       // na tela de resultado (antes os dois clientes eram jogados no menu antes
@@ -57,6 +60,24 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
 
       // Aplica apenas os campos do GameState, sem sobrescrever o papel (myRole) ou IDs de sala
       if (lobby.gameState) {
+        // Sem servidor autoritativo, o adversário pode escrever qualquer coisa
+        // no documento. Barramos o caso óbvio: escrita fora do turno dele e
+        // snapshot que volta no tempo.
+        const localState = useGameStore.getState();
+        const decision = shouldAcceptRemoteState(
+          {
+            turnNumber: localState.turnNumber,
+            currentTurnPlayerId: localState.currentTurnPlayerId,
+            currentPhase: localState.currentPhase,
+          },
+          lobby.gameState,
+          role,
+        );
+        if (!decision.accept) {
+          console.warn('PvP: snapshot recusado —', decision.reason);
+          return;
+        }
+
         const { 
           matchId, turnNumber, currentPhase, currentTurnPlayerId, 
           players, boardUnits, combatLogs, winner 
@@ -90,8 +111,8 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
 
   // ── Envia o estado local para o Firestore após uma ação ──
   const syncAction = useCallback(
-    async (fullState: any) => {
-      if (!lobbyId) return;
+    async (fullState: GameState) => {
+      if (!lobbyId || !myUid) return;
       
       const gameState: GameState = {
         matchId:             fullState.matchId,
@@ -101,7 +122,7 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
         players:             fullState.players,
         boardUnits:          fullState.boardUnits,
         combatLogs:          fullState.combatLogs || [],
-        winner:              fullState.winner || null,
+        winner:              fullState.winner ?? undefined,
         lastActionVfx:       fullState.lastActionVfx,
       };
 
@@ -110,12 +131,12 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
 
       lastSyncedState.current = stateJson;
       try {
-        await pushGameState(lobbyId, gameState);
+        await pushGameState(lobbyId, gameState, myUid);
       } catch (err) {
         console.error('Falha ao sincronizar PvP:', err);
       }
     },
-    [lobbyId]
+    [lobbyId, myUid]
   );
 
   // Ref para a função de sincronização para evitar re-inscrições desnecessárias no store
@@ -170,8 +191,9 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
   // ── Encerra a sala quando o jogo termina ──
   useEffect(() => {
     if (!lobbyId || currentPhase !== 'GAME_OVER') return;
-    closeLobby(lobbyId);
+    const code = useGameStore.getState().lobbyCode ?? undefined;
+    closeLobby(lobbyId, code).catch(err => console.warn('Falha ao fechar a sala:', err));
   }, [lobbyId, currentPhase]);
 
-  return { syncAction, myUid: user?.uid ?? null };
+  return { syncAction, myUid };
 }
