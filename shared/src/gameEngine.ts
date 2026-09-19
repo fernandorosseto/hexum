@@ -1,11 +1,34 @@
 import type { GameState, Unit, Card, UnitCard } from './types';
 import { getHexDistance, getHexNeighbors, isInsideBoard, BOARD_RADIUS } from './hexMath';
 import type { HexCoordinates } from './hexMath';
-import { ARTIFACTS, SPELLS, getUnitCard } from './cardLibrary';
-import { UNIT_BEHAVIORS, isPathBlocked, checkEffectTrigger, handleUnitDeath } from './unitBehaviors';
+import { ARTIFACTS, SPELLS, getUnitCard, tryGetUnitCard } from './cardLibrary';
+import { UNIT_BEHAVIORS, checkEffectTrigger, handleUnitDeath } from './unitBehaviors';
 import { SPELL_REGISTRY } from './spellHandlers';
 import { ARTIFACT_REGISTRY } from './artifactHandlers';
 import { getValidAttackTargets } from './getValidAttackTargets';
+
+// ══════════════════════════════════════════════
+//  Utilitários
+// ══════════════════════════════════════════════
+
+let idCounter = 0;
+
+/** Id curto e sem colisão: contador monotônico + ruído aleatório. */
+function makeId(prefix: string, suffix = ''): string {
+  idCounter += 1;
+  const noise = Math.random().toString(36).slice(2, 7);
+  return suffix ? `${prefix}_${idCounter}${noise}_${suffix}` : `${prefix}_${idCounter}${noise}`;
+}
+
+/** Embaralhamento uniforme (Fisher-Yates). `Array.sort(() => 0.5 - random)` é enviesado. */
+function shuffle<T>(items: T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
 
 /**
  * Funções Puras (Reducers) para manipular o Estado
@@ -59,8 +82,7 @@ export function getValidSpawnCoordinates(state: GameState, playerId: string, car
     
     // Feitiços de ATAQUE (Inimigos)
     if (['spl_raio', 'spl_raizes'].includes(cardId)) {
-      let potentialTargets = boardUnits.filter(u => u.playerId !== playerId);
-      return potentialTargets.map(u => u.position);
+      return boardUnits.filter(u => u.playerId !== playerId).map(u => u.position);
     }
 
     // Transfusão Sombria (Adjacente ao Rei, qualquer lado)
@@ -117,7 +139,7 @@ export function createInitialState(): GameState {
   const p2Id = 'p2';
 
   const state: GameState = {
-    matchId: `m_${Math.random().toString(36).substr(2, 9)}`,
+    matchId: makeId('m'),
     turnNumber: 1,
     currentPhase: 'MAIN_PHASE',
     currentTurnPlayerId: p1Id,
@@ -154,19 +176,18 @@ function createInitialPlayer(id: string) {
   ];
   heroes.forEach(h => deck.push(h));
 
-  const randomArts = [...ARTIFACTS].sort(() => 0.5 - Math.random()).slice(0, 4);
-  randomArts.forEach(a => deck.push(a.id));
+  shuffle(ARTIFACTS).slice(0, 4).forEach(a => deck.push(a.id));
+  shuffle(SPELLS).slice(0, 4).forEach(s => deck.push(s.id));
 
-  const randomSpells = [...SPELLS].sort(() => 0.5 - Math.random()).slice(0, 4);
-  randomSpells.forEach(s => deck.push(s.id));
-
-  deck.sort(() => 0.5 - Math.random());
-  return { id, mana: 1, maxMana: 1, canOfferCard: true, hand: [] as string[], deck, graveyard: [] as string[] };
+  return {
+    id, mana: 1, maxMana: 1, canOfferCard: true,
+    hand: [] as string[], deck: shuffle(deck), graveyard: [] as string[]
+  };
 }
 
 function addInitialUnit(state: GameState, playerId: string, heroId: string, pos: HexCoordinates) {
   const card = getUnitCard(heroId);
-  const id = `u_${Math.random().toString(36).substr(2, 5)}_${card.unitClass.toLowerCase()}`;
+  const id = makeId('u', card.unitClass.toLowerCase());
   state.boardUnits[id] = {
     id, playerId, cardId: heroId, unitClass: card.unitClass,
     hp: card.baseHp, maxHp: card.baseHp, attack: card.baseAttack, position: pos,
@@ -191,8 +212,7 @@ function drawInitialHand(state: GameState, playerId: string) {
   const player = state.players[playerId];
   let attempts = 0;
   while (attempts < 50) {
-    const tempDeck = [...player.deck];
-    tempDeck.sort(() => 0.5 - Math.random());
+    const tempDeck = shuffle(player.deck);
     const tempHand = tempDeck.splice(0, 3);
     const unitCount = tempHand.filter(id => id.startsWith('hero_') || id.startsWith('unit_')).length;
     if (unitCount >= 2) {
@@ -231,6 +251,9 @@ export function cloneGameState(state: GameState): GameState {
     turnNumber: state.turnNumber,
     currentPhase: state.currentPhase,
     currentTurnPlayerId: state.currentTurnPlayerId,
+    // `language` precisa ser copiado: os reducers leem state.language para escolher
+    // o idioma dos logs e das mensagens de erro depois do clone.
+    language: state.language,
     sandboxMode: state.sandboxMode,
     winner: state.winner,
     players: newPlayers,
@@ -419,6 +442,27 @@ export function getValidMoveCoordinates(state: GameState, unitId: string, useSpe
 //  Ataque
 // ══════════════════════════════════════════════
 
+/** Alcance em que uma unidade com Provocar força o inimigo a atacá-la. */
+export const TAUNT_RADIUS = 2;
+
+/** Lista os inimigos com Provocar que obrigam `unit` a mudar de alvo. */
+export function getTauntingEnemies(state: GameState, unit: Unit): Unit[] {
+  return Object.values(state.boardUnits).filter(u =>
+    u.playerId !== unit.playerId &&
+    u.buffs.some(b => b.type === 'taunt') &&
+    getHexDistance(unit.position, u.position) <= TAUNT_RADIUS
+  );
+}
+
+function assertTauntRespected(state: GameState, attacker: Unit, target: Unit): void {
+  const taunting = getTauntingEnemies(state, attacker);
+  if (taunting.length === 0) return;
+  if (taunting.some(u => u.id === target.id)) return;
+  throw new Error(state.language === 'pt'
+    ? 'Provocar: você deve atacar a unidade que está provocando.'
+    : 'Taunt: you must attack the taunting unit.');
+}
+
 export function attack(state: GameState, attackerId: string, targetId: string, useSpecial: boolean = false): GameState {
   const newState = cloneGameState(state);
   const attacker = newState.boardUnits[attackerId];
@@ -453,15 +497,22 @@ export function attack(state: GameState, attackerId: string, targetId: string, u
   if ((attacker.equippedArtifacts || []).includes('art_arco')) rangeBonus += 1;
   if ((attacker.equippedArtifacts || []).includes('art_anel') && (attacker.unitClass === 'Alquimista' || attacker.unitClass === 'Clerigo')) rangeBonus += 1;
 
+  // Provocar: se houver inimigo com Taunt ao alcance da regra, ele é alvo obrigatório.
+  // Precisa viver aqui (e não só no helper de UI), senão IA e PvP ignoram o efeito.
+  assertTauntRespected(newState, attacker, target);
+
   // Delega validação à behavior da classe
   const behavior = UNIT_BEHAVIORS[attacker.unitClass];
   behavior.validateAttack(attacker, target, dist, rangeBonus, useSpecial, newState);
 
-  // Aura de Medo do Rei (compartilhado)
+  // Prepara o array de logs detalhados (limpa o que veio do turno anterior)
+  newState.combatLogs = [];
+
+  // Aura de Medo do Rei (compartilhado). O raio vem de getFearStatus — com a
+  // Coroa do Regente ele é 2, e antes esta checagem fixava dist === 1.
   const fearInfo = getFearStatus(attacker, newState);
-  if (fearInfo.inRange && dist === 1) {
+  if (fearInfo.inRange) {
     if (Math.random() < fearInfo.chance) {
-      if (!newState.combatLogs) newState.combatLogs = [];
       const fearMsg = newState.language === 'pt'
         ? `😱 ${attacker.unitClass} sucumbiu ao Medo do Rei inimigo e hesitou em atacar!`
         : `😱 ${attacker.unitClass} succumbed to the enemy King's Fear and hesitated to attack!`;
@@ -470,9 +521,6 @@ export function attack(state: GameState, attackerId: string, targetId: string, u
       return newState;
     }
   }
-
-  // Prepara o array de logs detalhados
-  newState.combatLogs = [];
 
   // Delega dano e efeitos à behavior da classe
   behavior.applyDamage(attacker, target, newState, dist, useSpecial, rangeBonus);
@@ -487,10 +535,18 @@ export function attack(state: GameState, attackerId: string, targetId: string, u
 //  Jogar Carta (Unidade, Feitiço, Artefato)
 // ══════════════════════════════════════════════
 
+/** Quantos artefatos diferentes uma mesma unidade pode carregar. */
+export const MAX_ARTIFACTS_PER_UNIT = 3;
+
 export function playCard(state: GameState, playerId: string, cardId: string, targetHex: HexCoordinates): GameState {
   const newState = cloneGameState(state);
   const player = newState.players[playerId];
 
+  if (!player) throw new Error("Unknown player.");
+  // Sandbox permite montar o tabuleiro dos dois lados; a partida real, não.
+  if (!newState.sandboxMode && playerId !== newState.currentTurnPlayerId) {
+    throw new Error(newState.language === 'pt' ? "Não é o seu turno." : "Not your turn.");
+  }
   if (!player.hand.includes(cardId)) throw new Error("Card not in hand.");
 
   let card: Card | UnitCard | undefined;
@@ -500,7 +556,7 @@ export function playCard(state: GameState, playerId: string, cardId: string, tar
     card = ARTIFACTS.find(a => a.id === cardId) || SPELLS.find(s => s.id === cardId);
   }
   if (!card) throw new Error("Invalid card.");
-  if (player.mana < card.manaCost) throw new Error(state.language === 'en' ? "Not enough mana." : "Mana insuficiente.");
+  if (player.mana < card.manaCost) throw new Error(newState.language === 'pt' ? "Mana insuficiente." : "Not enough mana.");
 
   // ── Unidade ──
   if (card.type === 'Unit') {
@@ -539,16 +595,10 @@ export function playCard(state: GameState, playerId: string, cardId: string, tar
     if (!handler) throw new Error(`Unknown spell: ${card.id}`);
     handler.execute(newState, playerId, targetHex);
 
-    // Cleanup de mortes após feitiço
-    for (const uId in newState.boardUnits) {
-      if (newState.boardUnits[uId].hp <= 0) {
-        if (newState.boardUnits[uId].unitClass === 'Rei' && !newState.sandboxMode) {
-          newState.currentPhase = 'GAME_OVER';
-          newState.winner = playerId;
-        }
-        delete newState.boardUnits[uId];
-      }
-    }
+    // Cleanup de mortes após feitiço. Usa handleUnitDeath para que o vencedor seja
+    // sempre o adversário do Rei que caiu — inclusive quando o feitiço mata o
+    // próprio Rei do conjurador (fogo amigo de Meteoro/Relâmpago).
+    cleanupDeaths(newState);
   }
   // ── Artefato ──
   else if (card.type === 'Artifact') {
@@ -557,6 +607,16 @@ export function playCard(state: GameState, playerId: string, cardId: string, tar
     );
     if (!targetUnit) throw new Error("Select a unit to equip.");
     if (!newState.sandboxMode && targetUnit.playerId !== playerId) throw new Error("Must equip on an allied unit.");
+    if ((targetUnit.equippedArtifacts || []).includes(card.id)) {
+      throw new Error(newState.language === 'pt'
+        ? "Esta unidade já está equipada com este artefato."
+        : "This unit already carries this artifact.");
+    }
+    if ((targetUnit.equippedArtifacts || []).length >= MAX_ARTIFACTS_PER_UNIT) {
+      throw new Error(newState.language === 'pt'
+        ? `Limite de ${MAX_ARTIFACTS_PER_UNIT} artefatos por unidade atingido.`
+        : `Limit of ${MAX_ARTIFACTS_PER_UNIT} artifacts per unit reached.`);
+    }
 
     if (!targetUnit.equippedArtifacts) targetUnit.equippedArtifacts = [];
     targetUnit.equippedArtifacts.push(card.id);
@@ -582,12 +642,25 @@ export function heal(state: GameState, healerId: string, targetId: string): Game
   const healer = newState.boardUnits[healerId];
   const target = newState.boardUnits[targetId];
 
+  if (!healer || !target) throw new Error("Invalid units.");
+  if (healer.unitClass !== 'Clerigo') throw new Error("Only Clerics can heal.");
+  if (healer.id === target.id) throw new Error("The Cleric cannot heal itself.");
+  if (!newState.sandboxMode) {
+    if (healer.playerId !== newState.currentTurnPlayerId) {
+      throw new Error(newState.language === 'pt' ? "Não é o seu turno." : "Not your turn.");
+    }
+    if (healer.summoningSickness) {
+      throw new Error(newState.language === 'pt' ? "Unidade está com enjoo de invocação." : "Unit has summoning sickness.");
+    }
+  }
+  if (target.playerId !== healer.playerId) throw new Error("You can only heal allied units.");
   if (!healer.canAttack) throw new Error("This unit already acted this turn.");
+  if (healer.buffs.some(b => b.type === 'stun')) throw new Error("Unit is stunned!");
 
   let healAmount = 2;
   if ((healer.equippedArtifacts || []).includes('art_tomo')) healAmount += 1;
 
-  let rangeBonus = (healer.equippedArtifacts || []).includes('art_anel') ? 1 : 0;
+  const rangeBonus = (healer.equippedArtifacts || []).includes('art_anel') ? 1 : 0;
   if (getHexDistance(healer.position, target.position) > 1 + rangeBonus) throw new Error("Target out of range to heal.");
 
   target.hp = Math.min(target.maxHp, target.hp + healAmount);
@@ -611,7 +684,7 @@ export function convert(state: GameState, healerId: string, targetId: string): G
   if (target.unitClass === 'Rei') throw new Error("The King cannot be converted.");
   if ((target.equippedArtifacts || []).includes('art_corcel') && target.unitClass === 'Cavaleiro') throw new Error("Knight with Steed is immune to conversion.");
 
-  let rangeBonus = (healer.equippedArtifacts || []).includes('art_anel') ? 1 : 0;
+  const rangeBonus = (healer.equippedArtifacts || []).includes('art_anel') ? 1 : 0;
   const dist = getHexDistance(healer.position, target.position);
   if (dist > 1 + rangeBonus) throw new Error(newState.language === 'en' ? "Conversion: Target must be in range." : "Conversão: Alvo deve estar ao alcance.");
 
@@ -646,16 +719,17 @@ export function offerCard(state: GameState, playerId: string, cardId: string): G
 //  Utilitários de Aura (Medo)
 // ══════════════════════════════════════════════
 
-export function getFearStatus(unit: Unit, state: GameState): { inRange: boolean, chance: number } {
+export function getFearStatus(unit: Unit, state: GameState): { inRange: boolean, chance: number, radius: number } {
   const enemyKing = Object.values(state.boardUnits).find(u => u.unitClass === 'Rei' && u.playerId !== unit.playerId);
-  if (!enemyKing) return { inRange: false, chance: 0 };
+  if (!enemyKing) return { inRange: false, chance: 0, radius: 0 };
 
-  const fearRadius = (enemyKing.equippedArtifacts || []).includes('art_coroa') ? 2 : 1;
-  const inRange = getHexDistance(unit.position, enemyKing.position) <= fearRadius;
-  
+  // Coroa do Regente dobra o raio da aura (1 -> 2).
+  const radius = (enemyKing.equippedArtifacts || []).includes('art_coroa') ? 2 : 1;
+  const inRange = getHexDistance(unit.position, enemyKing.position) <= radius;
+
   // Fórmula: 5% base + 1% por turno que o rei sobreviveu (roundsInField), teto de 30%
   const chance = Math.min(0.05 + (enemyKing.roundsInField * 0.01), 0.30);
-  return { inRange, chance };
+  return { inRange, chance, radius };
 }
 
 // ══════════════════════════════════════════════
@@ -667,64 +741,14 @@ export function hasAnyValidAction(state: GameState, playerId: string): boolean {
   const player = state.players[playerId];
   if (!player) return false;
 
-  // 1. O jogador pode fazer uma oferenda (sacrifício)?
-  // Só consideramos ação válida se sacrificar habilitar ALGUMA carta ou habilidade que ele não podia antes.
-  const canSacrifice = player.canOfferCard && player.hand.length > 0;
-  let sacrificeIsUseful = false;
-
-  if (canSacrifice) {
-    const manaAfterSacrifice = player.mana + 1;
-    const myUnitsOnBoard = Object.values(state.boardUnits).filter(u => u.playerId === playerId);
-
-    // 1a. Sacrificar habilita alguma CARTA? (Precisa de outra carta na mão)
-    if (player.hand.length > 1) {
-      for (const cardId of player.hand) {
-        const card = getUnitCard(cardId) || ARTIFACTS.find(a => a.id === cardId) || SPELLS.find(s => s.id === cardId);
-        if (card && player.mana < card.manaCost && manaAfterSacrifice >= card.manaCost) {
-          if (getValidSpawnCoordinates(state, playerId, cardId).length > 0) {
-            sacrificeIsUseful = true;
-            break;
-          }
-        }
-      }
-    }
-
-    // 1b. Sacrificar habilita alguma HABILIDADE ESPECIAL no tabuleiro?
-    if (!sacrificeIsUseful) {
-      for (const unit of myUnitsOnBoard) {
-        if (unit.abilityCooldown <= 0 && (unit.unitClass === 'Cavaleiro' || unit.unitClass === 'Assassino')) {
-          const abilityCost = 3; // Custo padrão de especial nestas classes
-          if (player.mana < abilityCost && manaAfterSacrifice >= abilityCost) {
-            // Verifica se tem alvos/movimentos válidos para o especial
-            const hasSpecialMove = getValidMoveCoordinates(state, unit.id, true).length > 0;
-            const hasSpecialAttack = getValidAttackTargets(state, unit.id, true).length > 0;
-            if (hasSpecialMove || hasSpecialAttack) {
-              sacrificeIsUseful = true;
-              break;
-            }
-          }
-        }
-      }
-    }
-  }
-  if (sacrificeIsUseful) return true;
+  // 1. Oferenda (sacrifício) NÃO é considerada aqui.
+  // offerCard aumenta apenas maxMana — a mana utilizável só chega no próximo
+  // turno —, então sacrificar nunca destrava uma jogada no turno corrente e não
+  // deve impedir o auto-pass.
 
   // 2. O jogador pode jogar alguma carta da mão com a mana ATUAL?
   for (const cardId of player.hand) {
-    let cardCost = 999;
-    if (cardId.startsWith('unit_') || cardId.startsWith('hero_')) {
-      const card = getUnitCard(cardId);
-      cardCost = card ? card.manaCost : 999;
-    } else {
-      const art = ARTIFACTS.find(a => a.id === cardId);
-      if (art) {
-        cardCost = art.manaCost;
-      } else {
-        const spl = SPELLS.find(s => s.id === cardId);
-        if (spl) cardCost = spl.manaCost;
-      }
-    }
-
+    const cardCost = getCardManaCost(cardId);
     if (player.mana >= cardCost) {
       const validSpawns = getValidSpawnCoordinates(state, playerId, cardId);
       if (validSpawns.length > 0) return true;
@@ -743,9 +767,12 @@ export function hasAnyValidAction(state: GameState, playerId: string): boolean {
       if (validAttacks.length > 0) return true;
       
       if (unit.unitClass === 'Clerigo') {
-         const friends = myUnits.filter(u => u.id !== unit.id && getHexDistance(unit.position, u.position) <= 2);
+         // Prece de Esperança / Chamado da Fé: alcance 1 (+1 com Anel do Arquimago).
+         const clericRange = 1 + ((unit.equippedArtifacts || []).includes('art_anel') ? 1 : 0);
+         const friends = myUnits.filter(u => u.id !== unit.id && getHexDistance(unit.position, u.position) <= clericRange);
          if (friends.some(f => f.hp < f.maxHp)) return true;
-         const enemies = Object.values(state.boardUnits).filter(u => u.playerId !== playerId && getHexDistance(unit.position, u.position) <= 2);
+         const enemies = Object.values(state.boardUnits).filter(u =>
+           u.playerId !== playerId && u.unitClass !== 'Rei' && getHexDistance(unit.position, u.position) <= clericRange);
          if (enemies.length > 0) return true;
       }
     }
@@ -754,11 +781,22 @@ export function hasAnyValidAction(state: GameState, playerId: string): boolean {
   return false;
 }
 
+/** Custo de mana de qualquer carta; Infinity quando o id é desconhecido. */
+export function getCardManaCost(cardId: string): number {
+  const unit = tryGetUnitCard(cardId);
+  if (unit) return unit.manaCost;
+  const art = ARTIFACTS.find(a => a.id === cardId);
+  if (art) return art.manaCost;
+  const spl = SPELLS.find(sp => sp.id === cardId);
+  if (spl) return spl.manaCost;
+  return Number.POSITIVE_INFINITY;
+}
+
 export function cleanupDeaths(state: GameState): GameState {
   for (const unitId in state.boardUnits) {
     const unit = state.boardUnits[unitId];
     if (unit.hp <= 0) {
-      handleUnitDeath(state, unit, unit.playerId === 'p1' ? 'p2' : 'p1');
+      handleUnitDeath(state, unit);
     }
   }
   return state;
