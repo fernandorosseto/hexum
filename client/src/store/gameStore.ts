@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist, subscribeWithSelector } from 'zustand/middleware';
-import { endTurn, createInitialState, hasAnyValidAction } from 'shared';
-import { getBestAction } from 'shared/src/aiEngine';
+import { endTurn, createInitialState, hasAnyValidAction, getBestAction } from 'shared';
 import type { GameState, HexCoordinates } from 'shared';
 import { createCombatActions } from './combatActions';
 import { createSandboxActions } from './sandboxActions';
@@ -14,6 +13,26 @@ import {
   scheduleProjectileAnimation, scheduleThrustAnimation, scheduleMageAttack,
   scheduleAssassinAttack, scheduleHeavyMelee, scheduleCleaveAttack, scheduleMeleeAnimation
 } from './animationActions';
+
+/** Duração do turno em segundos (HUD e auto-pass do PvP). */
+export const TURN_SECONDS = 60;
+
+/** Limites do laço da IA: evitam travar a aba se uma ação não avançar o estado. */
+const AI_MAX_ACTIONS_PER_TURN = 25;
+const AI_MAX_TURN_MS = 15_000;
+
+/** Resumo barato do estado: detecta se a ação da IA realmente mudou algo. */
+function aiProgressSignature(state: GameState): string {
+  const units = Object.values(state.boardUnits)
+    .map(u => `${u.id}:${u.position.q},${u.position.r}:${u.hp}:${u.canMove ? 1 : 0}${u.canAttack ? 1 : 0}`)
+    .sort()
+    .join(';');
+  const players = Object.values(state.players)
+    .map(p => `${p.id}:${p.mana}:${p.maxMana}:${p.hand.length}:${p.canOfferCard ? 1 : 0}`)
+    .sort()
+    .join(';');
+  return `${state.currentTurnPlayerId}|${state.currentPhase}|${units}|${players}`;
+}
 
 interface GameLog {
   id: string;
@@ -92,6 +111,10 @@ interface GameStore extends GameState {
   removeUnit: (unitId: string) => void;
   isAutoPlay: boolean;
   toggleAutoPlay: () => void;
+  /** Contador de ações: invalida callbacks de animação de uma ação já superada. */
+  actionSeq: number;
+  /** true enquanto uma animação de ação está resolvendo — a UI ignora cliques. */
+  isResolving: boolean;
   isHandVisible: boolean;
   toggleHand: () => void;
   isCardDetailsVisible: boolean;
@@ -172,11 +195,16 @@ export const useGameStore = create<GameStore>()(
             isVsAI: true,
             isAutoPlay: false,
             selectedHex: null,
-            selectedCard: null
+            selectedCard: null,
+            turnTimer: TURN_SECONDS,
+            isTimerRunning: true
           }));
         } else if (view === 'PVP') {
           // Modo PvP: não reseta o estado — o lobby já inicializou via createInitialState
-          set({ currentView: 'PVP', sandboxMode: false, isVsAI: false, isAutoPlay: false });
+          set({
+            currentView: 'PVP', sandboxMode: false, isVsAI: false, isAutoPlay: false,
+            turnTimer: TURN_SECONDS, isTimerRunning: true
+          });
         } else {
           set({ 
             currentView: view, 
@@ -213,16 +241,26 @@ export const useGameStore = create<GameStore>()(
       activeWallFormation: null,
       activeMistImpact: null,
       activeWindTrail: null,
-      turnTimer: 60,
+      turnTimer: TURN_SECONDS,
       isTimerRunning: false,
-      startTimer: () => set({ isTimerRunning: true, turnTimer: 60 }),
+      startTimer: () => set({ isTimerRunning: true, turnTimer: TURN_SECONDS }),
       stopTimer: () => set({ isTimerRunning: false }),
-      decrementTimer: () => set(state => {
-        if (state.turnTimer <= 0) {
-          return { turnTimer: 0 };
+      decrementTimer: () => {
+        const state = get();
+        if (!state.isTimerRunning || state.currentPhase === 'GAME_OVER' || state.sandboxMode) return;
+        if (state.turnTimer > 0) {
+          set({ turnTimer: state.turnTimer - 1 });
+          return;
         }
-        return { turnTimer: state.turnTimer - 1 };
-      }),
+        // Zerou: em PvP o turno passa sozinho para a partida não travar com um
+        // jogador ausente. Fora do PvP o relógio é apenas informativo.
+        set({ isTimerRunning: false });
+        if (state.isPvP && state.currentTurnPlayerId === state.myRole) {
+          get().triggerEndTurn();
+        }
+      },
+      actionSeq: 0,
+      isResolving: false,
       isAutoPlay: false,
       toggleAutoPlay: () => {
         const newVal = !get().isAutoPlay;
@@ -267,16 +305,20 @@ export const useGameStore = create<GameStore>()(
         const state = get();
         if (state.currentPhase === 'GAME_OVER') return;
 
-        const opponentId = state.myRole === 'p1' ? 'p2' : 'p1';
-        const loserName = state.myRole === 'p1' ? 'Azul' : 'Roxo';
+        // Fora do PvP `myRole` é null; quem desiste é sempre o jogador local (p1).
+        const loserId = state.isPvP ? (state.myRole ?? 'p1') : 'p1';
+        const winnerId = loserId === 'p1' ? 'p2' : 'p1';
+        const loserName = loserId === 'p1' ? 'Azul' : 'Roxo';
 
         set({
           currentPhase: 'GAME_OVER',
-          winner: opponentId,
-          isTimerRunning: false
+          winner: winnerId,
+          isTimerRunning: false,
+          actionSeq: state.actionSeq + 1,
+          isResolving: false,
         });
 
-        get().addLog(`${loserName} surrendered!`, state.myRole || 'p1');
+        get().addLog(`${loserName} surrendered!`, loserId);
       },
 
       ...createCombatActions(set, get),
@@ -346,7 +388,15 @@ export const useGameStore = create<GameStore>()(
           const currentGameState = get();
           const pId = currentGameState.currentTurnPlayerId;
           const newState = endTurn(currentGameState);
-          set({ ...newState, selectedHex: null, turnTimer: 60, isTimerRunning: true });
+          set({
+            ...newState,
+            selectedHex: null,
+            turnTimer: TURN_SECONDS,
+            isTimerRunning: true,
+            // Qualquer animação pendente do turno anterior deixa de valer.
+            actionSeq: currentGameState.actionSeq + 1,
+            isResolving: false,
+          });
           get().addLog(`${pId === 'p1' ? 'Blue' : 'Purple'}'s turn ended.`, pId);
 
           const updatedState = get();
@@ -354,10 +404,17 @@ export const useGameStore = create<GameStore>()(
           if (updatedState.currentPhase !== 'GAME_OVER' && (updatedState.isAutoPlay || (updatedState.isVsAI && updatedState.currentTurnPlayerId === 'p2'))) {
             setTimeout(() => get().runAiTurn(), autoBattleTarget);
           } else if (updatedState.currentPhase === 'MAIN_PHASE' && !updatedState.sandboxMode && !hasAnyValidAction(updatedState, updatedState.currentTurnPlayerId)) {
-            // Se o PRÓXIMO jogador (p1) não tem ações logo de cara
+            // Se o PRÓXIMO jogador não tem nenhuma ação, passa sozinho.
             setTimeout(() => {
-              if (get().currentTurnPlayerId === updatedState.currentTurnPlayerId) {
-                get().triggerEndTurn();
+              try {
+                const latest = get();
+                if (latest.currentTurnPlayerId === updatedState.currentTurnPlayerId &&
+                    latest.currentPhase === 'MAIN_PHASE' &&
+                    !hasAnyValidAction(latest, latest.currentTurnPlayerId)) {
+                  latest.triggerEndTurn();
+                }
+              } catch (autoPassErr) {
+                console.warn('Auto-pass:', autoPassErr);
               }
             }, 1500);
           }
@@ -374,47 +431,59 @@ export const useGameStore = create<GameStore>()(
 
         set({ isAiThinking: true });
 
+        const currentPlayer = state.currentTurnPlayerId;
+        const startedAt = Date.now();
+        let actionsTaken = 0;
+
         try {
-          let continueTurn = true;
-          const currentPlayer = state.currentTurnPlayerId;
-          while (continueTurn) {
-            const currentState = get();
-            if (currentState.currentPhase === 'GAME_OVER' || currentState.currentTurnPlayerId !== currentPlayer) break;
+          while (true) {
+            const before = get();
+            if (before.currentPhase === 'GAME_OVER') break;
+            if (before.currentTurnPlayerId !== currentPlayer) break;
 
-            const action = getBestAction(currentState, currentPlayer);
-
-            if (!action) {
-              continueTurn = false;
-              get().triggerEndTurn();
+            // Guard-rails: sem eles, uma ação recusada pelo motor (cujo erro é
+            // engolido pelos wrappers) faria este laço rodar para sempre.
+            if (actionsTaken >= AI_MAX_ACTIONS_PER_TURN || Date.now() - startedAt > AI_MAX_TURN_MS) {
+              console.warn('IA: limite de ações/tempo atingido, encerrando o turno.');
+              before.triggerEndTurn();
               break;
             }
 
-            const delay = state.isAutoPlay ? 150 : 800;
-            await new Promise(resolve => setTimeout(resolve, delay));
+            const action = getBestAction(before, currentPlayer, { timeBudgetMs: 800 });
+            if (!action || action.type === 'END_TURN') {
+              before.triggerEndTurn();
+              break;
+            }
 
-            try {
-              if (action.type === 'MOVE') {
-                get().attemptMove(action.unitId, action.target);
-              } else if (action.type === 'ATTACK') {
-                get().attemptAttack(action.attackerId, action.targetId, action.special);
-              } else if (action.type === 'PLAY_CARD') {
-                get().attemptPlayCard(action.cardId, action.target);
-              } else if (action.type === 'OFFER') {
-                get().offerCard(action.cardId);
-              } else if (action.type === 'HEAL') {
-                get().attemptHeal(action.healerId, action.targetId);
-              }
-            } catch (e) {
-              console.error("AI Error:", e);
-              continueTurn = false;
+            await new Promise(resolve => setTimeout(resolve, get().isAutoPlay ? 150 : 800));
+            if (get().currentTurnPlayerId !== currentPlayer) break;
+
+            const signatureBefore = aiProgressSignature(get());
+            const actions = get();
+            switch (action.type) {
+              case 'MOVE':      actions.attemptMove(action.unitId, action.target); break;
+              case 'ATTACK':    actions.attemptAttack(action.attackerId, action.targetId, action.special); break;
+              case 'PLAY_CARD': actions.attemptPlayCard(action.cardId, action.target); break;
+              case 'OFFER':     actions.offerCard(action.cardId); break;
+              case 'HEAL':      actions.attemptHeal(action.healerId, action.targetId); break;
+            }
+            actionsTaken++;
+
+            // A ação não mudou nada? O motor a recusou — não insistir nela.
+            if (aiProgressSignature(get()) === signatureBefore) {
+              console.warn('IA: ação sem efeito, encerrando o turno.', action.type);
               get().triggerEndTurn();
+              break;
             }
           }
+        } catch (err) {
+          console.error('AI Error:', err);
+          if (get().currentTurnPlayerId === currentPlayer) get().triggerEndTurn();
         } finally {
           set({ isAiThinking: false });
         }
       },
-      
+
       resetGame: () => {
         const initialState = createInitialState();
         set(state => ({
@@ -432,38 +501,21 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'hexum-game-state-v2',
-      partialize: (state) => {
-        const {
-          animatingUnits,
-          isAiThinking,
-          selectedHex,
-          selectedCard,
-          targetHex,
-          selectedAbility,
-          activeTransfusion,
-          activeProjectile,
-          activeThrust,
-          activeMeteor,
-          activeCleave,
-          activeOverheadSlash,
-          activeShadowSlash,
-          activeArcaneExplosion,
-          activeAuraRunica,
-          activeDivineBlessing,
-          activeEarthRoots,
-          activeFuryPulse,
-          activeWallFormation,
-          activeMistImpact,
-          activeWindTrail,
-          isHandVisible,
-          isCardDetailsVisible,
-          isInspectMode,
-          isHandExpanded,
-          isAutoPlay,
-          ...rest
-        } = state;
-        return rest;
-      },
+      // Persistimos só a partida em si. Estado de navegação, sessão de lobby,
+      // cronômetro e flags efêmeras voltavam do localStorage e reabriam telas
+      // de PvP mortas depois de um reload.
+      partialize: (state) => ({
+        matchId: state.matchId,
+        turnNumber: state.turnNumber,
+        currentPhase: state.currentPhase,
+        currentTurnPlayerId: state.currentTurnPlayerId,
+        winner: state.winner,
+        players: state.players,
+        boardUnits: state.boardUnits,
+        language: state.language,
+        isVsAI: state.isVsAI,
+        sandboxMode: state.sandboxMode,
+      }),
     }
   )
 )

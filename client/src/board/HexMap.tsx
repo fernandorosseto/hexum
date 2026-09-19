@@ -137,6 +137,10 @@ export const HexMap: React.FC = () => {
       return;
     }
 
+    // Enquanto uma animação está aplicando o estado final, um clique aqui seria
+    // calculado sobre o tabuleiro antigo e depois sobrescrito pelo timer.
+    if (useGameStore.getState().isResolving) return;
+
     // No PvP, você só pode interagir no seu turno (a menos que seja inspeção)
     const isMyTurn = isPvP ? (currentTurnPlayerId === myRole) : (currentTurnPlayerId === 'p1');
     if (isPvP && !isMyTurn) return;

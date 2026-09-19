@@ -12,6 +12,7 @@ import { useMultiplayer } from './hooks/useMultiplayer';
 import { useGameStore } from './store/gameStore';
 import { useAuth } from './hooks/useAuth';
 import { LoginPage } from './ui/LoginPage';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import './index.css';
 import backgroundImg from './assets/background.jpg';
@@ -39,6 +40,19 @@ function App() {
   const isAiThinking = useGameStore(s => s.isAiThinking);
   const isPvP = useGameStore(s => s.isPvP);
   const isMatchStarted = useGameStore(s => s.isMatchStarted);
+  const language = useGameStore(s => s.language);
+
+  // Cronômetro de turno: `decrementTimer` existia no store mas nunca era
+  // chamado, então o HUD ficava congelado em 60s para sempre.
+  useEffect(() => {
+    if (currentView === 'MENU' || sandboxMode) return;
+    const ticker = setInterval(() => useGameStore.getState().decrementTimer(), 1000);
+    return () => clearInterval(ticker);
+  }, [currentView, sandboxMode]);
+
+  useEffect(() => {
+    document.documentElement.lang = language === 'pt' ? 'pt-BR' : 'en';
+  }, [language]);
 
   if (loading) {
     return (

@@ -6,8 +6,12 @@ import {
 import { 
   scheduleProjectileAnimation, scheduleThrustAnimation, scheduleMeleeAnimation, 
   scheduleMageAttack, scheduleAssassinAttack, scheduleHeavyMelee, scheduleCleaveAttack,
-  scheduleSpellCardAnimation, AnimationType 
+  AnimationType 
 } from './animationActions';
+import { beginAction } from './actionGuard';
+
+/** Janela máxima de animação; depois dela a UI volta a aceitar cliques. */
+const RESOLVE_WINDOW_MS = 1400;
 
 export const createCombatActions = (set: any, get: any) => {
   const checkAutoPass = () => {
@@ -30,6 +34,7 @@ export const createCombatActions = (set: any, get: any) => {
 
   return {
   attemptMove: (unitId: string, targetHex: HexCoordinates, useSpecial = false) => {
+    const action = beginAction(set, get);
     try {
       const currentGameState = get();
       const unit = currentGameState.boardUnits[unitId];
@@ -52,7 +57,7 @@ export const createCombatActions = (set: any, get: any) => {
 
       const finalUseSpecial = useSpecial || !!currentGameState.selectedAbility;
       const newState = moveTo(effectiveState, unitId, targetHex, finalUseSpecial);
-      set({ 
+      action.set({ 
         ...newState, 
         selectedHex: null, 
         selectedAbility: null,
@@ -72,13 +77,14 @@ export const createCombatActions = (set: any, get: any) => {
       const moveMsg = moveTemplates[Math.floor(Math.random() * moveTemplates.length)];
       get().addLog(moveMsg, unit.playerId);
       checkAutoPass();
-    } catch (err: any) {
-      console.warn("Erro de Regra:", err.message);
-      set({ selectedHex: null, selectedAbility: null });
+    } catch (err) {
+      console.warn("Erro de Regra:", err instanceof Error ? err.message : err);
+      action.set({ selectedHex: null, selectedAbility: null });
     }
   },
 
   attemptAttack: (attackerId: string, targetId: string, useSpecial = false) => {
+    const action = beginAction(set, get);
     try {
       const currentGameState = get();
       const attacker = currentGameState.boardUnits[attackerId];
@@ -138,31 +144,37 @@ export const createCombatActions = (set: any, get: any) => {
         timestamp: Date.now() 
       };
 
+      // Bloqueia a entrada enquanto a animação resolve o estado final.
+      action.set({ isResolving: true });
+      setTimeout(() => action.set({ isResolving: false }), RESOLVE_WINDOW_MS);
+
+      const set_ = action.set;
       if (attacker.unitClass === 'Arqueiro') {
-        scheduleProjectileAnimation(set, get, attacker, target, newState, animations, attackMsg, targetDied);
+        scheduleProjectileAnimation(set_, get, attacker, target, newState, animations, attackMsg, targetDied);
       } else if (attacker.unitClass === 'Lanceiro') {
-        scheduleThrustAnimation(set, get, attacker, target, newState, animations, attackMsg, targetDied);
+        scheduleThrustAnimation(set_, get, attacker, target, newState, animations, attackMsg, targetDied);
       } else if (attacker.unitClass === 'Mago' || attacker.unitClass === 'Alquimista') {
-        scheduleMageAttack(set, get, attacker, target, newState, animations, attackMsg, targetDied);
+        scheduleMageAttack(set_, get, attacker, target, newState, animations, attackMsg, targetDied);
       } else if (attacker.unitClass === 'Assassino') {
-        scheduleAssassinAttack(set, get, attacker, target, newState, animations, attackMsg, targetDied);
+        scheduleAssassinAttack(set_, get, attacker, target, newState, animations, attackMsg, targetDied);
       } else if (attacker.unitClass === 'Cavaleiro') {
-        scheduleHeavyMelee(set, get, attacker, target, newState, animations, attackMsg, targetDied);
+        scheduleHeavyMelee(set_, get, attacker, target, newState, animations, attackMsg, targetDied);
       } else if (attacker.unitClass === 'Rei') {
-        scheduleCleaveAttack(set, get, attacker, target, newState, animations, attackMsg, targetDied, 'gold');
+        scheduleCleaveAttack(set_, get, attacker, target, newState, animations, attackMsg, targetDied, 'gold');
       } else if (attacker.unitClass === 'Clerigo') {
         scheduleCleaveAttack(set, get, attacker, target, newState, animations, attackMsg, targetDied, 'cyan');
       } else {
-        scheduleMeleeAnimation(set, get, attacker, target, newState, animations, attackMsg, targetDied);
+        scheduleMeleeAnimation(set_, get, attacker, target, newState, animations, attackMsg, targetDied);
       }
       checkAutoPass();
-    } catch (err: any) {
-      console.warn("Erro de Ataque:", err.message);
-      set({ selectedHex: null, targetHex: null, selectedAbility: null });
+    } catch (err) {
+      console.warn("Erro de Ataque:", err instanceof Error ? err.message : err);
+      action.set({ selectedHex: null, targetHex: null, selectedAbility: null, isResolving: false });
     }
   },
 
   attemptHeal: (healerId: string, targetId: string) => {
+    const action = beginAction(set, get);
     try {
       const currentGameState = get();
       const healer = currentGameState.boardUnits[healerId];
@@ -180,7 +192,7 @@ export const createCombatActions = (set: any, get: any) => {
       }
 
       const newState = heal(effectiveState, healerId, targetId);
-      set({ 
+      action.set({ 
         ...newState, 
         selectedHex: null, 
         animatingUnits: { [targetId]: 'healing' },
@@ -191,15 +203,16 @@ export const createCombatActions = (set: any, get: any) => {
         ? `O ${healer.unitClass} usou preces divinas para curar o ${target.unitClass}!`
         : `The ${healer.unitClass} used divine prayers to heal ${target.unitClass}!`;
       get().addLog(msg, healer.playerId);
-      setTimeout(() => set({ animatingUnits: {} }), 600);
+      setTimeout(() => action.set({ animatingUnits: {} }), 600);
       checkAutoPass();
-    } catch (err: any) {
-      console.warn("Erro de Cura:", err.message);
-      set({ selectedHex: null });
+    } catch (err) {
+      console.warn("Erro de Cura:", err instanceof Error ? err.message : err);
+      action.set({ selectedHex: null });
     }
   },
 
   attemptPlayCard: (cardId: string, targetHex: HexCoordinates) => {
+    const action = beginAction(set, get);
     try {
       const currentGameState = get();
 
@@ -347,8 +360,9 @@ export const createCombatActions = (set: any, get: any) => {
       }
 
       const applyFinalState = () => {
-        set({
+        action.set({
           ...newState,
+          isResolving: false,
           selectedCard: null,
           selectedHex: null,
           activeTransfusion: null,
@@ -375,12 +389,16 @@ export const createCombatActions = (set: any, get: any) => {
       };
 
       if (hasCustomAnimation) {
-        // Atualiza imediatamente mão e mana do jogador para responsividade na UI
-        set({
+        // Atualiza imediatamente mão e mana do jogador para responsividade na UI.
+        // O tabuleiro só muda ao final da animação, por isso a entrada fica
+        // bloqueada (isResolving) até lá — antes, um clique nessa janela era
+        // desfeito quando o timer aplicava o estado pré-calculado.
+        action.set({
           ...newState,
-          boardUnits: currentGameState.boardUnits, // Mantém o tabuleiro original para a animação
+          boardUnits: currentGameState.boardUnits,
           selectedCard: null,
-          selectedHex: null
+          selectedHex: null,
+          isResolving: true
         });
 
         // Dispara os estados de animação específicos
@@ -393,9 +411,9 @@ export const createCombatActions = (set: any, get: any) => {
       } else {
         applyFinalState();
       }
-    } catch (err: any) {
-      console.warn("Erro ao jogar carta:", err.message);
-      set({ selectedCard: null, selectedHex: null });
+    } catch (err) {
+      console.warn("Erro ao jogar carta:", err instanceof Error ? err.message : err);
+      action.set({ selectedCard: null, selectedHex: null, isResolving: false });
     }
   },
 
@@ -429,8 +447,8 @@ export const createCombatActions = (set: any, get: any) => {
         : `A mana offering was made by ${pName}.`;
       get().addLog(offeringMsg, currentGameState.currentTurnPlayerId);
       checkAutoPass();
-    } catch (err: any) {
-      console.warn("Erro ao oferecer carta:", err.message);
+    } catch (err) {
+      console.warn("Erro ao oferecer carta:", err instanceof Error ? err.message : err);
     }
   },
 
@@ -448,8 +466,8 @@ export const createCombatActions = (set: any, get: any) => {
       get().addLog(msg, healer.playerId);
       setTimeout(() => set({ animatingUnits: {} }), 600);
       checkAutoPass();
-    } catch (err: any) {
-      console.warn("Erro ao curar:", err.message);
+    } catch (err) {
+      console.warn("Erro ao curar:", err instanceof Error ? err.message : err);
     }
   }
 }

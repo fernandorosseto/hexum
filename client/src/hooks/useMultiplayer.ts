@@ -39,10 +39,15 @@ export function useMultiplayer({ lobbyId, myRole }: UseMultiplayerOptions) {
     if (!lobbyId || !myRole) return;
 
     const unsub = subscribeToLobby(lobbyId, (lobby: LobbyDoc) => {
-      // Se a sala foi finalizada por outra aba/cliente, limpa a sessão e volta ao menu
+      // Sala finalizada: se a partida terminou aqui também, deixamos o jogador
+      // na tela de resultado (antes os dois clientes eram jogados no menu antes
+      // de o GameOverUI sequer aparecer). Só voltamos ao menu quando a sala
+      // fecha sem um fim de jogo local (host saiu, sala expirou).
       if (lobby.status === 'finished') {
-        useGameStore.getState().clearLobbySession();
-        setCurrentView('MENU');
+        if (useGameStore.getState().currentPhase !== 'GAME_OVER') {
+          useGameStore.getState().clearLobbySession();
+          setCurrentView('MENU');
+        }
         return;
       }
 
