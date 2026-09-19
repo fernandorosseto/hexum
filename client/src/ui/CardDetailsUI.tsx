@@ -2,7 +2,7 @@ import React from 'react';
 import { useGameStore } from '../store/gameStore';
 import { UNIT_DESCRIPTIONS, getUnitCard, ARTIFACTS, SPELLS, ARTIFACT_DESCRIPTIONS, SPELL_DESCRIPTIONS, getFearStatus, buffLabels, ARTIFACT_NAMES, SPELL_NAMES } from 'shared';
 import { motion } from 'framer-motion';
-import { CLASS_ICONS as UNIT_ICONS, UNIT_ART_COLORS } from '../constants/unitIcons';
+import { CLASS_ICONS as UNIT_ICONS, UNIT_ART_COLORS, type ClassIcon } from '../constants/unitIcons';
 import { SpellIcon, ArtifactIcon } from '../assets/icons/VectorIcons';
 import { translations } from './translations';
 
@@ -18,8 +18,8 @@ export const CardDetailsUI: React.FC = () => {
   const setSelectedHex = useGameStore(state => state.setSelectedHex);
   const setSelectedCard = useGameStore(state => state.setSelectedCard);
   const isInspectMode = useGameStore(state => state.isInspectMode);
-  const toggleInspectMode = useGameStore(state => state.toggleInspectMode);
   const isCardDetailsVisible = useGameStore(state => state.isCardDetailsVisible);
+  const gameState = useGameStore(state => state);
   const language = useGameStore(state => state.language);
   const t = translations[language];
 
@@ -27,7 +27,7 @@ export const CardDetailsUI: React.FC = () => {
   type CardData = {
     kind: 'unit' | 'spell' | 'artifact';
     title: string;
-    icon: string | React.FC<any>;
+    icon: ClassIcon;
     manaCost: number;
     atk?: number;
     hp?: string;
@@ -54,7 +54,9 @@ export const CardDetailsUI: React.FC = () => {
           unitClass: card.unitClass,
           colors: UNIT_ART_COLORS[card.unitClass] || UNIT_ART_COLORS['Rei'],
         };
-      } catch(e) {}
+      } catch {
+        // Id sem carta correspondente: nada a exibir.
+      }
     } else {
       const art = ARTIFACTS.find(a => a.id === selectedCardId);
       if (art) {
@@ -95,7 +97,9 @@ export const CardDetailsUI: React.FC = () => {
           buffs: unitOnHex.buffs,
           artifacts: unitOnHex.equippedArtifacts,
         };
-      } catch (e) {}
+      } catch {
+        // Id sem carta correspondente: nada a exibir.
+      }
     }
   }
 
@@ -182,7 +186,7 @@ export const CardDetailsUI: React.FC = () => {
                 }`} 
               />
             ) : (
-              React.createElement(data.icon as React.FC<any>, { className: "w-16 h-16 md:w-24 md:h-24 drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]" })
+              React.createElement(data.icon as Exclude<ClassIcon, string>, { className: "w-16 h-16 md:w-24 md:h-24 drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]" })
             )
           ) : data.kind === 'spell' ? (
             <SpellIcon id={selectedCardId || ''} size={64} className="text-purple-300 drop-shadow-[0_0_15px_rgba(167,139,250,0.8)]" />
@@ -241,7 +245,7 @@ export const CardDetailsUI: React.FC = () => {
               {(() => {
                 const unitOnHex = Object.values(boardUnits).find(u => u.position.q === selectedHex.q && u.position.r === selectedHex.r);
                 if (unitOnHex) {
-                  const fearInfo = getFearStatus(unitOnHex, { boardUnits } as any);
+                  const fearInfo = getFearStatus(unitOnHex, gameState);
                   if (fearInfo.inRange) {
                     return (
                       <span className="px-1.5 py-0.5 rounded text-[8px] font-bold border bg-purple-900/80 text-purple-300 border-purple-700/50">

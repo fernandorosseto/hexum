@@ -1,5 +1,6 @@
 import type { GameState, Unit, UnitClass } from './types';
 import { getHexDistance, getHexNeighbors, isLine, getLineOfSight, isDiagonal, isInsideBoard } from './hexMath';
+import { getClassDisplayName } from './cardLibrary';
 import type { HexCoordinates } from './hexMath';
 
 // ══════════════════════════════════════════════
@@ -34,9 +35,14 @@ function checkTrajectory(state: GameState, attacker: Unit, target: Unit, startIn
   }
 }
 
+/**
+ * Dano REAL das Adagas Envenenadas: ignora escudos de propósito (GDD §6), mas
+ * respeita `invulnerable`, que nega qualquer dano.
+ */
 function applyArtifactDamageEffects(attacker: Unit, target: Unit): number {
   let extraDamage = 0;
   if ((attacker.equippedArtifacts || []).includes('art_adagas')) {
+    if (target.buffs.some(b => b.type === 'invulnerable')) return 0;
     target.hp -= 1;
     extraDamage += 1;
     applyDoT(target, 'poison', 1, 1);
@@ -103,7 +109,7 @@ function applyFuryEffect(attacker: Unit, state: GameState): void {
   if (attacker.buffs.some(b => b.type === 'fury')) {
     attacker.hp -= 1;
     addCombatLog(state, `🩸 Battle Fury: ${attacker.unitClass} lost 1 HP.`, `🩸 Fúria de Batalha: ${attacker.unitClass} perdeu 1 de HP.`);
-    handleUnitDeath(state, attacker, attacker.playerId === 'p1' ? 'p2' : 'p1');
+    handleUnitDeath(state, attacker);
   }
 }
 
@@ -120,15 +126,29 @@ export function addCombatLog(state: GameState, logEn: string, logPt: string): vo
   state.combatLogs.push(log);
 }
 
-export function handleUnitDeath(state: GameState, unit: Unit, killerPlayerId: string): void {
+export function handleUnitDeath(state: GameState, unit: Unit): void {
   if (unit.hp <= 0) {
     if (unit.unitClass === 'Rei' && !state.sandboxMode) {
       state.currentPhase = 'GAME_OVER';
       state.winner = unit.playerId === 'p1' ? 'p2' : 'p1';
+      state.winReason = 'king';
     }
     delete state.boardUnits[unit.id];
-    addCombatLog(state, `💀 The ${unit.unitClass} succumbed and was removed from the field.`, `💀 O ${unit.unitClass} sucumbiu e foi removido de campo.`);
+    addCombatLog(
+      state,
+      `💀 The ${getClassDisplayName(unit.unitClass, 'en')} succumbed and was removed from the field.`,
+      `💀 O ${getClassDisplayName(unit.unitClass, 'pt')} sucumbiu e foi removido de campo.`,
+    );
   }
+}
+
+/**
+ * Alcance de movimento da unidade: base da classe + Corcel de Guerra.
+ * Usado pelos helpers `isValidMovePosition` para que os realces da UI batam
+ * exatamente com o que `moveTo` aceita.
+ */
+export function maxMoveDistFor(unit: Unit, baseMove: number): number {
+  return baseMove + ((unit.equippedArtifacts || []).includes('art_corcel') ? 1 : 0);
 }
 
 function hasAmuleto(unit: Unit): boolean {
@@ -152,10 +172,10 @@ export interface UnitBehavior {
 
 const ReiBehavior: UnitBehavior = {
   validateMove(unit, target, dist, maxMoveDist) {
-    if (dist > maxMoveDist) throw new Error("King only moves 1 hex.");
+    if (dist > maxMoveDist) throw new Error(`King only moves up to ${maxMoveDist} hex(es).`);
   },
   isValidMovePosition(unit, targetPos, dist) {
-    return dist === 1;
+    return dist <= maxMoveDistFor(unit, 1);
   },
   validateAttack(attacker, target, dist, rangeBonus) {
     if (dist > 1 + rangeBonus) throw new Error("King only attacks adjacent hexes.");
@@ -171,7 +191,7 @@ const ReiBehavior: UnitBehavior = {
     const extra = applyArtifactDamageEffects(attacker, target);
     if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`, `Artefatos: +${extra}`);
     applyFuryEffect(attacker, state);
-    handleUnitDeath(state, target, attacker.playerId);
+    handleUnitDeath(state, target);
   }
 };
 
@@ -192,10 +212,8 @@ const CavaleiroBehavior: UnitBehavior = {
   },
   isValidMovePosition(unit, targetPos, dist, state, useSpecial) {
     if (useSpecial) return dist <= 3 && isLine(unit.position, targetPos);
-    
     // Movimento normal: até dist 2 (ou 3 com corcel) mas SEMPRE em linha reta
-    const bonus = (unit.equippedArtifacts || []).includes('art_corcel') ? 1 : 0;
-    return dist <= (2 + bonus) && isLine(unit.position, targetPos);
+    return dist <= maxMoveDistFor(unit, 2) && isLine(unit.position, targetPos);
   },
   validateAttack(attacker, target, dist, rangeBonus, useSpecial, state) {
     if (useSpecial) {
@@ -249,7 +267,7 @@ const CavaleiroBehavior: UnitBehavior = {
       addCombatLog(state, `💫 The target was stunned by the shock!`, `💫 O alvo foi atordoado pelo choque!`);
     }
     applyFuryEffect(attacker, state);
-    handleUnitDeath(state, target, attacker.playerId);
+    handleUnitDeath(state, target);
   }
 };
 
@@ -267,7 +285,7 @@ const LanceiroBehavior: UnitBehavior = {
     }
   },
   isValidMovePosition(unit, targetPos, dist) {
-    return dist === 1 && unit.position.r !== targetPos.r;
+    return dist <= maxMoveDistFor(unit, 1) && unit.position.r !== targetPos.r;
   },
   validateAttack(attacker, target, dist, rangeBonus, useSpecial, state) {
     if (!isLine(attacker.position, target.position) || attacker.position.r === target.position.r) {
@@ -295,7 +313,7 @@ const LanceiroBehavior: UnitBehavior = {
       }
     }
     applyFuryEffect(attacker, state);
-    handleUnitDeath(state, target, attacker.playerId);
+    handleUnitDeath(state, target);
   }
 };
 
@@ -304,14 +322,16 @@ const LanceiroBehavior: UnitBehavior = {
 // ══════════════════════════════════════════════
 
 const ArqueiroBehavior: UnitBehavior = {
-  validateMove(unit, target, dist, maxMoveDist, state) {
-    if (dist > maxMoveDist) throw new Error("Archer: Moves only 1 hex.");
+  validateMove(unit, target, dist, maxMoveDist) {
+    if (dist > maxMoveDist) throw new Error(`Archer moves up to ${maxMoveDist} hex(es).`);
   },
   isValidMovePosition(unit, targetPos, dist) {
-    return dist <= 1;
+    return dist <= maxMoveDistFor(unit, 1);
   },
-  validateAttack(attacker, target, dist, rangeBonus) {
+  validateAttack(attacker, target, dist, rangeBonus, useSpecial, state) {
     if (dist > 3 + rangeBonus) throw new Error("Archer: Range 3.");
+    // Tiros precisam de linha de visão livre (mesma regra do Lanceiro).
+    checkTrajectory(state, attacker, target, 1);
   },
   applyDamage(attacker, target, state) {
     checkAndConsumeInvulnerability(attacker, state);
@@ -324,7 +344,7 @@ const ArqueiroBehavior: UnitBehavior = {
       addCombatLog(state, `🎯 Precision Shot! The target was paralyzed.`, `🎯 Tiro Preciso! O alvo foi paralisado.`);
     }
     applyFuryEffect(attacker, state);
-    handleUnitDeath(state, target, attacker.playerId);
+    handleUnitDeath(state, target);
   }
 };
 
@@ -374,7 +394,7 @@ const AssassinoBehavior: UnitBehavior = {
 
     applyFuryEffect(attacker, state);
     const targetDied = target.hp <= 0;
-    handleUnitDeath(state, target, attacker.playerId);
+    handleUnitDeath(state, target);
 
     if (useSpecial) {
       if (targetDied) {
@@ -407,13 +427,15 @@ const AssassinoBehavior: UnitBehavior = {
 
 const AlquimistaBehavior: UnitBehavior = {
   validateMove(unit, target, dist, maxMoveDist) {
-    if (dist > maxMoveDist) throw new Error("Alchemist only moves 1 hex.");
+    if (dist > maxMoveDist) throw new Error(`Alchemist moves up to ${maxMoveDist} hex(es).`);
   },
   isValidMovePosition(unit, targetPos, dist) {
-    return dist === 1;
+    return dist <= maxMoveDistFor(unit, 1);
   },
-  validateAttack(attacker, target, dist, rangeBonus) {
+  validateAttack(attacker, target, dist, rangeBonus, useSpecial, state) {
     if (dist > 3 + rangeBonus) throw new Error("Alchemist: Range 3.");
+    // O frasco também precisa de linha de visão livre até o alvo.
+    checkTrajectory(state, attacker, target, 1);
   },
   applyDamage(attacker, target, state) {
     checkAndConsumeInvulnerability(attacker, state);
@@ -440,7 +462,7 @@ const AlquimistaBehavior: UnitBehavior = {
         applyDoT(u, 'burn', 2, 1);
         addCombatLog(state, `🔥 Alchemical Fire: Ignited the ${u.unitClass}!`, `🔥 Fogo Alquímico: Incendiou o ${u.unitClass}!`);
       }
-      handleUnitDeath(state, u, attacker.playerId);
+      handleUnitDeath(state, u);
     });
     applyFuryEffect(attacker, state);
   }
@@ -452,10 +474,10 @@ const AlquimistaBehavior: UnitBehavior = {
 
 const ClerigoBehavior: UnitBehavior = {
   validateMove(unit, target, dist, maxMoveDist) {
-    if (dist > maxMoveDist) throw new Error("Cleric only moves 1 hex.");
+    if (dist > maxMoveDist) throw new Error(`Cleric moves up to ${maxMoveDist} hex(es).`);
   },
   isValidMovePosition(unit, targetPos, dist) {
-    return dist === 1;
+    return dist <= maxMoveDistFor(unit, 1);
   },
   validateAttack(attacker, target, dist, rangeBonus) {
     if (dist > 1 + rangeBonus) throw new Error("Cleric: Range 1.");
@@ -467,7 +489,7 @@ const ClerigoBehavior: UnitBehavior = {
     const extra = applyArtifactDamageEffects(attacker, target);
     if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`, `Artefatos: +${extra}`);
     applyFuryEffect(attacker, state);
-    handleUnitDeath(state, target, attacker.playerId);
+    handleUnitDeath(state, target);
   }
 };
 
@@ -485,7 +507,7 @@ const EstruturaBehavior: UnitBehavior = {
     applyFinalDamage(target, attacker.attack, state);
     const extra = applyArtifactDamageEffects(attacker, target);
     if (extra > 0) addCombatLog(state, `Artifacts: +${extra}`, `Artefatos: +${extra}`);
-    handleUnitDeath(state, target, attacker.playerId);
+    handleUnitDeath(state, target);
   }
 };
 

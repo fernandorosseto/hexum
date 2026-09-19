@@ -13,7 +13,10 @@ import {
  * Mapa centralizado de ícones por classe de unidade.
  * Eliminado a duplicação que existia em UnitSprite.tsx e CardDetailsUI.tsx.
  */
-export const CLASS_ICONS: Record<string, string | React.FC<any>> = {
+/** Ícone de classe: caminho de imagem ou componente SVG. */
+export type ClassIcon = string | React.FC<{ className?: string; size?: number }>;
+
+export const CLASS_ICONS: Record<string, ClassIcon> = {
   'Rei': reiIcon,
   'Cavaleiro': cavaleiroIcon,
   'Lanceiro': lanceiroIcon,

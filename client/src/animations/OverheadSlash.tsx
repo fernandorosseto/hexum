@@ -9,7 +9,7 @@ interface Props {
 }
 
 export const OverheadSlash: React.FC<Props> = ({ source, target }) => {
-  const src = hexToPixel(source);
+  const _src = hexToPixel(source);
   const tgt = hexToPixel(target);
   
   // Calcular ângulo entre origem e destino caso necessário, mas o golpe é vertical

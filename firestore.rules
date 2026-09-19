@@ -1,0 +1,98 @@
+rules_version = '2';
+
+// ============================================================
+//  Regras de segurança do Firestore — Hexum
+//
+//  Deploy:  firebase deploy --only firestore:rules
+//
+//  Estas regras assumem que TODO cliente está autenticado, inclusive o modo
+//  convidado (que usa login anônimo do Firebase). Sem isso não existe
+//  `request.auth.uid` e nenhuma regra significativa é possível.
+//
+//  LIMITE CONHECIDO: o Firestore autoriza documentos inteiros, não campos.
+//  Como o `gameState` de uma partida mora em um único documento lido pelos
+//  dois jogadores, o adversário consegue ver a sua mão e o seu baralho.
+//  Esconder informação oculta de verdade exige um servidor autoritativo
+//  (Cloud Functions ou serviço próprio) resolvendo as jogadas. Estas regras
+//  garantem o que é possível sem ele: ninguém de fora da partida lê nada, e
+//  ninguém escreve no lugar de outro.
+// ============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // ── Perfis ────────────────────────────────────────────
+    // Leitura pública (necessária para o ranking); escrita só no próprio doc.
+    // Antes, o cliente escrevia nas estatísticas de QUALQUER usuário.
+    // Para um placar confiável, mova o incremento para uma Cloud Function e
+    // troque o `update` abaixo por `false`.
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow create, update: if isSelf(uid);
+      allow delete: if false;
+    }
+
+    // ── Histórico de partidas ─────────────────────────────
+    // Só dá para registrar uma partida da qual você participou.
+    match /matches/{matchId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid in request.resource.data.players;
+      allow update, delete: if false;
+    }
+
+    // ── Índice código -> sala ─────────────────────────────
+    // Documento propositalmente vazio de dados de jogo: é o que permite entrar
+    // por código sem precisar listar (e ler) as partidas de todo mundo.
+    match /lobbyCodes/{code} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn()
+                    && request.resource.data.lobbyId == resource.data.lobbyId;
+      allow delete: if false;
+    }
+
+    // ── Salas PvP ─────────────────────────────────────────
+    match /lobbies/{lobbyId} {
+      function isParticipant() {
+        return isSignedIn()
+               && (request.auth.uid == resource.data.hostId
+                   || request.auth.uid == resource.data.guestId);
+      }
+
+      // Uma sala aberta precisa ser legível por quem vai ocupar a vaga;
+      // o id do documento é gerado pelo Firestore e não é adivinhável.
+      function isOpenSeat() {
+        return isSignedIn()
+               && resource.data.status == 'waiting'
+               && resource.data.guestId == null;
+      }
+
+      // Entrar na sala: só preenche a vaga vazia, com o próprio uid, e não
+      // mexe em quem é o host nem no estado do jogo.
+      function isJoining() {
+        return isOpenSeat()
+               && request.resource.data.guestId == request.auth.uid
+               && request.resource.data.hostId == resource.data.hostId
+               && request.resource.data.status == 'in_progress';
+      }
+
+      allow read:   if isParticipant() || isOpenSeat();
+      allow create: if isSelf(request.resource.data.hostId)
+                    && request.resource.data.guestId == null
+                    && request.resource.data.status == 'waiting';
+      allow update: if isJoining()
+                    || (isParticipant()
+                        && request.resource.data.hostId == resource.data.hostId
+                        && request.resource.data.guestId == resource.data.guestId);
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.hostId;
+    }
+  }
+}

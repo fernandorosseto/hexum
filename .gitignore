@@ -38,6 +38,12 @@ yarn-error.log*
 *.swp
 *.swo
 
+# Firebase (saída dos emuladores)
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+.firebase/
+
 # Project Specific
 simulation_results.json
 deep_simulation_results.json
@@ -49,4 +55,3 @@ shared/src/run100.ts
 shared/src/run10.ts
 shared/src/run100.js
 shared/src/run10.js
-shared/tests/

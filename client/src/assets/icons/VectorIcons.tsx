@@ -11,7 +11,7 @@ interface IconProps {
 // ────────────────────────────────────────────────────────
 // FEITIÇOS (SPELLS) -> Letra 'f' em cor Prata (Silver)
 // ────────────────────────────────────────────────────────
-export const SpellIcon: React.FC<IconProps> = ({ id, size = 32, className = '', style }) => {
+export const SpellIcon: React.FC<IconProps> = ({ id: _id, size = 32, className = '', style }) => {
   return (
     <svg 
       viewBox="0 0 24 24" 
@@ -37,7 +37,7 @@ export const SpellIcon: React.FC<IconProps> = ({ id, size = 32, className = '', 
 // ────────────────────────────────────────────────────────
 // ARTEFATOS (ARTIFACTS) -> Letra 'a' em cor Dourada (Gold)
 // ────────────────────────────────────────────────────────
-export const ArtifactIcon: React.FC<IconProps> = ({ id, size = 32, className = '', style }) => {
+export const ArtifactIcon: React.FC<IconProps> = ({ id: _id, size = 32, className = '', style }) => {
   return (
     <svg 
       viewBox="0 0 24 24" 
@@ -63,7 +63,7 @@ export const ArtifactIcon: React.FC<IconProps> = ({ id, size = 32, className = '
 // ────────────────────────────────────────────────────────
 // STATUS / BUFFS (BUFFS E DEBUFFS) -> Letra 'b' em cor Bronze (Bronze)
 // ────────────────────────────────────────────────────────
-export const BuffIcon: React.FC<IconProps> = ({ id, size = 16, className = '', style }) => {
+export const BuffIcon: React.FC<IconProps> = ({ id: _id, size = 16, className = '', style }) => {
   return (
     <svg 
       viewBox="0 0 24 24" 

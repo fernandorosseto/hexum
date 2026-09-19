@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { hexToPixel, HEX_SIZE } from './HexUtils';
+import { hexToPixel } from './HexUtils';
 import { HexCoordinates } from 'shared';
 import { useGameStore } from '../store/gameStore';
 import { UnitSprite } from './UnitSprite';

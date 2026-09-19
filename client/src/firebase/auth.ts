@@ -4,6 +4,7 @@
 // ============================================================
 
 import {
+  signInAnonymously,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -17,6 +18,19 @@ import { auth } from './firebaseConfig';
 import { createUserProfile } from './firestore';
 
 const googleProvider = new GoogleAuthProvider();
+
+// ── Sessão de convidado (login anônimo) ────────────────────
+/**
+ * Abre uma sessão anônima no Firebase. Dá um uid real e estável sem pedir
+ * cadastro — é o que permite escrever regras de segurança no Firestore,
+ * impossíveis com um uid inventado no cliente.
+ */
+export async function ensureGuestSession(): Promise<User | null> {
+  if (!auth) return null;
+  if (auth.currentUser) return auth.currentUser;
+  const credential = await signInAnonymously(auth);
+  return credential.user;
+}
 
 // ── Registro com email e senha ─────────────────────────────
 export async function registerWithEmail(
