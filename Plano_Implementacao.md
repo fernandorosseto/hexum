@@ -45,20 +45,33 @@ Aqui o jogo entra na forma "Jogável".
 
 ## Fase 4: IA Estratégica (Oponente "Inteligente")
 
-A máquina oponente agora simulará jogadas reais e escolherá a melhor ação baseada em um algoritmo de busca tática.
+A máquina oponente simula jogadas reais e escolhe a ação por busca adversarial.
 
-- [ ] Construir o `evaluateState.ts`: Função heurística que dá "nota" ao tabuleiro (Vantagem de HP, Posicionamento do Rei, Mana).
-- [ ] Implementar `getBestAction.ts`: Motor de simulação que testa todos os movimentos legais e escolhe o de maior score.
-- [ ] Hook `useBot`: Integrar no cliente para disparar ações automáticas quando `currentTurnPlayerId === 'p2'`.
-- [ ] Visualização de "Pensamento": Adicionar delays de 800ms entre as ações da IA para que o jogador acompanhe o desenrolar do turno inimigo.
+- [x] `evaluateState`: heurística que dá nota ao tabuleiro (material por classe e HP, pressão sobre o Rei inimigo, ameaça ao próprio Rei, economia de mana, influência posicional). **Soma-zero**, requisito da poda alfa-beta.
+- [x] `getBestAction`: alfa-beta com aprofundamento iterativo, tabela de transposição e orçamento de tempo. A ação `END_TURN` é o que faz a busca trocar de lado.
+- [x] Hook `useBot`: dispara o turno da IA quando a vez passa para o p2 (a execução mora em `gameStore.runAiTurn`, com guard único).
+- [x] Visualização de "Pensamento": delay entre as ações da IA para o jogador acompanhar.
+
+> **Meta da Fase 4:** ATINGIDA. `shared/src/selfPlay.test.ts` conduz uma partida IA vs IA completa; `aiEngine.test.ts` cobre o mate em 1 e a simetria da avaliação.
 
 ---
 
-## Fase 5: Transição Multiplayer (A Escala do Chess.com)
+## Fase 5: Transição Multiplayer
 
-Quando o "Jogo Contra o Bot" for validado por você, migraremos a "Mesa de Operações" para a Nuvem de forma instantânea.
+Implementada sobre **Firebase** (Auth anônima + Firestore) em vez do par Node.js + Socket.io previsto originalmente — decisão tomada para chegar ao PvP jogável sem manter infraestrutura própria.
 
-- [ ] Bootstrapping BackEnd: Configurar `Node.js` + `Socket.io` isolados.
-- [ ] Importar Motor Lógico (`Phase 1`) do Monorepo para dentro da Engine Node.js.
-- [ ] Desativar Controlador Local no Cliente e conectar o Hook do `MatchController` mandando pacotes via Socket (`emit('PLAY_CARD', x, y)`).
-- [ ] Conectar o BaaS `Supabase`, Autenticar o perfil de Jogador, resgatar o array de Cartas do Inventário, e gravar histórico das vitórias de Matchmakings ranqueados pelo Servidor!
+- [x] Sala PvP por código, com índice `lobbyCodes/{CODE}` e ocupação de vaga transacional.
+- [x] Sincronização em tempo real do `GameState` via `onSnapshot`.
+- [x] Identidade de jogador sem tela de login (Auth anônima), com `VITE_AUTH_MODE=firebase` para ligar contas de verdade.
+- [x] `firestore.rules` versionadas: só os participantes leem a sala, só o dono escreve no próprio perfil.
+- [x] Validação do snapshot recebido (`hooks/pvpSync.ts`): recusa escrita fora do turno do remetente e estado que volta no tempo.
+- [ ] **Servidor autoritativo** (Cloud Functions ou Node): resolver as jogadas fora do cliente. É o que falta para (a) esconder a mão e o baralho do adversário, (b) impedir que um cliente escreva qualquer `GameState` e (c) tornar o ranking confiável.
+- [ ] Histórico/ranking gravados pelo servidor (`saveMatchResult` hoje só escreve o placar do próprio jogador).
+- [ ] Deck building persistente e matchmaking.
+
+---
+
+## Fase 6: Dívidas em aberto
+
+- [ ] **Regra de fim por baralho:** não existe fadiga, derrota por deck vazio nem limite de mão; uma partida equilibrada pode não terminar. Decisão de design pendente.
+- [ ] **Peso dos assets:** `hexum.png` (8,9 MB) e `muralha_gelo.png` (6,4 MB) respondem pela maior parte dos ~19 MB do `dist/`.
