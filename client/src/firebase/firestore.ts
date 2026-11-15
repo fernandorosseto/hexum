@@ -17,6 +17,8 @@ import {
   limit,
   getDocs,
   onSnapshot,
+  writeBatch,
+  runTransaction,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebaseConfig';
@@ -83,28 +85,30 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 // ── Partidas ───────────────────────────────────────────────
 
 /**
- * Salva o resultado de uma partida e atualiza as estatísticas
- * dos jogadores envolvidos.
+ * Salva o resultado e atualiza as estatísticas do JOGADOR LOCAL.
+ *
+ * Antes esta função escrevia no documento dos dois jogadores a partir do
+ * navegador — qualquer cliente conseguia inflar (ou zerar) o placar alheio.
+ * As regras do Firestore agora só permitem que cada um escreva no próprio
+ * documento. Um ranking realmente confiável precisa de Cloud Function: o
+ * cliente continua podendo mexer no próprio placar.
  */
-export async function saveMatchResult(match: MatchRecord): Promise<string> {
+export async function saveMatchResult(match: MatchRecord, localUid: string): Promise<string> {
   if (!db) return 'offline_match';
-  // Registra a partida
+
   const matchRef = await addDoc(collection(db, 'matches'), {
     ...match,
     endedAt: serverTimestamp(),
   });
 
-  // Atualiza stats de cada jogador (apenas UIDs reais, não 'ai')
-  for (const uid of match.players) {
-    if (uid === 'ai' || uid === 'p2') continue; // pula jogadores IA
-
-    const userRef = doc(db, 'users', uid);
+  const isRealPlayer = localUid && localUid !== 'ai' && localUid !== 'p1' && localUid !== 'p2';
+  if (isRealPlayer && match.players.includes(localUid)) {
     const result =
-      match.winner === uid   ? 'wins'
+      match.winner === localUid ? 'wins'
       : match.winner === 'draw' ? 'draws'
       : 'losses';
 
-    await updateDoc(userRef, {
+    await updateDoc(doc(db, 'users', localUid), {
       [`stats.${result}`]: increment(1),
     });
   }
@@ -142,6 +146,29 @@ export interface LobbyDoc {
   status: LobbyStatus;
   createdAt: unknown;
   gameState: GameState | null;
+  /** uid de quem escreveu o último gameState (checado na recepção). */
+  updatedBy?: string;
+}
+
+/**
+ * Índice público código -> sala. Mantém o documento da partida legível apenas
+ * pelos dois participantes: antes, entrar numa sala exigia listar `lobbies`,
+ * o que deixava qualquer usuário ler o estado (e as mãos) de partidas alheias.
+ * Este documento não guarda nada do jogo.
+ */
+export interface LobbyCodeDoc {
+  lobbyId: string;
+  hostName: string;
+  status: LobbyStatus;
+}
+
+const LOBBY_CODE_LENGTH = 6;
+const LOBBY_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem I/O/0/1
+
+function generateLobbyCode(): string {
+  const bytes = new Uint32Array(LOBBY_CODE_LENGTH);
+  globalThis.crypto.getRandomValues(bytes);
+  return Array.from(bytes, b => LOBBY_CODE_ALPHABET[b % LOBBY_CODE_ALPHABET.length]).join('');
 }
 
 /**
@@ -151,12 +178,15 @@ export async function createLobby(
   hostId: string,
   hostName: string,
   initialGameState: GameState
-): Promise<string> {
+): Promise<{ lobbyId: string; code: string }> {
   if (!db) throw new Error("Firebase não inicializado. Verifique a configuração.");
-  const code = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-  const ref = doc(collection(db, 'lobbies'));
-  await setDoc(ref, {
+  const code = generateLobbyCode();
+  const lobbyRef = doc(collection(db, 'lobbies'));
+
+  // Sala e índice do código são gravados juntos para não existir código órfão.
+  const batch = writeBatch(db);
+  batch.set(lobbyRef, {
     code,
     hostId,
     hostName,
@@ -165,38 +195,65 @@ export async function createLobby(
     status: 'waiting' as LobbyStatus,
     createdAt: serverTimestamp(),
     gameState: initialGameState,
+    updatedBy: hostId,
   });
+  batch.set(doc(db, 'lobbyCodes', code), {
+    lobbyId: lobbyRef.id,
+    hostName,
+    status: 'waiting' as LobbyStatus,
+  });
+  await batch.commit();
 
-  return ref.id;
+  return { lobbyId: lobbyRef.id, code };
 }
 
 /**
- * Busca uma sala pelo código de 6 chars e entra como guest.
- * Retorna { lobbyId, doc } ou null se não encontrada.
+ * Entra numa sala pelo código.
+ *
+ * A versão anterior lia as 20 salas mais recentes e filtrava no cliente: salas
+ * mais antigas ficavam inacessíveis e, sem transação, dois convidados podiam
+ * ocupar a mesma vaga. Agora o código resolve direto para o id da sala e a
+ * ocupação da vaga é atômica.
  */
 export async function joinLobbyByCode(
   code: string,
   guestId: string,
   guestName: string
-): Promise<{ lobbyId: string; lobby: LobbyDoc } | null> {
+): Promise<{ lobbyId: string; hostName: string } | null> {
   if (!db) return null;
-  const q = query(collection(db, 'lobbies'), orderBy('createdAt', 'desc'), limit(20));
-  const snap = await getDocs(q);
+  const database = db;
 
-  const match = snap.docs.find(
-    d => (d.data() as LobbyDoc).code === code.toUpperCase() &&
-         (d.data() as LobbyDoc).status === 'waiting'
-  );
+  const normalized = code.trim().toUpperCase();
+  const codeSnap = await getDoc(doc(database, 'lobbyCodes', normalized));
+  if (!codeSnap.exists()) return null;
 
-  if (!match) return null;
+  const { lobbyId } = codeSnap.data() as LobbyCodeDoc;
+  const lobbyRef = doc(database, 'lobbies', lobbyId);
 
-  await updateDoc(match.ref, {
-    guestId,
-    guestName,
-    status: 'in_progress' as LobbyStatus,
-  });
+  try {
+    return await runTransaction(database, async transaction => {
+      const lobbySnap = await transaction.get(lobbyRef);
+      if (!lobbySnap.exists()) return null;
 
-  return { lobbyId: match.id, lobby: match.data() as LobbyDoc };
+      const lobby = lobbySnap.data() as LobbyDoc;
+      if (lobby.status !== 'waiting' || lobby.guestId) return null;
+      if (lobby.hostId === guestId) return null; // não dá para jogar sozinho
+
+      transaction.update(lobbyRef, {
+        guestId,
+        guestName,
+        status: 'in_progress' as LobbyStatus,
+      });
+      transaction.update(doc(database, 'lobbyCodes', normalized), {
+        status: 'in_progress' as LobbyStatus,
+      });
+
+      return { lobbyId, hostName: lobby.hostName };
+    });
+  } catch (error) {
+    console.error('Falha ao entrar na sala:', error);
+    return null;
+  }
 }
 
 /**
@@ -219,16 +276,20 @@ export function subscribeToLobby(
  */
 export async function pushGameState(
   lobbyId: string,
-  gameState: GameState
+  gameState: GameState,
+  updatedBy: string
 ): Promise<void> {
   if (!db) return;
-  await updateDoc(doc(db, 'lobbies', lobbyId), { gameState });
+  await updateDoc(doc(db, 'lobbies', lobbyId), { gameState, updatedBy });
 }
 
 /**
  * Marca a sala como finalizada.
  */
-export async function closeLobby(lobbyId: string): Promise<void> {
+export async function closeLobby(lobbyId: string, code?: string): Promise<void> {
   if (!db) return;
-  await updateDoc(doc(db, 'lobbies', lobbyId), { status: 'finished' as LobbyStatus });
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'lobbies', lobbyId), { status: 'finished' as LobbyStatus });
+  if (code) batch.update(doc(db, 'lobbyCodes', code.toUpperCase()), { status: 'finished' as LobbyStatus });
+  await batch.commit();
 }

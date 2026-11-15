@@ -1,15 +1,23 @@
 import type { HexCoordinates, Unit } from 'shared';
 import { 
   moveTo, attack, heal, playCard, offerCard, getHexDistance, getHexNeighbors, 
-  hasAnyValidAction, getUnitCard, ARTIFACT_NAMES, SPELL_NAMES
+  hasAnyValidAction, tryGetUnitCard, getClassDisplayName, ARTIFACT_NAMES, SPELL_NAMES
 } from 'shared';
 import { 
   scheduleProjectileAnimation, scheduleThrustAnimation, scheduleMeleeAnimation, 
   scheduleMageAttack, scheduleAssassinAttack, scheduleHeavyMelee, scheduleCleaveAttack,
-  scheduleSpellCardAnimation, AnimationType 
+  AnimationType 
 } from './animationActions';
+import { beginAction } from './actionGuard';
+import type { GameStore } from './gameStore';
 
-export const createCombatActions = (set: any, get: any) => {
+type StoreSet = (partial: Partial<GameStore> | ((state: GameStore) => Partial<GameStore>)) => void;
+type StoreGet = () => GameStore;
+
+/** Janela máxima de animação; depois dela a UI volta a aceitar cliques. */
+const RESOLVE_WINDOW_MS = 1400;
+
+export const createCombatActions = (set: StoreSet, get: StoreGet) => {
   const checkAutoPass = () => {
     const state = get();
     // No modo Sandbox ou se já acabou o jogo, não fazemos auto-pass
@@ -30,6 +38,7 @@ export const createCombatActions = (set: any, get: any) => {
 
   return {
   attemptMove: (unitId: string, targetHex: HexCoordinates, useSpecial = false) => {
+    const action = beginAction(set, get);
     try {
       const currentGameState = get();
       const unit = currentGameState.boardUnits[unitId];
@@ -52,7 +61,7 @@ export const createCombatActions = (set: any, get: any) => {
 
       const finalUseSpecial = useSpecial || !!currentGameState.selectedAbility;
       const newState = moveTo(effectiveState, unitId, targetHex, finalUseSpecial);
-      set({ 
+      action.set({ 
         ...newState, 
         selectedHex: null, 
         selectedAbility: null,
@@ -60,25 +69,27 @@ export const createCombatActions = (set: any, get: any) => {
       });
 
       const lang: 'en' | 'pt' = (get().language || 'pt') as 'en' | 'pt';
+      const who = getClassDisplayName(unit.unitClass, lang);
       const moveTemplates = lang === 'pt' ? [
-        `O ${unit.unitClass} marchou pelo campo de batalha.`,
-        `O ${unit.unitClass} se posicionou estrategicamente.`,
-        `O ${unit.unitClass} avançou em direção ao objetivo.`
+        `O ${who} marchou pelo campo de batalha.`,
+        `O ${who} se posicionou estrategicamente.`,
+        `O ${who} avançou em direção ao objetivo.`
       ] : [
-        `The ${unit.unitClass} marched across the battlefield.`,
-        `${unit.unitClass} positioned strategically.`,
-        `The ${unit.unitClass} advanced toward the objective.`
+        `The ${who} marched across the battlefield.`,
+        `${who} positioned strategically.`,
+        `The ${who} advanced toward the objective.`
       ];
       const moveMsg = moveTemplates[Math.floor(Math.random() * moveTemplates.length)];
       get().addLog(moveMsg, unit.playerId);
       checkAutoPass();
-    } catch (err: any) {
-      console.warn("Erro de Regra:", err.message);
-      set({ selectedHex: null, selectedAbility: null });
+    } catch (err) {
+      console.warn("Erro de Regra:", err instanceof Error ? err.message : err);
+      action.set({ selectedHex: null, selectedAbility: null });
     }
   },
 
   attemptAttack: (attackerId: string, targetId: string, useSpecial = false) => {
+    const action = beginAction(set, get);
     try {
       const currentGameState = get();
       const attacker = currentGameState.boardUnits[attackerId];
@@ -117,14 +128,16 @@ export const createCombatActions = (set: any, get: any) => {
 
       const details = (newState.combatLogs && newState.combatLogs.length > 0) ? `. ${newState.combatLogs.join('. ')}` : '';
       const lang: 'en' | 'pt' = (get().language || 'pt') as 'en' | 'pt';
+      const who = getClassDisplayName(attacker.unitClass, lang);
+      const foe = getClassDisplayName(target.unitClass, lang);
       const attackTemplates = lang === 'pt' ? [
-        `O ${attacker.unitClass} golpeou o ${target.unitClass} com um ataque preciso, causando ${damageDealt} de dano!`,
-        `O ${attacker.unitClass} atacou o ${target.unitClass} infligindo ${damageDealt} de dano.`,
-        `O impacto do ${attacker.unitClass} atingiu o ${target.unitClass} com força: ${damageDealt} de dano.`
+        `O ${who} golpeou o ${foe} com um ataque preciso, causando ${damageDealt} de dano!`,
+        `O ${who} atacou o ${foe} infligindo ${damageDealt} de dano.`,
+        `O impacto do ${who} atingiu o ${foe} com força: ${damageDealt} de dano.`
       ] : [
-        `The ${attacker.unitClass} struck ${target.unitClass} with a precise blow dealing ${damageDealt} damage!`,
-        `${attacker.unitClass} attacked ${target.unitClass} inflicting ${damageDealt} damage.`,
-        `The impact from ${attacker.unitClass} hit ${target.unitClass} hard: ${damageDealt} damage.`
+        `The ${who} struck ${foe} with a precise blow dealing ${damageDealt} damage!`,
+        `${who} attacked ${foe} inflicting ${damageDealt} damage.`,
+        `The impact from ${who} hit ${foe} hard: ${damageDealt} damage.`
       ];
       const attackMsg = attackTemplates[Math.floor(Math.random() * attackTemplates.length)] + details;
 
@@ -138,31 +151,37 @@ export const createCombatActions = (set: any, get: any) => {
         timestamp: Date.now() 
       };
 
+      // Bloqueia a entrada enquanto a animação resolve o estado final.
+      action.set({ isResolving: true });
+      setTimeout(() => action.set({ isResolving: false }), RESOLVE_WINDOW_MS);
+
+      const set_ = action.set;
       if (attacker.unitClass === 'Arqueiro') {
-        scheduleProjectileAnimation(set, get, attacker, target, newState, animations, attackMsg, targetDied);
+        scheduleProjectileAnimation(set_, get, attacker, target, newState, animations, attackMsg, targetDied);
       } else if (attacker.unitClass === 'Lanceiro') {
-        scheduleThrustAnimation(set, get, attacker, target, newState, animations, attackMsg, targetDied);
+        scheduleThrustAnimation(set_, get, attacker, target, newState, animations, attackMsg, targetDied);
       } else if (attacker.unitClass === 'Mago' || attacker.unitClass === 'Alquimista') {
-        scheduleMageAttack(set, get, attacker, target, newState, animations, attackMsg, targetDied);
+        scheduleMageAttack(set_, get, attacker, target, newState, animations, attackMsg, targetDied);
       } else if (attacker.unitClass === 'Assassino') {
-        scheduleAssassinAttack(set, get, attacker, target, newState, animations, attackMsg, targetDied);
+        scheduleAssassinAttack(set_, get, attacker, target, newState, animations, attackMsg, targetDied);
       } else if (attacker.unitClass === 'Cavaleiro') {
-        scheduleHeavyMelee(set, get, attacker, target, newState, animations, attackMsg, targetDied);
+        scheduleHeavyMelee(set_, get, attacker, target, newState, animations, attackMsg, targetDied);
       } else if (attacker.unitClass === 'Rei') {
-        scheduleCleaveAttack(set, get, attacker, target, newState, animations, attackMsg, targetDied, 'gold');
+        scheduleCleaveAttack(set_, get, attacker, target, newState, animations, attackMsg, targetDied, 'gold');
       } else if (attacker.unitClass === 'Clerigo') {
         scheduleCleaveAttack(set, get, attacker, target, newState, animations, attackMsg, targetDied, 'cyan');
       } else {
-        scheduleMeleeAnimation(set, get, attacker, target, newState, animations, attackMsg, targetDied);
+        scheduleMeleeAnimation(set_, get, attacker, target, newState, animations, attackMsg, targetDied);
       }
       checkAutoPass();
-    } catch (err: any) {
-      console.warn("Erro de Ataque:", err.message);
-      set({ selectedHex: null, targetHex: null, selectedAbility: null });
+    } catch (err) {
+      console.warn("Erro de Ataque:", err instanceof Error ? err.message : err);
+      action.set({ selectedHex: null, targetHex: null, selectedAbility: null, isResolving: false });
     }
   },
 
   attemptHeal: (healerId: string, targetId: string) => {
+    const action = beginAction(set, get);
     try {
       const currentGameState = get();
       const healer = currentGameState.boardUnits[healerId];
@@ -180,7 +199,7 @@ export const createCombatActions = (set: any, get: any) => {
       }
 
       const newState = heal(effectiveState, healerId, targetId);
-      set({ 
+      action.set({ 
         ...newState, 
         selectedHex: null, 
         animatingUnits: { [targetId]: 'healing' },
@@ -188,18 +207,19 @@ export const createCombatActions = (set: any, get: any) => {
       });
       const lang: 'en' | 'pt' = (get().language || 'pt') as 'en' | 'pt';
       const msg = lang === 'pt'
-        ? `O ${healer.unitClass} usou preces divinas para curar o ${target.unitClass}!`
-        : `The ${healer.unitClass} used divine prayers to heal ${target.unitClass}!`;
+        ? `O ${getClassDisplayName(healer.unitClass, lang)} usou preces divinas para curar o ${getClassDisplayName(target.unitClass, lang)}!`
+        : `The ${getClassDisplayName(healer.unitClass, lang)} used divine prayers to heal ${getClassDisplayName(target.unitClass, lang)}!`;
       get().addLog(msg, healer.playerId);
-      setTimeout(() => set({ animatingUnits: {} }), 600);
+      setTimeout(() => action.set({ animatingUnits: {} }), 600);
       checkAutoPass();
-    } catch (err: any) {
-      console.warn("Erro de Cura:", err.message);
-      set({ selectedHex: null });
+    } catch (err) {
+      console.warn("Erro de Cura:", err instanceof Error ? err.message : err);
+      action.set({ selectedHex: null });
     }
   },
 
   attemptPlayCard: (cardId: string, targetHex: HexCoordinates) => {
+    const action = beginAction(set, get);
     try {
       const currentGameState = get();
 
@@ -217,7 +237,6 @@ export const createCombatActions = (set: any, get: any) => {
         newState.players['p1'].mana = 99;
         newState.players['p1'].maxMana = 99;
       }
-      const deadUnitIds = Object.keys(currentGameState.boardUnits).filter(id => !newState.boardUnits[id]);
       let hasCustomAnimation = false;
       let animationDuration = 0;
       let setupAnimations = () => {};
@@ -317,19 +336,23 @@ export const createCombatActions = (set: any, get: any) => {
 
       // Prepara a mensagem de log
       const lang: 'en' | 'pt' = (get().language || 'pt') as 'en' | 'pt';
-      let cardName = cardId.replace('unit_', '').replace('spl_', '').replace('art_', '').toUpperCase();
+      // O baralho é feito de ids `hero_*`; tratar só `unit_*` fazia o log
+      // mostrar o id cru ("Played HERO_LANDSKNECHT") em toda invocação.
+      let cardName = cardId.replace(/^(unit|hero|spl|art)_/, '').toUpperCase();
       try {
-        if (cardId.startsWith('unit_')) {
-          cardName = getUnitCard(cardId, lang).name;
+        if (cardId.startsWith('unit_') || cardId.startsWith('hero_')) {
+          cardName = tryGetUnitCard(cardId, lang)?.name ?? cardName;
         } else if (cardId.startsWith('art_')) {
           cardName = ARTIFACT_NAMES[cardId]?.[lang] || cardName;
         } else if (cardId.startsWith('spl_')) {
           cardName = SPELL_NAMES[cardId]?.[lang] || cardName;
         }
-      } catch (e) {}
+      } catch {
+        // Sem nome traduzido: mantém o fallback derivado do id.
+      }
 
       let playMsg = lang === 'pt' ? `Jogou ${cardName}` : `Played ${cardName}`;
-      if (cardId.startsWith('unit_')) {
+      if (cardId.startsWith('unit_') || cardId.startsWith('hero_')) {
         const pName = currentGameState.currentTurnPlayerId === 'p1'
           ? (lang === 'pt' ? 'Azul' : 'Blue')
           : (lang === 'pt' ? 'Roxo' : 'Purple');
@@ -347,8 +370,9 @@ export const createCombatActions = (set: any, get: any) => {
       }
 
       const applyFinalState = () => {
-        set({
+        action.set({
           ...newState,
+          isResolving: false,
           selectedCard: null,
           selectedHex: null,
           activeTransfusion: null,
@@ -375,12 +399,16 @@ export const createCombatActions = (set: any, get: any) => {
       };
 
       if (hasCustomAnimation) {
-        // Atualiza imediatamente mão e mana do jogador para responsividade na UI
-        set({
+        // Atualiza imediatamente mão e mana do jogador para responsividade na UI.
+        // O tabuleiro só muda ao final da animação, por isso a entrada fica
+        // bloqueada (isResolving) até lá — antes, um clique nessa janela era
+        // desfeito quando o timer aplicava o estado pré-calculado.
+        action.set({
           ...newState,
-          boardUnits: currentGameState.boardUnits, // Mantém o tabuleiro original para a animação
+          boardUnits: currentGameState.boardUnits,
           selectedCard: null,
-          selectedHex: null
+          selectedHex: null,
+          isResolving: true
         });
 
         // Dispara os estados de animação específicos
@@ -393,9 +421,9 @@ export const createCombatActions = (set: any, get: any) => {
       } else {
         applyFinalState();
       }
-    } catch (err: any) {
-      console.warn("Erro ao jogar carta:", err.message);
-      set({ selectedCard: null, selectedHex: null });
+    } catch (err) {
+      console.warn("Erro ao jogar carta:", err instanceof Error ? err.message : err);
+      action.set({ selectedCard: null, selectedHex: null, isResolving: false });
     }
   },
 
@@ -429,8 +457,8 @@ export const createCombatActions = (set: any, get: any) => {
         : `A mana offering was made by ${pName}.`;
       get().addLog(offeringMsg, currentGameState.currentTurnPlayerId);
       checkAutoPass();
-    } catch (err: any) {
-      console.warn("Erro ao oferecer carta:", err.message);
+    } catch (err) {
+      console.warn("Erro ao oferecer carta:", err instanceof Error ? err.message : err);
     }
   },
 
@@ -443,13 +471,13 @@ export const createCombatActions = (set: any, get: any) => {
       set({ ...newState, animatingUnits: { [targetId]: 'healing' } });
       const lang: 'en' | 'pt' = (get().language || 'pt') as 'en' | 'pt';
       const msg = lang === 'pt'
-        ? `O ${healer.unitClass} curou o ${target.unitClass}`
-        : `${healer.unitClass} healed ${target.unitClass}`;
+        ? `O ${getClassDisplayName(healer.unitClass, lang)} curou o ${getClassDisplayName(target.unitClass, lang)}`
+        : `${getClassDisplayName(healer.unitClass, lang)} healed ${getClassDisplayName(target.unitClass, lang)}`;
       get().addLog(msg, healer.playerId);
       setTimeout(() => set({ animatingUnits: {} }), 600);
       checkAutoPass();
-    } catch (err: any) {
-      console.warn("Erro ao curar:", err.message);
+    } catch (err) {
+      console.warn("Erro ao curar:", err instanceof Error ? err.message : err);
     }
   }
 }

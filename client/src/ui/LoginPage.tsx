@@ -18,6 +18,13 @@ interface LoginPageProps {
   onAuthenticated: () => void;
 }
 
+/** Código de erro do Firebase Auth, quando houver. */
+function authErrorCode(error: unknown): string {
+  return typeof error === 'object' && error !== null && 'code' in error
+    ? String((error as { code: unknown }).code)
+    : '';
+}
+
 export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
   const [tab, setTab] = useState<AuthTab>('login');
   const [displayName, setDisplayName] = useState('');
@@ -48,7 +55,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
         await loginWithEmail(email, password);
       }
       onAuthenticated();
-    } catch (err: any) {
+    } catch (err) {
       const msg: Record<string, string> = {
         'auth/email-already-in-use': t.authEmailInUse,
         'auth/invalid-email': t.authInvalidEmail,
@@ -57,7 +64,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
         'auth/wrong-password': t.authWrongPassword,
         'auth/invalid-credential': t.authInvalidCredential,
       };
-      setError(msg[err.code] ?? t.authUnexpected);
+      setError(msg[authErrorCode(err)] ?? t.authUnexpected);
     } finally {
       setLoading(false);
     }

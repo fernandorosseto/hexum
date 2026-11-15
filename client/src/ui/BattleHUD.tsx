@@ -10,6 +10,8 @@ export const BattleHUD: React.FC = () => {
   const currentTurnPlayerId = useGameStore(state => state.currentTurnPlayerId);
   const players = useGameStore(state => state.players);
   const triggerEndTurn = useGameStore(state => state.triggerEndTurn);
+  // Turno parado no limite de mão: passar a vez não é uma opção agora.
+  const isAwaitingDiscard = useGameStore(state => state.currentPhase === 'END_PHASE');
   const turnNumber = useGameStore(state => state.turnNumber);
   const setCurrentView = useGameStore(state => state.setCurrentView);
   const isAiThinking = useGameStore(state => state.isAiThinking);
@@ -163,7 +165,15 @@ export const BattleHUD: React.FC = () => {
               <span className="text-[10px] font-black text-purple-300 uppercase tracking-widest">{t.aiThinking}</span>
             </div>
           )}
-          {isMyTurn && !sandboxMode && !isAiThinking && (
+          {isAwaitingDiscard && (
+            <div className="flex items-center gap-2 px-3 py-1 bg-amber-900/40 border border-amber-500/40 rounded-lg">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+              <span className="text-[10px] font-black text-amber-300 uppercase tracking-widest">
+                {isMyTurn ? t.discardBadge : t.waitingDiscard}
+              </span>
+            </div>
+          )}
+          {isMyTurn && !sandboxMode && !isAiThinking && !isAwaitingDiscard && (
             <button 
               onClick={triggerEndTurn}
               className="px-4 md:px-5 py-1 md:py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-black text-[10px] md:text-sm rounded-lg shadow-[0_2px_10px_rgba(37,99,235,0.3)] transition-all active:scale-95 border border-blue-400/30"

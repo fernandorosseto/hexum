@@ -1,14 +1,22 @@
-import type { HexCoordinates } from 'shared';
-import { getUnitCard } from 'shared';
+import type { HexCoordinates, Unit } from 'shared';
+import { tryGetUnitCard } from 'shared';
+import type { GameStore } from './gameStore';
 
-export const createSandboxActions = (set: any, get: any) => ({
+type StoreSet = (partial: Partial<GameStore> | ((state: GameStore) => Partial<GameStore>)) => void;
+type StoreGet = () => GameStore;
+
+/** Maior animação de carta (1000ms) + folga. */
+const SANDBOX_MANA_RESTORE_MS = 1100;
+
+export const createSandboxActions = (set: StoreSet, get: StoreGet) => ({
   spawnUnit: (unitName: string, hex: HexCoordinates, playerId: string) => {
-    let card;
-    try { card = getUnitCard(unitName, get().language); } catch(e){}
+    const card = tryGetUnitCard(unitName, get().language);
     if (!card) return;
 
-    const unitId = `u_sbx_${Math.random().toString(36).substr(2, 5)}_${card.unitClass.toLowerCase()}`;
-    const newUnit = {
+    const unitId = `u_sbx_${Math.random().toString(36).slice(2, 7)}_${card.unitClass.toLowerCase()}`;
+    // Tipar como Unit fez aparecer que `abilityCooldown` nunca era preenchido:
+    // unidades criadas no Sandbox tinham a especial sempre disponível.
+    const newUnit: Unit = {
       id: unitId,
       playerId,
       cardId: card.id,
@@ -22,10 +30,11 @@ export const createSandboxActions = (set: any, get: any) => ({
       summoningSickness: false,
       canMove: true,
       canAttack: true,
+      abilityCooldown: 0,
       equippedArtifacts: []
     };
 
-    set((state: any) => ({
+    set(state => ({
       boardUnits: { ...state.boardUnits, [unitId]: newUnit }
     }));
     const lang = get().language || 'pt';
@@ -36,7 +45,7 @@ export const createSandboxActions = (set: any, get: any) => ({
   },
 
   addCardToHand: (cardId: string) => {
-    set((state: any) => {
+    set(state => {
       const pId = state.currentTurnPlayerId;
       const player = state.players[pId];
       return {
@@ -65,7 +74,7 @@ export const createSandboxActions = (set: any, get: any) => ({
 
     const originalMana = currentState.players[playerId].mana;
 
-    set((state: any) => ({
+    set(state => ({
       players: {
         ...state.players,
         [playerId]: {
@@ -79,12 +88,17 @@ export const createSandboxActions = (set: any, get: any) => ({
     try {
       get().attemptPlayCard(cardId, hex);
     } finally {
-      set((state: any) => ({
-        players: {
-          ...state.players,
-          [playerId]: { ...state.players[playerId], mana: originalMana }
-        }
-      }));
+      // A restauração precisa acontecer DEPOIS da animação: attemptPlayCard
+      // aplica o estado final num setTimeout, e um restore síncrono era
+      // sobrescrito por ele logo em seguida.
+      setTimeout(() => {
+        set(state => ({
+          players: {
+            ...state.players,
+            [playerId]: { ...state.players[playerId], mana: originalMana }
+          }
+        }));
+      }, SANDBOX_MANA_RESTORE_MS);
     }
   },
 
@@ -98,8 +112,8 @@ export const createSandboxActions = (set: any, get: any) => ({
   },
 
   removeUnit: (unitId: string) => {
-    set((state: any) => {
-      const { [unitId]: _, ...remainingUnits } = state.boardUnits;
+    set(state => {
+      const { [unitId]: _removed, ...remainingUnits } = state.boardUnits;
       return {
         boardUnits: remainingUnits,
         selectedHex: null,

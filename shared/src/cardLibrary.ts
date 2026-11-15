@@ -125,6 +125,27 @@ export const SPELL_DESCRIPTIONS: Record<string, { en: string, pt: string }> = {
   'spl_reforcos': { en: 'Adds 2 Lancer cards to your deck and hand.', pt: 'Adiciona 2 cartas de Lanceiro ao seu baralho e mão.' },
 };
 
+/**
+ * Versão tolerante de getUnitCard: devolve undefined em vez de lançar quando o id
+ * não é de unidade. Use sempre que o id puder ser de feitiço/artefato.
+ */
+export function tryGetUnitCard(idOrClass: string, lang: 'en' | 'pt' = 'en'): UnitCard | undefined {
+  try {
+    return getUnitCard(idOrClass, lang);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Nome da classe no idioma pedido ("Lanceiro" -> "Lancer").
+ * Os logs usavam `unit.unitClass` cru, que é sempre o identificador interno em
+ * português e destoava no modo inglês.
+ */
+export function getClassDisplayName(unitClass: string, lang: 'en' | 'pt' = 'en'): string {
+  return tryGetUnitCard(unitClass, lang)?.name ?? unitClass;
+}
+
 export function getUnitCard(idOrClass: string, lang: 'en' | 'pt' = 'en'): UnitCard {
   // Retro-compatibilidade se a chamada vier pela classe crua (ex: "Cavaleiro" na Forja/UI)
   const rawClassFallback: Record<string, string> = {

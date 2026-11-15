@@ -4,8 +4,12 @@ import { translations } from './translations';
 
 export const GameOverUI: React.FC = () => {
   const winner = useGameStore(s => s.winner);
+  const winReason = useGameStore(s => s.winReason);
+  const isPvP = useGameStore(s => s.isPvP);
+  const myRole = useGameStore(s => s.myRole);
   const setCurrentView = useGameStore(s => s.setCurrentView);
   const resetGame = useGameStore(s => s.resetGame);
+  const clearLobbySession = useGameStore(s => s.clearLobbySession);
   const language = useGameStore(s => s.language);
   const t = translations[language];
   
@@ -24,16 +28,26 @@ export const GameOverUI: React.FC = () => {
     if (!winner || !shouldShow) return;
 
     const autoExitTimer = setTimeout(() => {
+      if (useGameStore.getState().isPvP) clearLobbySession();
       resetGame();
       setCurrentView('MENU');
     }, 60000); // 1 minuto
 
     return () => clearTimeout(autoExitTimer);
-  }, [winner, shouldShow, resetGame, setCurrentView]);
+  }, [winner, shouldShow, resetGame, setCurrentView, clearLobbySession]);
 
   if (!winner || !shouldShow) return null;
 
-  const isVictory = winner === 'p1';
+  // No PvP o convidado joga como p2; fixar 'p1' mostrava derrota para quem venceu.
+  const localPlayerId = isPvP ? (myRole ?? 'p1') : 'p1';
+  const isVictory = winner === localPlayerId;
+
+  // Sem isso a tela só diz "Vitória"/"Derrota" e o jogador não entende por quê
+  // — especialmente na derrota por baralho vazio, que não tem nada no tabuleiro.
+  const subtitle =
+    winReason === 'deckout'   ? (isVictory ? t.enemyDeckedOut : t.youDeckedOut)
+    : winReason === 'surrender' ? (isVictory ? t.enemySurrendered : t.youSurrendered)
+    : (isVictory ? t.enemyKingDefeated : t.kingFell);
 
   // Versão minimizada do modal para revisão do campo
   if (isMinimized) {
@@ -80,7 +94,7 @@ export const GameOverUI: React.FC = () => {
             {isVictory ? t.victory : t.defeat}
           </h1>
           <p className="text-white/50 font-bold tracking-[0.4em] uppercase text-[9px] drop-shadow-md">
-            {isVictory ? t.enemyKingDefeated : t.kingFell}
+            {subtitle}
           </p>
         </div>
 
@@ -88,6 +102,7 @@ export const GameOverUI: React.FC = () => {
         <div className="w-full flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500 fill-mode-both">
           <button
             onClick={() => {
+              if (isPvP) clearLobbySession();
               resetGame();
             }}
             className="w-full py-4 bg-white text-black font-black uppercase tracking-widest text-sm rounded-xl hover:bg-slate-100 transition-all active:scale-95 shadow-2xl"
@@ -104,6 +119,7 @@ export const GameOverUI: React.FC = () => {
           
           <button
             onClick={() => {
+              if (isPvP) clearLobbySession();
               resetGame();
               setCurrentView('MENU');
             }}

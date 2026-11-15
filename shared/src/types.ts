@@ -44,6 +44,9 @@ export interface Unit {
 
 export type Phase = 'DRAW_PHASE' | 'MAIN_PHASE' | 'END_PHASE' | 'GAME_OVER';
 
+/** Motivo do fim da partida. */
+export type WinReason = 'king' | 'deckout' | 'surrender';
+
 export interface PlayerState {
   id: string;
   mana: number;
@@ -77,6 +80,8 @@ export interface GameState {
 
   sandboxMode?: boolean;
   winner?: string; // Player que ganhou
+  /** Por que a partida acabou — usado pela tela de fim de jogo. */
+  winReason?: WinReason;
   players: Record<string, PlayerState>;
   boardUnits: Record<string, Unit>; // O Id da Unidade aponta pro objeto dela
   combatLogs?: string[]; // Trilha de log detalhada gerada no último combate

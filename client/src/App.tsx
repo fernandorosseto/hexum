@@ -12,6 +12,7 @@ import { useMultiplayer } from './hooks/useMultiplayer';
 import { useGameStore } from './store/gameStore';
 import { useAuth } from './hooks/useAuth';
 import { LoginPage } from './ui/LoginPage';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import './index.css';
 import backgroundImg from './assets/background.jpg';
@@ -27,7 +28,6 @@ function App() {
   const currentTurnPlayerId = useGameStore(s => s.currentTurnPlayerId);
   const phase = useGameStore(s => s.currentPhase);
   const currentView = useGameStore(s => s.currentView);
-  const isLogVisible = useGameStore(s => s.isLogVisible);
   const isHandVisible = useGameStore(s => s.isHandVisible);
   const toggleHand = useGameStore(s => s.toggleHand);
   const isCardDetailsVisible = useGameStore(s => s.isCardDetailsVisible);
@@ -39,6 +39,19 @@ function App() {
   const isAiThinking = useGameStore(s => s.isAiThinking);
   const isPvP = useGameStore(s => s.isPvP);
   const isMatchStarted = useGameStore(s => s.isMatchStarted);
+  const language = useGameStore(s => s.language);
+
+  // Cronômetro de turno: `decrementTimer` existia no store mas nunca era
+  // chamado, então o HUD ficava congelado em 60s para sempre.
+  useEffect(() => {
+    if (currentView === 'MENU' || sandboxMode) return;
+    const ticker = setInterval(() => useGameStore.getState().decrementTimer(), 1000);
+    return () => clearInterval(ticker);
+  }, [currentView, sandboxMode]);
+
+  useEffect(() => {
+    document.documentElement.lang = language === 'pt' ? 'pt-BR' : 'en';
+  }, [language]);
 
   if (loading) {
     return (
@@ -125,7 +138,7 @@ function App() {
       {currentView === 'PLAY' && (
         <div className="sm:hidden fixed right-3 z-50 pointer-events-auto flex flex-col gap-3" style={{ bottom: 'calc(100px + env(safe-area-inset-bottom, 0px))' }}>
           {/* Botão Passar Turno (principal) */}
-          {!sandboxMode && isMyTurn && !isAiThinking && phase !== 'GAME_OVER' && (
+          {!sandboxMode && isMyTurn && !isAiThinking && phase === 'MAIN_PHASE' && (
             <button 
               onClick={triggerEndTurn}
               className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 border-2 border-blue-400/60 text-white shadow-[0_4px_20px_rgba(59,130,246,0.5)] active:scale-90 transition-all flex items-center justify-center"

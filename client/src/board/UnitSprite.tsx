@@ -1,11 +1,10 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Unit, HexCoordinates } from 'shared';
+import type { Buff, Unit, HexCoordinates } from 'shared';
 import { getFearStatus } from 'shared';
 import { useGameStore } from '../store/gameStore';
 import { CLASS_ICONS } from '../constants/unitIcons';
 import { HEX_SIZE } from './HexUtils';
-import reiImg from '../assets/icons/rei.png';
 import { BuffIcon } from '../assets/icons/VectorIcons';
 import { LightningAnimation } from '../animations';
 import { StructureSprite, UnitBadges, UnitBuffs, ShieldAura, UnitEquipment } from '../units';
@@ -16,20 +15,21 @@ interface Props {
   isTargetable?: boolean;
   targetColor?: 'red' | 'green';
   animation?: 'attacking' | 'damaged' | 'healing' | 'lightning';
+  /** Reservados para a animação de investida do Lanceiro (ainda não usados aqui). */
   thrustTarget?: HexCoordinates;
   thrustDistance?: number;
   thrustAngle?: number;
 }
 
 export const UnitSprite: React.FC<Props> = ({ 
-  unit, isSelected, isTargetable, targetColor, animation, thrustTarget, thrustDistance, thrustAngle 
+  unit, isSelected, isTargetable, targetColor, animation
 }) => {
   const gameState = useGameStore(state => state);
-  const fearInfo = getFearStatus(unit, gameState as any);
+  const fearInfo = getFearStatus(unit, gameState);
 
-  const displayBuffs = [...unit.buffs];
+  const displayBuffs: Buff[] = [...unit.buffs];
   if (fearInfo.inRange) {
-    displayBuffs.push({ type: 'fear' as any, duration: 0 });
+    displayBuffs.push({ type: 'fear', duration: 0 });
   }
 
   if (unit.unitClass === 'Estrutura') {
@@ -50,7 +50,6 @@ export const UnitSprite: React.FC<Props> = ({
   const isAttackSpent = isCurrentTurn && !unit.canAttack && !unit.summoningSickness;
   const hasSickness = unit.summoningSickness;
   const hasShield = unit.buffs.some(b => b.type === 'shield');
-  const isRei = unit.unitClass.toLowerCase() === 'rei';
   const unitImage = CLASS_ICONS[unit.unitClass];
 
   // Cores SVG
@@ -80,15 +79,6 @@ export const UnitSprite: React.FC<Props> = ({
   const reiOffset = -reiWidth / 2;
 
   const sicknessInnerR = HEX_SIZE * (24 / 90);
-
-  const iconSizeBase = HEX_SIZE * (60 / 90);
-  const iconSizeBig = HEX_SIZE * (126 / 90);
-
-  const iconXBase = -iconSizeBase / 2;
-  const iconYBase = -iconSizeBase * 35 / 60;
-
-  const iconXBig = -iconSizeBig / 2;
-  const iconYBig = -iconSizeBig * 55 / 126;
 
   return (
     <motion.g 

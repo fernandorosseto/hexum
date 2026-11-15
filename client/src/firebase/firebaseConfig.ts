@@ -1,16 +1,14 @@
 // ============================================================
 //  firebase/firebaseConfig.ts
 //  Inicializa o app Firebase com as credenciais do .env
-//  Substitua os valores no arquivo .env da pasta /client
+//  Veja client/.env.example para a lista de variáveis.
 // ============================================================
 
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp, type FirebaseApp } from 'firebase/app';
+import { getAuth, type Auth } from 'firebase/auth';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  // ✏️ Estas variáveis são lidas do arquivo .env
-  // Edite /client/.env com os valores do seu projeto Firebase
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
@@ -19,17 +17,36 @@ const firebaseConfig = {
   appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Inicializa o app Firebase (singleton) — graceful quando sem credenciais
-let app: ReturnType<typeof initializeApp> = null as any;
-let auth: ReturnType<typeof getAuth> = null as any;
-let db: ReturnType<typeof getFirestore> = null as any;
+/**
+ * Credenciais obrigatórias. `initializeApp` NÃO lança com valores undefined,
+ * então o try/catch anterior nunca protegia nada: `auth` e `db` ficavam
+ * não-nulos e o erro só aparecia depois, como falha de rede em runtime.
+ */
+const REQUIRED_KEYS = ['apiKey', 'authDomain', 'projectId', 'appId'] as const;
+const missing = REQUIRED_KEYS.filter(key => !firebaseConfig[key]);
 
-try {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-} catch (e) {
-  console.warn('⚠️ Firebase não inicializado (credenciais ausentes). Modo offline ativo.', e);
+export const isFirebaseConfigured = missing.length === 0;
+
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
+
+if (isFirebaseConfigured) {
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+  } catch (error) {
+    console.error('Firebase: falha ao inicializar.', error);
+    app = null;
+    auth = null;
+    db = null;
+  }
+} else {
+  console.warn(
+    `⚠️ Firebase desativado — faltam as variáveis: ${missing.map(k => `VITE_FIREBASE_${k.replace(/[A-Z]/g, c => '_' + c).toUpperCase()}`).join(', ')}. ` +
+    'O jogo roda normalmente offline (solo e sandbox); o PvP fica indisponível.'
+  );
 }
 
 export { auth, db };

@@ -43,15 +43,10 @@ export const LobbyPage: React.FC = () => {
     setLoading(true);
     try {
       const initialState = createInitialState();
-      const lobbyId = await createLobby(user.uid, displayName, initialState);
+      const { lobbyId, code } = await createLobby(user.uid, displayName, initialState);
 
-      // Busca o código do documento recém criado via snapshot
-      const unsub = subscribeToLobby(lobbyId, (lobby) => {
-        setRoomCode(lobby.code);
-        setLobbySession(lobbyId, lobby.code, 'p1');
-        unsub();
-      });
-
+      setRoomCode(code);
+      setLobbySession(lobbyId, code, 'p1');
       setWaitingLobbyId(lobbyId);
     } catch {
       setError(t.errorCreateRoom);
@@ -75,7 +70,7 @@ export const LobbyPage: React.FC = () => {
     });
 
     return () => unsub();
-  }, [waitingLobbyId, setCurrentView]);
+  }, [waitingLobbyId, setCurrentView, setMatchStarted, setPlayerNames]);
 
   // ── Entrar em sala (guest = p2) ────────────────────────────
   const handleJoin = async () => {
@@ -90,7 +85,7 @@ export const LobbyPage: React.FC = () => {
       }
       // setLobbySession ANTES de setCurrentView para isPvP=true ao renderizar
       setLobbySession(result.lobbyId, joinCode.trim().toUpperCase(), 'p2');
-      setPlayerNames(result.lobby.hostName, displayName);
+      setPlayerNames(result.hostName, displayName);
       setMatchStarted(true);
       setCurrentView('PVP');
     } catch {
